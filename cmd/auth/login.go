@@ -11,8 +11,8 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
 	"gopkg.in/yaml.v3"
 )
 
@@ -59,23 +59,35 @@ func runAuthLogin(ctx context.Context, opts *options.RootOptions, keyType, keyID
 	ios := opts.IOStreams
 
 	if ios.CanPrompt() {
-		var err error
+		var fields []huh.Field
 		if keyType == "" {
-			keyType, err = promptChoice(ios.Out, ios.In, "Key type (config, ingest, management): ", []string{"config", "ingest", "management"})
-			if err != nil {
-				return fmt.Errorf("reading key type: %w", err)
-			}
+			fields = append(fields, huh.NewSelect[string]().
+				Title("Key type").
+				Options(
+					huh.NewOption("config", "config"),
+					huh.NewOption("ingest", "ingest"),
+					huh.NewOption("management", "management"),
+				).
+				Value(&keyType))
 		}
 		if keyID == "" {
-			keyID, err = promptLine(ios.Out, ios.In, "Key ID: ")
-			if err != nil {
-				return fmt.Errorf("reading key ID: %w", err)
-			}
+			fields = append(fields, huh.NewInput().
+				Title("Key ID").
+				Value(&keyID))
 		}
 		if keySecret == "" {
-			keySecret, err = promptSecret(ios.Out, ios.In, ios.StdinFd(), "Key secret: ")
+			fields = append(fields, huh.NewInput().
+				Title("Key secret").
+				EchoMode(huh.EchoModePassword).
+				Value(&keySecret))
+		}
+		if len(fields) > 0 {
+			err := huh.NewForm(huh.NewGroup(fields...)).Run()
+			if err == huh.ErrUserAborted {
+				return nil
+			}
 			if err != nil {
-				return fmt.Errorf("reading key secret: %w", err)
+				return fmt.Errorf("prompting for credentials: %w", err)
 			}
 		}
 	} else {
@@ -167,39 +179,6 @@ func writeLoginResult(opts *options.RootOptions, result loginResult) error {
 	default:
 		return fmt.Errorf("unsupported format: %s", opts.ResolveFormat())
 	}
-}
-
-func promptLine(out io.Writer, in io.Reader, prompt string) (string, error) {
-	_, _ = fmt.Fprint(out, prompt)
-	return readLine(in)
-}
-
-func promptChoice(out io.Writer, in io.Reader, prompt string, choices []string) (string, error) {
-	for {
-		line, err := promptLine(out, in, prompt)
-		if err != nil {
-			return "", err
-		}
-		for _, c := range choices {
-			if strings.EqualFold(line, c) {
-				return c, nil
-			}
-		}
-		_, _ = fmt.Fprintf(out, "Invalid choice. Options: %s\n", strings.Join(choices, ", "))
-	}
-}
-
-func promptSecret(out io.Writer, in io.Reader, fd uintptr, prompt string) (string, error) {
-	_, _ = fmt.Fprint(out, prompt)
-	if fd != 0 {
-		b, err := term.ReadPassword(int(fd))
-		_, _ = fmt.Fprintln(out)
-		if err != nil {
-			return "", err
-		}
-		return string(b), nil
-	}
-	return readLine(in)
 }
 
 func readLine(r io.Reader) (string, error) {

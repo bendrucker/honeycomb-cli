@@ -66,7 +66,7 @@ Run `go generate ./internal/api/...` to regenerate. The generated file is commit
 | `mattn/go-isatty` | TTY detection |
 | `oapi-codegen/runtime` | Generated client runtime |
 | `oapi-codegen/nullable` | Three-state nullable for OpenAPI |
-| `golang.org/x/term` | Secure password input |
+| `charmbracelet/huh` | Terminal forms and prompts |
 
 ## Authentication
 
