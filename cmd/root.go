@@ -8,6 +8,7 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/dataset"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/cmd/slo"
+	"github.com/bendrucker/honeycomb-cli/cmd/trigger"
 	"github.com/bendrucker/honeycomb-cli/internal/agent"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/bendrucker/honeycomb-cli/internal/iostreams"
@@ -57,6 +58,7 @@ func NewRootCmd(ios *iostreams.IOStreams) *cobra.Command {
 	cmd.AddCommand(column.NewCmd(opts))
 	cmd.AddCommand(dataset.NewCmd(opts))
 	cmd.AddCommand(slo.NewCmd(opts))
+	cmd.AddCommand(trigger.NewCmd(opts))
 
 	return cmd
 }
