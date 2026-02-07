@@ -3,13 +3,8 @@ package dataset
 import (
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
-
-	"github.com/bendrucker/honeycomb-cli/cmd/options"
-	"github.com/bendrucker/honeycomb-cli/internal/config"
-	"github.com/bendrucker/honeycomb-cli/internal/iostreams"
 )
 
 func TestView(t *testing.T) {
@@ -57,6 +52,9 @@ func TestView(t *testing.T) {
 	if detail.Columns == nil || *detail.Columns != 42 {
 		t.Errorf("Columns = %v, want 42", detail.Columns)
 	}
+	if detail.LastWritten == nil || *detail.LastWritten != "2025-01-15T10:30:00Z" {
+		t.Errorf("LastWritten = %v, want %q", detail.LastWritten, "2025-01-15T10:30:00Z")
+	}
 	if !detail.DeleteProtected {
 		t.Error("DeleteProtected = false, want true")
 	}
@@ -81,16 +79,7 @@ func TestView_NotFound(t *testing.T) {
 }
 
 func TestView_MissingArg(t *testing.T) {
-	srv := httptest.NewServer(http.NotFoundHandler())
-	t.Cleanup(srv.Close)
-
-	ts := iostreams.Test()
-	opts := &options.RootOptions{
-		IOStreams: ts.IOStreams,
-		Config:    &config.Config{},
-		APIUrl:    srv.URL,
-		Format:    "json",
-	}
+	opts, _ := setupTest(t, http.NotFoundHandler())
 
 	cmd := NewCmd(opts)
 	cmd.SetArgs([]string{"view"})

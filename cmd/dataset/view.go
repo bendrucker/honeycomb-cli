@@ -2,15 +2,14 @@ package dataset
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"io"
 	"text/tabwriter"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 )
 
 type datasetDetail struct {
@@ -94,16 +93,7 @@ func runDatasetView(ctx context.Context, opts *options.RootOptions, slug string)
 }
 
 func writeDatasetDetail(opts *options.RootOptions, detail datasetDetail) error {
-	out := opts.IOStreams.Out
-
-	switch opts.ResolveFormat() {
-	case "json":
-		enc := json.NewEncoder(out)
-		enc.SetIndent("", "  ")
-		return enc.Encode(detail)
-	case "yaml":
-		return yaml.NewEncoder(out).Encode(detail)
-	case "table":
+	return opts.OutputWriter().WriteValue(detail, func(out io.Writer) error {
 		tw := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
 		_, _ = fmt.Fprintf(tw, "Name:\t%s\n", detail.Name)
 		_, _ = fmt.Fprintf(tw, "Slug:\t%s\n", detail.Slug)
@@ -122,7 +112,5 @@ func writeDatasetDetail(opts *options.RootOptions, detail datasetDetail) error {
 		_, _ = fmt.Fprintf(tw, "Delete Protected:\t%t\n", detail.DeleteProtected)
 		_, _ = fmt.Fprintf(tw, "Created At:\t%s\n", detail.CreatedAt)
 		return tw.Flush()
-	default:
-		return fmt.Errorf("unsupported format: %s", opts.ResolveFormat())
-	}
+	})
 }
