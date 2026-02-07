@@ -14,8 +14,8 @@ func TestAuthLogout_SingleKeyType(t *testing.T) {
 	ts := iostreams.Test()
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
-		Config:   &config.Config{},
-		Format:   "json",
+		Config:    &config.Config{},
+		Format:    "json",
 	}
 
 	if err := config.SetKey("default", config.KeyConfig, "test-key"); err != nil {
@@ -47,8 +47,8 @@ func TestAuthLogout_AllKeys(t *testing.T) {
 	ts := iostreams.Test()
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
-		Config:   &config.Config{},
-		Format:   "json",
+		Config:    &config.Config{},
+		Format:    "json",
 	}
 
 	if err := config.SetKey("default", config.KeyConfig, "cfg-key"); err != nil {
@@ -83,8 +83,8 @@ func TestAuthLogout_NoKeys(t *testing.T) {
 	ts := iostreams.Test()
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
-		Config:   &config.Config{},
-		Format:   "json",
+		Config:    &config.Config{},
+		Format:    "json",
 	}
 
 	err := runAuthLogout(opts, "")
@@ -101,8 +101,8 @@ func TestAuthLogout_KeyTypeNotFound(t *testing.T) {
 	ts := iostreams.Test()
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
-		Config:   &config.Config{},
-		Format:   "json",
+		Config:    &config.Config{},
+		Format:    "json",
 	}
 
 	if err := config.SetKey("default", config.KeyConfig, "cfg-key"); err != nil {
@@ -124,8 +124,8 @@ func TestAuthLogout_InvalidKeyType(t *testing.T) {
 	ts := iostreams.Test()
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
-		Config:   &config.Config{},
-		Format:   "json",
+		Config:    &config.Config{},
+		Format:    "json",
 	}
 
 	err := runAuthLogout(opts, "bogus")
@@ -141,9 +141,9 @@ func TestAuthLogout_NonDefaultProfile(t *testing.T) {
 	ts := iostreams.Test()
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
-		Config:   &config.Config{},
-		Format:   "json",
-		Profile:  "staging",
+		Config:    &config.Config{},
+		Format:    "json",
+		Profile:   "staging",
 	}
 
 	if err := config.SetKey("staging", config.KeyConfig, "staging-key"); err != nil {
