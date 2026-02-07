@@ -379,6 +379,239 @@ func TestRun_JQ_NonSuccess(t *testing.T) {
 	}
 }
 
+func TestRun_V2_FieldWrapping(t *testing.T) {
+	tests := []struct {
+		name       string
+		args       []string
+		wantMethod string
+		wantType   string
+	}{
+		{
+			name:       "POST infers type from collection",
+			args:       []string{"/2/teams/my-team/environments", "-f", "name=prod"},
+			wantMethod: http.MethodPost,
+			wantType:   "environments",
+		},
+		{
+			name:       "PATCH infers type from parent segment",
+			args:       []string{"/2/teams/my-team/environments/env-id", "-X", "PATCH", "-f", "name=updated"},
+			wantMethod: http.MethodPatch,
+			wantType:   "environments",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotBody map[string]any
+			opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != tt.wantMethod {
+					t.Errorf("method = %q, want %q", r.Method, tt.wantMethod)
+				}
+				if ct := r.Header.Get("Content-Type"); ct != "application/vnd.api+json" {
+					t.Errorf("Content-Type = %q, want application/vnd.api+json", ct)
+				}
+				_ = json.NewDecoder(r.Body).Decode(&gotBody)
+				w.Header().Set("Content-Type", "application/vnd.api+json")
+				_, _ = w.Write([]byte(`{"data":{"id":"1","type":"environments","attributes":{"name":"prod"}}}`))
+			}), config.KeyManagement, "mgmt-key")
+
+			cmd := NewCmd(opts)
+			cmd.SetArgs(tt.args)
+			if err := cmd.Execute(); err != nil {
+				t.Fatal(err)
+			}
+
+			data, ok := gotBody["data"].(map[string]any)
+			if !ok {
+				t.Fatal("request body missing data key")
+			}
+			if data["type"] != tt.wantType {
+				t.Errorf("data.type = %v, want %s", data["type"], tt.wantType)
+			}
+			if _, ok := data["attributes"]; !ok {
+				t.Error("request body missing data.attributes")
+			}
+		})
+	}
+}
+
+func TestRun_V2_ResponseUnwrap(t *testing.T) {
+	t.Run("single resource", func(t *testing.T) {
+		opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "application/vnd.api+json")
+			_, _ = w.Write([]byte(`{"data":{"id":"abc","type":"environments","attributes":{"name":"prod"}}}`))
+		}), config.KeyManagement, "mgmt-key")
+
+		cmd := NewCmd(opts)
+		cmd.SetArgs([]string{"/2/teams/my-team/environments/abc"})
+		if err := cmd.Execute(); err != nil {
+			t.Fatal(err)
+		}
+
+		var flat map[string]any
+		if err := json.Unmarshal(ts.OutBuf.Bytes(), &flat); err != nil {
+			t.Fatal(err)
+		}
+		if flat["id"] != "abc" {
+			t.Errorf("id = %v, want abc", flat["id"])
+		}
+		if flat["name"] != "prod" {
+			t.Errorf("name = %v, want prod", flat["name"])
+		}
+	})
+
+	t.Run("list", func(t *testing.T) {
+		opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "application/vnd.api+json")
+			_, _ = w.Write([]byte(`{"data":[{"id":"a","type":"environments","attributes":{"name":"prod"}},{"id":"b","type":"environments","attributes":{"name":"staging"}}]}`))
+		}), config.KeyManagement, "mgmt-key")
+
+		cmd := NewCmd(opts)
+		cmd.SetArgs([]string{"/2/teams/my-team/environments"})
+		if err := cmd.Execute(); err != nil {
+			t.Fatal(err)
+		}
+
+		var flat []map[string]any
+		if err := json.Unmarshal(ts.OutBuf.Bytes(), &flat); err != nil {
+			t.Fatal(err)
+		}
+		if len(flat) != 2 {
+			t.Fatalf("len = %d, want 2", len(flat))
+		}
+		if flat[0]["name"] != "prod" {
+			t.Errorf("[0].name = %v, want prod", flat[0]["name"])
+		}
+	})
+}
+
+func TestRun_V2_Raw(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		_, _ = w.Write([]byte(`{"data":{"id":"abc","type":"environments","attributes":{"name":"prod"}}}`))
+	}), config.KeyManagement, "mgmt-key")
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"/2/teams/my-team/environments/abc", "--raw"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	var raw map[string]any
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &raw); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := raw["data"]; !ok {
+		t.Error("--raw should preserve data envelope")
+	}
+}
+
+func TestRun_V2_InputNotWrapped(t *testing.T) {
+	var gotBody string
+	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		gotBody = string(b)
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		_, _ = w.Write([]byte(`{"data":{"id":"1","type":"environments","attributes":{}}}`))
+	}), config.KeyManagement, "mgmt-key")
+
+	ts := iostreams.Test()
+	ts.InBuf.WriteString(`{"data":{"type":"environments","attributes":{"name":"prod"}}}`)
+	opts.IOStreams = ts.IOStreams
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"/2/teams/my-team/environments", "--input", "-"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.Contains(gotBody, `"data"`) {
+		t.Errorf("--input body should be sent as-is, got %q", gotBody)
+	}
+}
+
+func TestRun_V2_HeaderOverride(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ct := r.Header.Get("Content-Type")
+		if ct != "application/json" {
+			t.Errorf("Content-Type = %q, want application/json (overridden)", ct)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{}`))
+	}), config.KeyManagement, "mgmt-key")
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"/2/teams/my-team/environments", "-f", "name=prod", "-H", "Content-Type: application/json"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRun_V2_GET_FieldsAsQuery(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Errorf("method = %q, want GET", r.Method)
+		}
+		if r.URL.Query().Get("filter") != "prod" {
+			t.Errorf("query filter = %q, want prod", r.URL.Query().Get("filter"))
+		}
+		if r.Body != nil {
+			b, _ := io.ReadAll(r.Body)
+			if len(b) > 0 {
+				t.Errorf("GET should not have body, got %q", b)
+			}
+		}
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		_, _ = w.Write([]byte(`{"data":[]}`))
+	}), config.KeyManagement, "mgmt-key")
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"/2/teams/my-team/environments", "-X", "GET", "-f", "filter=prod"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRun_V2_ErrorResponse(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		_, _ = w.Write([]byte(`{"errors":[{"title":"Validation Error","detail":"name is required"}]}`))
+	}), config.KeyManagement, "mgmt-key")
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"/2/teams/my-team/environments"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for 422")
+	}
+	if !strings.Contains(err.Error(), "HTTP 422") {
+		t.Errorf("error = %q, want HTTP 422", err.Error())
+	}
+	// Error body should be written to output even on failure
+	if !strings.Contains(ts.OutBuf.String(), "name is required") {
+		t.Errorf("output = %q, want error body written", ts.OutBuf.String())
+	}
+}
+
+func TestRun_V2_JQ_Unwrap(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		_, _ = w.Write([]byte(`{"data":{"id":"abc","type":"environments","attributes":{"name":"prod"}}}`))
+	}), config.KeyManagement, "mgmt-key")
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"/2/teams/my-team/environments/abc", "--jq", ".name"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	got := strings.TrimSpace(ts.OutBuf.String())
+	if got != "prod" {
+		t.Errorf("jq output = %q, want %q (should operate on unwrapped data)", got, "prod")
+	}
+}
+
 func writeTestFile(path, content string) error {
 	return os.WriteFile(path, []byte(content), 0o644)
 }
