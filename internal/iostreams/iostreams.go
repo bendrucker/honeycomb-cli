@@ -63,6 +63,10 @@ func (s *IOStreams) SetNeverPrompt(v bool) {
 	s.neverPrompt = v
 }
 
+func (s *IOStreams) IsStdinTTY() bool {
+	return s.stdinIsTTY
+}
+
 func (s *IOStreams) IsStdoutTTY() bool {
 	return s.stdoutIsTTY
 }

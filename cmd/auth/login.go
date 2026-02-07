@@ -94,11 +94,9 @@ func runAuthLogin(ctx context.Context, opts *options.RootOptions, keyType, keyID
 		}
 	}
 
-	kt := config.KeyType(keyType)
-	switch kt {
-	case config.KeyConfig, config.KeyIngest, config.KeyManagement:
-	default:
-		return fmt.Errorf("invalid key type: %q (must be config, ingest, or management)", keyType)
+	kt, err := config.ParseKeyType(keyType)
+	if err != nil {
+		return err
 	}
 
 	combinedKey := keyID + ":" + keySecret

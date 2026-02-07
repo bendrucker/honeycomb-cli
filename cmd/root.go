@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	apiCmd "github.com/bendrucker/honeycomb-cli/cmd/api"
 	"github.com/bendrucker/honeycomb-cli/cmd/auth"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/agent"
@@ -45,6 +46,7 @@ func NewRootCmd(ios *iostreams.IOStreams) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&opts.APIUrl, "api-url", "", "Honeycomb API URL")
 	cmd.PersistentFlags().StringVar(&opts.Profile, "profile", "", "Configuration profile to use")
 
+	cmd.AddCommand(apiCmd.NewCmd(opts))
 	cmd.AddCommand(auth.NewCmd(opts))
 
 	return cmd
