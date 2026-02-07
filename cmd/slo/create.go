@@ -11,7 +11,6 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
-	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/spf13/cobra"
 )
@@ -70,44 +69,12 @@ func runSLOCreate(ctx context.Context, opts *options.RootOptions, dataset, file 
 		return err
 	}
 
-	if resp.JSON201 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
+	var slo api.SLO
+	if err := json.Unmarshal(resp.Body, &slo); err != nil {
+		return fmt.Errorf("parsing response: %w", err)
 	}
 
-	detail := sloCreateToDetail(*resp.JSON201)
-	return opts.OutputWriter().Write(detail, output.TableDef{})
-}
-
-func sloCreateToDetail(s api.SLOCreate) sloDetail {
-	d := sloDetail{
-		Name:             s.Name,
-		TargetPerMillion: s.TargetPerMillion,
-		TimePeriodDays:   s.TimePeriodDays,
-		SLIAlias:         s.Sli.Alias,
-	}
-	if s.Id != nil {
-		d.ID = *s.Id
-	}
-	if s.Description != nil {
-		d.Description = *s.Description
-	}
-	if s.CreatedAt != nil {
-		d.CreatedAt = s.CreatedAt.Format("2006-01-02T15:04:05Z07:00")
-	}
-	if s.UpdatedAt != nil {
-		d.UpdatedAt = s.UpdatedAt.Format("2006-01-02T15:04:05Z07:00")
-	}
-	if s.ResetAt.IsSpecified() && !s.ResetAt.IsNull() {
-		d.ResetAt = s.ResetAt.MustGet().Format("2006-01-02T15:04:05Z07:00")
-	}
-	if s.DatasetSlugs != nil {
-		for _, v := range *s.DatasetSlugs {
-			if slug, ok := v.(string); ok {
-				d.DatasetSlugs = append(d.DatasetSlugs, slug)
-			}
-		}
-	}
-	return d
+	return writeSloDetail(opts, sloToDetail(slo))
 }
 
 func readFile(opts *options.RootOptions, file string) ([]byte, error) {

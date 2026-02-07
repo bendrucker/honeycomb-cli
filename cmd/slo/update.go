@@ -9,7 +9,6 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
-	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -97,7 +96,7 @@ func runSLOUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, sloID,
 		return fmt.Errorf("unexpected response: %s", resp.Status())
 	}
 
-	return opts.OutputWriter().Write(sloToDetail(*resp.JSON200), output.TableDef{})
+	return writeSloDetail(opts, sloToDetail(*resp.JSON200))
 }
 
 func updateFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, key, dataset, sloID, file string) error {
@@ -119,7 +118,7 @@ func updateFromFile(ctx context.Context, client *api.ClientWithResponses, opts *
 		return fmt.Errorf("unexpected response: %s", resp.Status())
 	}
 
-	return opts.OutputWriter().Write(sloToDetail(*resp.JSON200), output.TableDef{})
+	return writeSloDetail(opts, sloToDetail(*resp.JSON200))
 }
 
 func getSLO(ctx context.Context, client *api.ClientWithResponses, key, dataset, sloID string) (*api.SLO, error) {
