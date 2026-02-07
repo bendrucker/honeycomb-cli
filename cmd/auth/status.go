@@ -98,7 +98,7 @@ func verifyKey(ctx context.Context, client *api.ClientWithResponses, kt config.K
 
 	switch kt {
 	case config.KeyConfig, config.KeyIngest:
-		resp, err := client.GetAuthWithResponse(ctx, teamKeyEditor(value))
+		resp, err := client.GetAuthWithResponse(ctx, keyEditor(kt, value))
 		if err != nil {
 			return ks, fmt.Errorf("verifying %s key: %w", kt, err)
 		}
@@ -120,7 +120,7 @@ func verifyKey(ctx context.Context, client *api.ClientWithResponses, kt config.K
 		}
 
 	case config.KeyManagement:
-		resp, err := client.GetV2AuthWithResponse(ctx, bearerKeyEditor(value))
+		resp, err := client.GetV2AuthWithResponse(ctx, keyEditor(kt, value))
 		if err != nil {
 			return ks, fmt.Errorf("verifying %s key: %w", kt, err)
 		}
@@ -168,16 +168,9 @@ func writeStatuses(opts *options.RootOptions, statuses []KeyStatus) error {
 	}
 }
 
-func teamKeyEditor(key string) api.RequestEditorFn {
+func keyEditor(kt config.KeyType, key string) api.RequestEditorFn {
 	return func(_ context.Context, req *http.Request) error {
-		req.Header.Set("X-Honeycomb-Team", key)
-		return nil
-	}
-}
-
-func bearerKeyEditor(key string) api.RequestEditorFn {
-	return func(_ context.Context, req *http.Request) error {
-		req.Header.Set("Authorization", "Bearer "+key)
+		config.ApplyAuth(req, kt, key)
 		return nil
 	}
 }
