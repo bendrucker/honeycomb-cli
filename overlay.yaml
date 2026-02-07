@@ -1,0 +1,107 @@
+overlay: 1.0.0
+info:
+  title: OpenAPI 3.1 to 3.0 compatibility
+  version: 1.0.0
+actions:
+  # Downgrade version so oapi-codegen doesn't warn
+  - target: $.openapi
+    update: "3.0.3"
+
+  # type: ['null', T] → type: T + nullable: true
+  - target: $.components.schemas.DatasetDefinition
+    update:
+      type: object
+      nullable: true
+  - target: $.components.schemas.Dataset.properties.regular_columns_count
+    update:
+      type: integer
+      nullable: true
+  - target: $.components.schemas.Dataset.properties.last_written_at
+    update:
+      type: string
+      nullable: true
+  - target: $.components.schemas.MarkerSetting.properties.updated_at
+    update:
+      type: string
+      nullable: true
+  - target: $.components.schemas.FilterColumn
+    update:
+      type: string
+      nullable: true
+  - target: $.components.schemas.Query.properties.calculations.items.properties.column
+    update:
+      type: string
+      nullable: true
+  - target: $.components.schemas.Query.properties.calculations.items.properties.name
+    update:
+      type: string
+      nullable: true
+  - target: $.components.schemas.Query.properties.havings.items.properties.column
+    update:
+      type: string
+      nullable: true
+  - target: $.components.schemas.SLOCreate.properties.reset_at
+    update:
+      type: string
+      nullable: true
+  - target: $.components.schemas.SLO.properties.reset_at
+    update:
+      type: string
+      nullable: true
+  - target: $.components.schemas.MarkerObject.properties.relationships.properties.dataset.properties.data
+    update:
+      type: object
+      nullable: true
+  - target: $.components.schemas.PaginationLinks.properties.next
+    update:
+      type: string
+      nullable: true
+
+  # type: [T] (single-element array) → type: T
+  - target: $.components.schemas.Query.properties.formulas.items.properties.name
+    update:
+      type: string
+  - target: $.components.schemas.Query.properties.formulas.items.properties.expression
+    update:
+      type: string
+
+  # allOf [$ref, {default}] → flatten to just $ref (oapi-codegen can't merge defaults)
+  - target: $.components.schemas.Query.properties.calculations.items.properties.op
+    update:
+      $ref: "#/components/schemas/QueryOp"
+  - target: $.components.schemas.Query.properties.calculations.items.properties.op.allOf
+    remove: true
+
+  # type: [T1, T2, T3] (polymorphic values) → remove type constraint
+  - target: $.components.schemas.Event.additionalProperties.type
+    remove: true
+  - target: $.components.schemas.QueryResultsData.properties.data.additionalProperties.type
+    remove: true
+
+  # oneOf/anyOf containing {type: null} → remove null member, add nullable
+  - target: $.components.schemas.CreatorRelationship
+    update:
+      nullable: true
+      $ref: "#/components/schemas/UserRelationship"
+  - target: $.components.schemas.CreatorRelationship.oneOf
+    remove: true
+  - target: $.components.schemas.EditorRelationship
+    update:
+      nullable: true
+      $ref: "#/components/schemas/UserRelationship"
+  - target: $.components.schemas.EditorRelationship.oneOf
+    remove: true
+
+  # FilterValue: anyOf with null + primitives → remove null member
+  - target: $.components.schemas.FilterValue.anyOf[0]
+    remove: true
+
+  # dependencies: oneOf [array, null] → array + nullable
+  - target: $.components.schemas.GetMapDependenciesResponse.properties.dependencies
+    update:
+      type: array
+      nullable: true
+      items:
+        $ref: "#/components/schemas/MapDependency"
+  - target: $.components.schemas.GetMapDependenciesResponse.properties.dependencies.oneOf
+    remove: true

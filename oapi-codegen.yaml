@@ -1,0 +1,10 @@
+package: api
+generate:
+  models: true
+  client: true
+output: client.gen.go
+output-options:
+  nullable-type: true
+  response-type-suffix: Resp
+  overlay:
+    path: ../../overlay.yaml

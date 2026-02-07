@@ -1,0 +1,41 @@
+{
+  "enabledPlugins": {
+    "gopls-lsp@claude-plugins-official": true
+  },
+  "permissions": {
+    "allow": [
+      "Bash(go build:*)",
+      "Bash(go test:*)",
+      "Bash(go vet:*)",
+      "Bash(go generate:*)",
+      "Bash(go mod tidy:*)",
+      "Bash(golangci-lint:*)",
+      "mcp__honeycomb__run_query",
+      "mcp__honeycomb__get_dataset",
+      "mcp__honeycomb__get_dataset_columns",
+      "mcp__honeycomb__find_columns",
+      "mcp__honeycomb__get_slos",
+      "mcp__honeycomb__get_triggers",
+      "mcp__honeycomb__list_boards",
+      "mcp__honeycomb__get_workspace_context",
+      "mcp__honeycomb__get_environment"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/go-fmt.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/go-lint.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
