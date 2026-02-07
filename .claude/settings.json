@@ -28,11 +28,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/go-fmt.sh"
-          },
+            "command": ".claude/hooks/go-fmt-check.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/go-lint.sh"
+            "command": ".claude/hooks/go-fix.sh"
           }
         ]
       }
