@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/bendrucker/honeycomb-cli/cmd"
@@ -12,6 +13,7 @@ func main() {
 	rootCmd := cmd.NewRootCmd(ios)
 
 	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
