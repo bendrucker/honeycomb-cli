@@ -3,6 +3,7 @@ package column
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"text/tabwriter"
 
@@ -79,9 +80,8 @@ func columnToDetail(c api.Column) columnDetail {
 
 func writeColumnDetail(opts *options.RootOptions, c api.Column) error {
 	d := columnToDetail(c)
-	format := opts.ResolveFormat()
-	if format == "table" {
-		tw := tabwriter.NewWriter(opts.IOStreams.Out, 0, 0, 2, ' ', 0)
+	return opts.OutputWriter().WriteValue(d, func(w io.Writer) error {
+		tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
 		_, _ = fmt.Fprintf(tw, "ID:\t%s\n", d.ID)
 		_, _ = fmt.Fprintf(tw, "Key Name:\t%s\n", d.KeyName)
 		_, _ = fmt.Fprintf(tw, "Type:\t%s\n", d.Type)
@@ -91,8 +91,7 @@ func writeColumnDetail(opts *options.RootOptions, c api.Column) error {
 		_, _ = fmt.Fprintf(tw, "Created At:\t%s\n", d.CreatedAt)
 		_, _ = fmt.Fprintf(tw, "Updated At:\t%s\n", d.UpdatedAt)
 		return tw.Flush()
-	}
-	return opts.OutputWriter().Write(d, output.TableDef{})
+	})
 }
 
 func NewCmd(opts *options.RootOptions) *cobra.Command {

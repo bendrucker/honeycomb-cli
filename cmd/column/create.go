@@ -1,7 +1,6 @@
 package column
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
@@ -42,7 +41,7 @@ func NewCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 				}
 			}
 
-			return runColumnCreate(cmd.Context(), opts, *dataset, keyName, colType, description, hidden)
+			return runColumnCreate(cmd, opts, *dataset, keyName, colType, description, hidden)
 		},
 	}
 
@@ -54,7 +53,7 @@ func NewCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	return cmd
 }
 
-func runColumnCreate(ctx context.Context, opts *options.RootOptions, dataset, keyName, colType, description string, hidden bool) error {
+func runColumnCreate(cmd *cobra.Command, opts *options.RootOptions, dataset, keyName, colType, description string, hidden bool) error {
 	key, err := opts.RequireKey(config.KeyConfig)
 	if err != nil {
 		return err
@@ -72,14 +71,14 @@ func runColumnCreate(ctx context.Context, opts *options.RootOptions, dataset, ke
 		t := api.CreateColumnType(colType)
 		body.Type = &t
 	}
-	if description != "" {
+	if cmd.Flags().Changed("description") {
 		body.Description = &description
 	}
-	if hidden {
+	if cmd.Flags().Changed("hidden") {
 		body.Hidden = &hidden
 	}
 
-	resp, err := client.CreateColumnWithResponse(ctx, dataset, body, keyEditor(key))
+	resp, err := client.CreateColumnWithResponse(cmd.Context(), dataset, body, keyEditor(key))
 	if err != nil {
 		return fmt.Errorf("creating column: %w", err)
 	}
