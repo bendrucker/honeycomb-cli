@@ -21,5 +21,3 @@ formatters:
   enable:
     - gofmt
 
-issues:
-  exclude-generated: strict
