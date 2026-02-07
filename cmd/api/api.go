@@ -8,9 +8,9 @@ import (
 	"os"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
+	clientapi "github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/spf13/cobra"
-	"github.com/zalando/go-keyring"
 )
 
 type apiOptions struct {
@@ -78,13 +78,9 @@ func run(cmd *cobra.Command, o *apiOptions, path string) error {
 		return err
 	}
 
-	profile := o.root.ActiveProfile()
-	key, err := config.GetKey(profile, kt)
-	if err == keyring.ErrNotFound {
-		return fmt.Errorf("no %s key configured for profile %q (run honeycomb auth login --key-type %s)", kt, profile, kt)
-	}
+	key, err := o.root.RequireKey(kt)
 	if err != nil {
-		return fmt.Errorf("reading %s key: %w", kt, err)
+		return err
 	}
 
 	baseURL := o.root.ResolveAPIUrl()
@@ -122,8 +118,8 @@ func run(cmd *cobra.Command, o *apiOptions, path string) error {
 			_, _ = ios.Out.Write(respBody)
 		}
 
-		if resp.StatusCode >= 400 {
-			return fmt.Errorf("%s %s: HTTP %d", method, path, resp.StatusCode)
+		if err := clientapi.CheckResponse(resp.StatusCode, respBody); err != nil {
+			return fmt.Errorf("%s %s: %w", method, path, err)
 		}
 
 		if !o.paginate {
