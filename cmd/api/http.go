@@ -52,7 +52,7 @@ func buildRequest(method, baseURL, path string, fields map[string]any, body io.R
 	}
 
 	if body != nil && req.Header.Get("Content-Type") == "" {
-		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Content-Type", contentTypeForPath(path))
 	}
 
 	for _, h := range headers {

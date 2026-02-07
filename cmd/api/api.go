@@ -25,6 +25,7 @@ type apiOptions struct {
 	paginate bool
 	keyType  string
 	input    string
+	raw      bool
 }
 
 func NewCmd(opts *options.RootOptions) *cobra.Command {
@@ -49,6 +50,7 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 	cmd.Flags().BoolVar(&o.paginate, "paginate", false, "Follow Link rel=\"next\" pagination")
 	cmd.Flags().StringVar(&o.keyType, "key-type", "", "Override auth key type: config, ingest, management")
 	cmd.Flags().StringVar(&o.input, "input", "", "Read body from file (- for stdin)")
+	cmd.Flags().BoolVar(&o.raw, "raw", false, "Output the full JSON:API envelope instead of flattened attributes")
 
 	return cmd
 }
@@ -87,6 +89,14 @@ func run(cmd *cobra.Command, o *apiOptions, path string) error {
 	client := &http.Client{}
 	ios := o.root.IOStreams
 
+	if isV2Path(path) && body == nil && len(fields) > 0 {
+		switch method {
+		case http.MethodPost, http.MethodPatch, http.MethodPut:
+			resourceType := inferResourceType(method, path)
+			fields = wrapJSONAPI(fields, resourceType)
+		}
+	}
+
 	for {
 		req, err := buildRequest(method, baseURL, path, fields, body, o.headers)
 		if err != nil {
@@ -108,6 +118,13 @@ func run(cmd *cobra.Command, o *apiOptions, path string) error {
 		_ = resp.Body.Close()
 		if err != nil {
 			return fmt.Errorf("reading response: %w", err)
+		}
+
+		if !o.raw && isV2Path(path) {
+			respBody, err = unwrapJSONAPI(respBody)
+			if err != nil {
+				return fmt.Errorf("unwrapping JSON:API response: %w", err)
+			}
 		}
 
 		if o.jqExpr != "" {

@@ -7,7 +7,7 @@ import (
 )
 
 func inferKeyType(path string) config.KeyType {
-	if strings.HasPrefix(path, "/2/") {
+	if isV2Path(path) {
 		return config.KeyManagement
 	}
 
