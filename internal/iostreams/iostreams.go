@@ -33,6 +33,7 @@ func System() *IOStreams {
 
 type TestStreams struct {
 	*IOStreams
+	InBuf  *bytes.Buffer
 	OutBuf *bytes.Buffer
 	ErrBuf *bytes.Buffer
 }
@@ -48,6 +49,7 @@ func Test() *TestStreams {
 			Out: out,
 			Err: errBuf,
 		},
+		InBuf:  in,
 		OutBuf: out,
 		ErrBuf: errBuf,
 	}
@@ -63,6 +65,13 @@ func (s *IOStreams) SetNeverPrompt(v bool) {
 
 func (s *IOStreams) IsStdoutTTY() bool {
 	return s.stdoutIsTTY
+}
+
+func (s *IOStreams) StdinFd() uintptr {
+	if f, ok := s.In.(*os.File); ok {
+		return f.Fd()
+	}
+	return 0
 }
 
 func (s *IOStreams) ColorEnabled() bool {

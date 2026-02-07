@@ -16,7 +16,13 @@ golangci-lint run ./...
 
 ```
 main.go                          Entry point
-cmd/root.go                      Root cobra command, global flags
+cmd/
+  root.go                        Root cobra command, global flags
+  options/options.go             RootOptions shared across command packages
+  auth/
+    auth.go                      auth parent command
+    login.go                     auth login command
+    status.go                    auth status command with key verification
 internal/
   api/
     generate.go                  go:generate directives for oapi-codegen
@@ -60,6 +66,7 @@ Run `go generate ./internal/api/...` to regenerate. The generated file is commit
 | `mattn/go-isatty` | TTY detection |
 | `oapi-codegen/runtime` | Generated client runtime |
 | `oapi-codegen/nullable` | Three-state nullable for OpenAPI |
+| `golang.org/x/term` | Secure password input |
 
 ## Authentication
 
@@ -103,6 +110,22 @@ Commands follow a consistent pattern:
 - Support `--format` for output
 - Both interactive and non-interactive paths
 
+## Testing
+
+**Unit tests** use `keyring.MockInit()` for an in-memory keyring and `httptest.NewServer` for API stubs. These run in `go test` with no external dependencies.
+
+**Interactive testing** requires a real OS keyring and a live Honeycomb API key. Build the binary and store a key manually:
+
+```
+go build -o tmp/honeycomb .
+security add-generic-password -s honeycomb-cli -a default:config -w '<KEY_ID:KEY_SECRET>'
+tmp/honeycomb auth status
+tmp/honeycomb auth status --offline
+tmp/honeycomb auth status --format json
+```
+
+Remove the key afterward with `security delete-generic-password -s honeycomb-cli -a default:config`.
+
 ## TUI Ideas (Future)
 
 - **Query results table** — run a query, display results in a rich table with sorting/filtering
@@ -111,6 +134,10 @@ Commands follow a consistent pattern:
 - **SLO dashboard** — live burn rate, budget remaining, recent breaches
 - **Dataset explorer** — browse columns, see types and descriptions
 - **Trigger status** — live view of trigger states and recent firings
+
+## MCP Client (Future)
+
+The CLI will include an `mcp` subcommand that acts as an MCP client to the Honeycomb MCP server. This provides access to features like query execution without requiring Enterprise-tier API key permissions (the Query Data API's "Run Queries" permission is Enterprise-only). The `query` command would still use the API directly and require the appropriate key permissions. The `mcp` command offers an alternative path using Honeycomb's own MCP server, which is available on all plans.
 
 ## Planned Command Hierarchy
 
@@ -123,5 +150,6 @@ honeycomb slo list/view/create/delete
 honeycomb trigger list/view/create/delete
 honeycomb marker create/list
 honeycomb column list/view
+honeycomb mcp query/...                # MCP client, works on all plans
 honeycomb api <method> <path>          # arbitrary API escape hatch
 ```

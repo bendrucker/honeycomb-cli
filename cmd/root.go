@@ -1,25 +1,16 @@
 package cmd
 
 import (
+	"github.com/bendrucker/honeycomb-cli/cmd/auth"
+	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/agent"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/bendrucker/honeycomb-cli/internal/iostreams"
 	"github.com/spf13/cobra"
 )
 
-type RootOptions struct {
-	IOStreams *iostreams.IOStreams
-	Config    *config.Config
-	Agent     *agent.Agent
-
-	NoInteractive bool
-	Format        string
-	APIUrl        string
-	Profile       string
-}
-
 func NewRootCmd(ios *iostreams.IOStreams) *cobra.Command {
-	opts := &RootOptions{IOStreams: ios}
+	opts := &options.RootOptions{IOStreams: ios}
 
 	cmd := &cobra.Command{
 		Use:           "honeycomb",
@@ -34,8 +25,7 @@ func NewRootCmd(ios *iostreams.IOStreams) *cobra.Command {
 			}
 			opts.Config = cfg
 
-			if a := agent.Detect(); a != nil {
-				opts.Agent = a
+			if agent.Detect() != nil {
 				opts.NoInteractive = true
 				if opts.Format == "" {
 					opts.Format = "json"
@@ -54,6 +44,8 @@ func NewRootCmd(ios *iostreams.IOStreams) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&opts.Format, "format", "", "Output format: json, table, yaml")
 	cmd.PersistentFlags().StringVar(&opts.APIUrl, "api-url", "", "Honeycomb API URL")
 	cmd.PersistentFlags().StringVar(&opts.Profile, "profile", "", "Configuration profile to use")
+
+	cmd.AddCommand(auth.NewCmd(opts))
 
 	return cmd
 }
