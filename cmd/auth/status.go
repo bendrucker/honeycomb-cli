@@ -2,8 +2,8 @@ package auth
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"text/tabwriter"
 
@@ -12,7 +12,6 @@ import (
 	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/spf13/cobra"
 	"github.com/zalando/go-keyring"
-	"gopkg.in/yaml.v3"
 )
 
 type KeyStatus struct {
@@ -90,7 +89,14 @@ func runAuthStatus(ctx context.Context, opts *options.RootOptions, offline bool)
 		}
 	}
 
-	return writeStatuses(opts, statuses)
+	return opts.WriteFormatted(statuses, func(out io.Writer) error {
+		w := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
+		_, _ = fmt.Fprintln(w, "TYPE\tSTATUS\tTEAM\tENVIRONMENT\tKEY ID")
+		for _, s := range statuses {
+			_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", s.Type, s.Status, s.Team, s.Environment, s.KeyID)
+		}
+		return w.Flush()
+	})
 }
 
 func verifyKey(ctx context.Context, client *api.ClientWithResponses, kt config.KeyType, value string) (KeyStatus, error) {
@@ -144,28 +150,6 @@ func verifyKey(ctx context.Context, client *api.ClientWithResponses, kt config.K
 	}
 
 	return ks, nil
-}
-
-func writeStatuses(opts *options.RootOptions, statuses []KeyStatus) error {
-	out := opts.IOStreams.Out
-
-	switch opts.ResolveFormat() {
-	case "json":
-		enc := json.NewEncoder(out)
-		enc.SetIndent("", "  ")
-		return enc.Encode(statuses)
-	case "yaml":
-		return yaml.NewEncoder(out).Encode(statuses)
-	case "table":
-		w := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
-		_, _ = fmt.Fprintln(w, "TYPE\tSTATUS\tTEAM\tENVIRONMENT\tKEY ID")
-		for _, s := range statuses {
-			_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", s.Type, s.Status, s.Team, s.Environment, s.KeyID)
-		}
-		return w.Flush()
-	default:
-		return fmt.Errorf("unsupported format: %s", opts.ResolveFormat())
-	}
 }
 
 func keyEditor(kt config.KeyType, key string) api.RequestEditorFn {

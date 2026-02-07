@@ -3,6 +3,7 @@ package cmd
 import (
 	apiCmd "github.com/bendrucker/honeycomb-cli/cmd/api"
 	"github.com/bendrucker/honeycomb-cli/cmd/auth"
+	"github.com/bendrucker/honeycomb-cli/cmd/dataset"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/agent"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
@@ -48,6 +49,7 @@ func NewRootCmd(ios *iostreams.IOStreams) *cobra.Command {
 
 	cmd.AddCommand(apiCmd.NewCmd(opts))
 	cmd.AddCommand(auth.NewCmd(opts))
+	cmd.AddCommand(dataset.NewCmd(opts))
 
 	return cmd
 }
