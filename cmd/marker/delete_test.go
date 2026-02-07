@@ -1,0 +1,49 @@
+package marker
+
+import (
+	"encoding/json"
+	"net/http"
+	"strings"
+	"testing"
+)
+
+func TestDelete_Yes(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete {
+			t.Errorf("method = %q, want DELETE", r.Method)
+		}
+		if r.URL.Path != "/1/markers/test-dataset/abc123" {
+			t.Errorf("path = %q, want /1/markers/test-dataset/abc123", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id":   "abc123",
+			"type": "deploy",
+		})
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"delete", "--dataset", "test-dataset", "--yes", "abc123"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.Contains(ts.ErrBuf.String(), "Deleted marker abc123") {
+		t.Errorf("stderr = %q, want deleted confirmation", ts.ErrBuf.String())
+	}
+}
+
+func TestDelete_NoYes_NonInteractive(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	opts.IOStreams.SetNeverPrompt(true)
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"delete", "--dataset", "test-dataset", "abc123"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for missing --yes")
+	}
+	if !strings.Contains(err.Error(), "--yes is required") {
+		t.Errorf("error = %q, want --yes required message", err.Error())
+	}
+}
