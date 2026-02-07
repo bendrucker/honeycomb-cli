@@ -3,7 +3,6 @@ package board
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -11,7 +10,6 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
-	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/spf13/cobra"
 )
@@ -98,7 +96,7 @@ func runBoardCreate(cmd *cobra.Command, opts *options.RootOptions, file, name, d
 		return fmt.Errorf("unexpected response: %s", resp.Status())
 	}
 
-	return opts.OutputWriter().Write(boardToDetail(*resp.JSON201), output.TableDef{})
+	return writeBoardDetail(opts, boardToDetail(*resp.JSON201))
 }
 
 func createFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, key, file string) error {
@@ -132,18 +130,5 @@ func createFromFile(ctx context.Context, client *api.ClientWithResponses, opts *
 		return fmt.Errorf("unexpected response: %s", resp.Status())
 	}
 
-	return opts.OutputWriter().Write(boardToDetail(*resp.JSON201), output.TableDef{})
-}
-
-func readBoardJSON(r io.Reader) (api.Board, error) {
-	data, err := io.ReadAll(r)
-	if err != nil {
-		return api.Board{}, fmt.Errorf("reading input: %w", err)
-	}
-
-	var board api.Board
-	if err := json.Unmarshal(data, &board); err != nil {
-		return api.Board{}, fmt.Errorf("parsing board JSON: %w", err)
-	}
-	return board, nil
+	return writeBoardDetail(opts, boardToDetail(*resp.JSON201))
 }

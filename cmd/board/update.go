@@ -11,7 +11,6 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
-	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -89,7 +88,7 @@ func runBoardUpdate(cmd *cobra.Command, opts *options.RootOptions, boardID, file
 		return fmt.Errorf("unexpected response: %s", resp.Status())
 	}
 
-	return opts.OutputWriter().Write(boardToDetail(*resp.JSON200), output.TableDef{})
+	return writeBoardDetail(opts, boardToDetail(*resp.JSON200))
 }
 
 func updateFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, key, boardID, file string, replace bool) error {
@@ -145,7 +144,7 @@ func updateFromFile(ctx context.Context, client *api.ClientWithResponses, opts *
 		return fmt.Errorf("unexpected response: %s", resp.Status())
 	}
 
-	return opts.OutputWriter().Write(boardToDetail(*resp.JSON200), output.TableDef{})
+	return writeBoardDetail(opts, boardToDetail(*resp.JSON200))
 }
 
 func getBoard(ctx context.Context, client *api.ClientWithResponses, key, boardID string) (*api.Board, error) {
@@ -165,6 +164,8 @@ func getBoard(ctx context.Context, client *api.ClientWithResponses, key, boardID
 	return resp.JSON200, nil
 }
 
+// mergeBoard applies non-zero fields from src onto dst.
+// Type is intentionally not merged because it is always "flexible".
 func mergeBoard(dst *api.Board, src *api.Board) {
 	if src.Name != "" {
 		dst.Name = src.Name

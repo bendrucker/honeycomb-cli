@@ -3,7 +3,10 @@ package board
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
+	"text/tabwriter"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
@@ -51,6 +54,32 @@ type boardDetail struct {
 	URL          string          `json:"url,omitempty"             yaml:"url,omitempty"`
 	Panels       json.RawMessage `json:"panels,omitempty"          yaml:"-"`
 	PanelsAny    any             `json:"-"                         yaml:"panels,omitempty"`
+}
+
+func writeBoardDetail(opts *options.RootOptions, detail boardDetail) error {
+	return opts.OutputWriter().WriteValue(detail, func(w io.Writer) error {
+		tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
+		_, _ = fmt.Fprintf(tw, "ID:\t%s\n", detail.ID)
+		_, _ = fmt.Fprintf(tw, "Name:\t%s\n", detail.Name)
+		_, _ = fmt.Fprintf(tw, "Description:\t%s\n", detail.Description)
+		_, _ = fmt.Fprintf(tw, "Type:\t%s\n", detail.Type)
+		_, _ = fmt.Fprintf(tw, "Column Layout:\t%s\n", detail.ColumnLayout)
+		_, _ = fmt.Fprintf(tw, "URL:\t%s\n", detail.URL)
+		return tw.Flush()
+	})
+}
+
+func readBoardJSON(r io.Reader) (api.Board, error) {
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return api.Board{}, fmt.Errorf("reading input: %w", err)
+	}
+
+	var board api.Board
+	if err := json.Unmarshal(data, &board); err != nil {
+		return api.Board{}, fmt.Errorf("parsing board JSON: %w", err)
+	}
+	return board, nil
 }
 
 func boardToDetail(b api.Board) boardDetail {
