@@ -3,13 +3,12 @@ package auth
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
-	"text/tabwriter"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 	"github.com/zalando/go-keyring"
 )
@@ -22,6 +21,16 @@ type KeyStatus struct {
 	KeyID       string `json:"key_id,omitempty" yaml:"key_id,omitempty"`
 	Name        string `json:"name,omitempty" yaml:"name,omitempty"`
 	Error       string `json:"error,omitempty" yaml:"error,omitempty"`
+}
+
+var statusTable = output.TableDef{
+	Columns: []output.Column{
+		{Header: "Type", Value: func(v any) string { return v.(KeyStatus).Type }},
+		{Header: "Status", Value: func(v any) string { return v.(KeyStatus).Status }},
+		{Header: "Team", Value: func(v any) string { return v.(KeyStatus).Team }},
+		{Header: "Environment", Value: func(v any) string { return v.(KeyStatus).Environment }},
+		{Header: "Key ID", Value: func(v any) string { return v.(KeyStatus).KeyID }},
+	},
 }
 
 func NewStatusCmd(opts *options.RootOptions) *cobra.Command {
@@ -89,14 +98,7 @@ func runAuthStatus(ctx context.Context, opts *options.RootOptions, offline bool)
 		}
 	}
 
-	return opts.WriteFormatted(statuses, func(out io.Writer) error {
-		w := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
-		_, _ = fmt.Fprintln(w, "TYPE\tSTATUS\tTEAM\tENVIRONMENT\tKEY ID")
-		for _, s := range statuses {
-			_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", s.Type, s.Status, s.Team, s.Environment, s.KeyID)
-		}
-		return w.Flush()
-	})
+	return opts.OutputWriter().Write(statuses, statusTable)
 }
 
 func verifyKey(ctx context.Context, client *api.ClientWithResponses, kt config.KeyType, value string) (KeyStatus, error) {
