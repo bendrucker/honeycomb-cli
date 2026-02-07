@@ -70,5 +70,5 @@ func runCreate(ctx context.Context, opts *options.RootOptions, dataset, file str
 	}
 
 	detail := toDetail(*resp.JSON201)
-	return opts.OutputWriter().Write(detail, triggerViewTable)
+	return writeTriggerDetail(opts, detail)
 }

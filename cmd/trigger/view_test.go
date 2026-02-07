@@ -60,8 +60,8 @@ func TestView(t *testing.T) {
 	if detail.Threshold.Op != ">" {
 		t.Errorf("Threshold.Op = %q, want %q", detail.Threshold.Op, ">")
 	}
-	if detail.Threshold.Value != "100" {
-		t.Errorf("Threshold.Value = %q, want %q", detail.Threshold.Value, "100")
+	if detail.Threshold.Value != 100 {
+		t.Errorf("Threshold.Value = %g, want 100", detail.Threshold.Value)
 	}
 	if detail.Threshold.ExceededLimit != 1 {
 		t.Errorf("Threshold.ExceededLimit = %d, want 1", detail.Threshold.ExceededLimit)

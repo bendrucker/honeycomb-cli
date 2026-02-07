@@ -3,7 +3,11 @@ package trigger
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
+	"strconv"
+	"strings"
+	"text/tabwriter"
 	"time"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
@@ -62,9 +66,9 @@ type triggerDetail struct {
 }
 
 type triggerThreshold struct {
-	Op            string `json:"op"                        yaml:"op"`
-	Value         string `json:"value"                     yaml:"value"`
-	ExceededLimit int    `json:"exceeded_limit,omitempty"  yaml:"exceeded_limit,omitempty"`
+	Op            string  `json:"op"                        yaml:"op"`
+	Value         float64 `json:"value"                     yaml:"value"`
+	ExceededLimit int     `json:"exceeded_limit,omitempty"  yaml:"exceeded_limit,omitempty"`
 }
 
 type recipientItem struct {
@@ -139,7 +143,7 @@ func toDetail(t api.TriggerResponse) triggerDetail {
 	if t.Threshold != nil {
 		d.Threshold = &triggerThreshold{
 			Op:    string(t.Threshold.Op),
-			Value: fmt.Sprintf("%g", t.Threshold.Value),
+			Value: float64(t.Threshold.Value),
 		}
 		if t.Threshold.ExceededLimit != nil {
 			d.Threshold.ExceededLimit = *t.Threshold.ExceededLimit
@@ -178,6 +182,50 @@ func toDetail(t api.TriggerResponse) triggerDetail {
 		d.UpdatedAt = t.UpdatedAt.Format(time.RFC3339)
 	}
 	return d
+}
+
+func writeTriggerDetail(opts *options.RootOptions, detail triggerDetail) error {
+	return opts.OutputWriter().WriteValue(detail, func(out io.Writer) error {
+		tw := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
+		_, _ = fmt.Fprintf(tw, "ID:\t%s\n", detail.ID)
+		_, _ = fmt.Fprintf(tw, "Name:\t%s\n", detail.Name)
+		_, _ = fmt.Fprintf(tw, "Description:\t%s\n", detail.Description)
+		_, _ = fmt.Fprintf(tw, "Disabled:\t%s\n", strconv.FormatBool(detail.Disabled))
+		_, _ = fmt.Fprintf(tw, "Triggered:\t%s\n", strconv.FormatBool(detail.Triggered))
+		_, _ = fmt.Fprintf(tw, "Alert Type:\t%s\n", detail.AlertType)
+		_, _ = fmt.Fprintf(tw, "Dataset Slug:\t%s\n", detail.DatasetSlug)
+		_, _ = fmt.Fprintf(tw, "Frequency:\t%d\n", detail.Frequency)
+		_, _ = fmt.Fprintf(tw, "Threshold:\t%s\n", formatThresholdDetail(detail.Threshold))
+		if detail.QueryID != "" {
+			_, _ = fmt.Fprintf(tw, "Query ID:\t%s\n", detail.QueryID)
+		} else if detail.HasQuery {
+			_, _ = fmt.Fprintf(tw, "Query ID:\t(inline)\n")
+		}
+		_, _ = fmt.Fprintf(tw, "Created At:\t%s\n", detail.CreatedAt)
+		_, _ = fmt.Fprintf(tw, "Updated At:\t%s\n", detail.UpdatedAt)
+		if len(detail.Recipients) > 0 {
+			targets := make([]string, len(detail.Recipients))
+			for i, r := range detail.Recipients {
+				targets[i] = r.Target
+			}
+			_, _ = fmt.Fprintf(tw, "Recipients:\t%s\n", strings.Join(targets, ", "))
+		}
+		if len(detail.Tags) > 0 {
+			tags := make([]string, len(detail.Tags))
+			for i, t := range detail.Tags {
+				tags[i] = t.Key + "=" + t.Value
+			}
+			_, _ = fmt.Fprintf(tw, "Tags:\t%s\n", strings.Join(tags, ", "))
+		}
+		return tw.Flush()
+	})
+}
+
+func formatThresholdDetail(t *triggerThreshold) string {
+	if t == nil {
+		return ""
+	}
+	return fmt.Sprintf("%s %g", t.Op, t.Value)
 }
 
 func keyEditor(key string) api.RequestEditorFn {

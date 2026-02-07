@@ -142,5 +142,5 @@ func runUpdate(ctx context.Context, opts *options.RootOptions, dataset, triggerI
 	}
 
 	detail := toDetail(*resp.JSON200)
-	return opts.OutputWriter().Write(detail, triggerViewTable)
+	return writeTriggerDetail(opts, detail)
 }

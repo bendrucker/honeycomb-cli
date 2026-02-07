@@ -7,16 +7,8 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
-	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
-
-var triggerViewTable = output.TableDef{
-	Columns: []output.Column{
-		{Header: "Field", Value: func(v any) string { return v.([2]string)[0] }},
-		{Header: "Value", Value: func(v any) string { return v.([2]string)[1] }},
-	},
-}
 
 func NewViewCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	return &cobra.Command{
@@ -54,5 +46,5 @@ func runView(ctx context.Context, opts *options.RootOptions, dataset, triggerID 
 	}
 
 	detail := toDetail(*resp.JSON200)
-	return opts.OutputWriter().Write(detail, triggerViewTable)
+	return writeTriggerDetail(opts, detail)
 }
