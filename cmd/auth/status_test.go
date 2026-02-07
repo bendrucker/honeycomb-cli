@@ -73,179 +73,133 @@ func TestAuthStatus_Offline(t *testing.T) {
 	}
 }
 
-func TestAuthStatus_ConfigKey_Valid(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/1/auth" {
-			t.Errorf("unexpected path: %s", r.URL.Path)
-			http.NotFound(w, r)
-			return
-		}
-		if r.Header.Get("X-Honeycomb-Team") != "test-config-key" {
-			w.WriteHeader(http.StatusUnauthorized)
-			writeJSON(t, w, map[string]string{"error": "unauthorized"})
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		writeJSON(t, w, map[string]any{
-			"id":          "abc123",
-			"type":        "configuration",
-			"team":        map[string]string{"name": "My Team", "slug": "my-team"},
-			"environment": map[string]string{"name": "production", "slug": "production"},
-			"api_key_access": map[string]bool{
-				"events": true,
+func TestAuthStatus_Verify(t *testing.T) {
+	tests := []struct {
+		name    string
+		keyType config.KeyType
+		key     string
+		handler http.Handler
+		want    KeyStatus
+	}{
+		{
+			name:    "config key valid",
+			keyType: config.KeyConfig,
+			key:     "test-config-key",
+			handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/1/auth" {
+					http.NotFound(w, r)
+					return
+				}
+				if r.Header.Get("X-Honeycomb-Team") != "test-config-key" {
+					w.WriteHeader(http.StatusUnauthorized)
+					return
+				}
+				w.Header().Set("Content-Type", "application/json")
+				_ = json.NewEncoder(w).Encode(map[string]any{
+					"id":             "abc123",
+					"type":           "configuration",
+					"team":           map[string]string{"name": "My Team", "slug": "my-team"},
+					"environment":    map[string]string{"name": "production", "slug": "production"},
+					"api_key_access": map[string]bool{"events": true},
+				})
+			}),
+			want: KeyStatus{
+				Type:        "config",
+				Status:      "valid",
+				Team:        "My Team",
+				Environment: "production",
+				KeyID:       "abc123",
 			},
-		})
-	}))
-	t.Cleanup(srv.Close)
-
-	ts := iostreams.Test()
-	opts := &options.RootOptions{
-		IOStreams: ts.IOStreams,
-		Config:    &config.Config{},
-		APIUrl:    srv.URL,
-		Format:    "json",
-	}
-
-	if err := config.SetKey("default", config.KeyConfig, "test-config-key"); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = config.DeleteKey("default", config.KeyConfig) })
-
-	if err := runAuthStatus(t.Context(), opts, false); err != nil {
-		t.Fatal(err)
-	}
-
-	var statuses []KeyStatus
-	if err := json.Unmarshal(ts.OutBuf.Bytes(), &statuses); err != nil {
-		t.Fatalf("unmarshal output: %v", err)
-	}
-	if len(statuses) != 1 {
-		t.Fatalf("got %d statuses, want 1", len(statuses))
-	}
-	s := statuses[0]
-	if s.Type != "config" {
-		t.Errorf("type = %q, want %q", s.Type, "config")
-	}
-	if s.Status != "valid" {
-		t.Errorf("status = %q, want %q", s.Status, "valid")
-	}
-	if s.Team != "My Team" {
-		t.Errorf("team = %q, want %q", s.Team, "My Team")
-	}
-	if s.Environment != "production" {
-		t.Errorf("environment = %q, want %q", s.Environment, "production")
-	}
-	if s.KeyID != "abc123" {
-		t.Errorf("key_id = %q, want %q", s.KeyID, "abc123")
-	}
-}
-
-func TestAuthStatus_IngestKey_Unauthorized(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		writeJSON(t, w, map[string]string{"error": "unauthorized"})
-	}))
-	t.Cleanup(srv.Close)
-
-	ts := iostreams.Test()
-	opts := &options.RootOptions{
-		IOStreams: ts.IOStreams,
-		Config:    &config.Config{},
-		APIUrl:    srv.URL,
-		Format:    "json",
-	}
-
-	if err := config.SetKey("default", config.KeyIngest, "bad-key"); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = config.DeleteKey("default", config.KeyIngest) })
-
-	if err := runAuthStatus(t.Context(), opts, false); err != nil {
-		t.Fatal(err)
-	}
-
-	var statuses []KeyStatus
-	if err := json.Unmarshal(ts.OutBuf.Bytes(), &statuses); err != nil {
-		t.Fatalf("unmarshal output: %v", err)
-	}
-	if len(statuses) != 1 {
-		t.Fatalf("got %d statuses, want 1", len(statuses))
-	}
-	if statuses[0].Status != "invalid" {
-		t.Errorf("status = %q, want %q", statuses[0].Status, "invalid")
-	}
-}
-
-func TestAuthStatus_ManagementKey_Valid(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/2/auth" {
-			t.Errorf("unexpected path: %s", r.URL.Path)
-			http.NotFound(w, r)
-			return
-		}
-		if r.Header.Get("Authorization") != "Bearer mgmt-key" {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-		w.Header().Set("Content-Type", "application/vnd.api+json")
-		writeJSON(t, w, map[string]any{
-			"data": map[string]any{
-				"id":   "mgmt-id",
-				"type": "api-keys",
-				"attributes": map[string]any{
-					"name":     "My Management Key",
-					"key_type": "management",
-				},
+		},
+		{
+			name:    "ingest key unauthorized",
+			keyType: config.KeyIngest,
+			key:     "bad-key",
+			handler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusUnauthorized)
+				_ = json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})
+			}),
+			want: KeyStatus{
+				Type:   "ingest",
+				Status: "invalid",
 			},
+		},
+		{
+			name:    "management key valid",
+			keyType: config.KeyManagement,
+			key:     "mgmt-key",
+			handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/2/auth" {
+					http.NotFound(w, r)
+					return
+				}
+				if r.Header.Get("Authorization") != "Bearer mgmt-key" {
+					w.WriteHeader(http.StatusUnauthorized)
+					return
+				}
+				w.Header().Set("Content-Type", "application/vnd.api+json")
+				_ = json.NewEncoder(w).Encode(map[string]any{
+					"data": map[string]any{
+						"id":   "mgmt-id",
+						"type": "api-keys",
+						"attributes": map[string]any{
+							"name":     "My Management Key",
+							"key_type": "management",
+						},
+					},
+				})
+			}),
+			want: KeyStatus{
+				Type:   "management",
+				Status: "valid",
+				KeyID:  "mgmt-id",
+				Name:   "My Management Key",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := httptest.NewServer(tt.handler)
+			t.Cleanup(srv.Close)
+
+			ts := iostreams.Test()
+			opts := &options.RootOptions{
+				IOStreams: ts.IOStreams,
+				Config:    &config.Config{},
+				APIUrl:    srv.URL,
+				Format:    "json",
+			}
+
+			if err := config.SetKey("default", tt.keyType, tt.key); err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { _ = config.DeleteKey("default", tt.keyType) })
+
+			if err := runAuthStatus(t.Context(), opts, false); err != nil {
+				t.Fatal(err)
+			}
+
+			var statuses []KeyStatus
+			if err := json.Unmarshal(ts.OutBuf.Bytes(), &statuses); err != nil {
+				t.Fatalf("unmarshal output: %v", err)
+			}
+			if len(statuses) != 1 {
+				t.Fatalf("got %d statuses, want 1", len(statuses))
+			}
+			if got := statuses[0]; got != tt.want {
+				t.Errorf("got %+v, want %+v", got, tt.want)
+			}
 		})
-	}))
-	t.Cleanup(srv.Close)
-
-	ts := iostreams.Test()
-	opts := &options.RootOptions{
-		IOStreams: ts.IOStreams,
-		Config:    &config.Config{},
-		APIUrl:    srv.URL,
-		Format:    "json",
-	}
-
-	if err := config.SetKey("default", config.KeyManagement, "mgmt-key"); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = config.DeleteKey("default", config.KeyManagement) })
-
-	if err := runAuthStatus(t.Context(), opts, false); err != nil {
-		t.Fatal(err)
-	}
-
-	var statuses []KeyStatus
-	if err := json.Unmarshal(ts.OutBuf.Bytes(), &statuses); err != nil {
-		t.Fatalf("unmarshal output: %v", err)
-	}
-	if len(statuses) != 1 {
-		t.Fatalf("got %d statuses, want 1", len(statuses))
-	}
-	s := statuses[0]
-	if s.Type != "management" {
-		t.Errorf("type = %q, want %q", s.Type, "management")
-	}
-	if s.Status != "valid" {
-		t.Errorf("status = %q, want %q", s.Status, "valid")
-	}
-	if s.KeyID != "mgmt-id" {
-		t.Errorf("key_id = %q, want %q", s.KeyID, "mgmt-id")
-	}
-	if s.Name != "My Management Key" {
-		t.Errorf("name = %q, want %q", s.Name, "My Management Key")
 	}
 }
 
 func TestAuthStatus_MultipleKeys(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
 		switch r.URL.Path {
 		case "/1/auth":
+			w.Header().Set("Content-Type", "application/json")
 			writeJSON(t, w, map[string]any{
 				"id":             "cfg-id",
 				"type":           "configuration",

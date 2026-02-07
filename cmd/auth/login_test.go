@@ -11,73 +11,140 @@ import (
 	"github.com/bendrucker/honeycomb-cli/internal/iostreams"
 )
 
-func TestAuthLogin_ConfigKey_Valid(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/1/auth" {
-			t.Errorf("unexpected path: %s", r.URL.Path)
-			http.NotFound(w, r)
-			return
-		}
-		if r.Header.Get("X-Honeycomb-Team") != "myid:mysecret" {
-			w.WriteHeader(http.StatusUnauthorized)
-			writeJSON(t, w, map[string]string{"error": "unauthorized"})
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		writeJSON(t, w, map[string]any{
-			"id":          "myid",
-			"type":        "configuration",
-			"team":        map[string]string{"name": "My Team", "slug": "my-team"},
-			"environment": map[string]string{"name": "production", "slug": "production"},
-			"api_key_access": map[string]bool{
-				"events": true,
+func TestAuthLogin_Success(t *testing.T) {
+	tests := []struct {
+		name      string
+		keyType   string
+		keyID     string
+		keySecret string
+		verify    bool
+		handler   http.Handler
+		want      loginResult
+	}{
+		{
+			name:      "config key verified",
+			keyType:   "config",
+			keyID:     "myid",
+			keySecret: "mysecret",
+			verify:    true,
+			handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/1/auth" {
+					http.NotFound(w, r)
+					return
+				}
+				if r.Header.Get("X-Honeycomb-Team") != "myid:mysecret" {
+					w.WriteHeader(http.StatusUnauthorized)
+					return
+				}
+				w.Header().Set("Content-Type", "application/json")
+				_ = json.NewEncoder(w).Encode(map[string]any{
+					"id":             "myid",
+					"type":           "configuration",
+					"team":           map[string]string{"name": "My Team", "slug": "my-team"},
+					"environment":    map[string]string{"name": "production", "slug": "production"},
+					"api_key_access": map[string]bool{"events": true},
+				})
+			}),
+			want: loginResult{
+				Type:        "config",
+				Team:        "My Team",
+				Environment: "production",
+				KeyID:       "myid",
+				Verified:    true,
 			},
+		},
+		{
+			name:      "management key verified",
+			keyType:   "management",
+			keyID:     "mgmtid",
+			keySecret: "mgmtsecret",
+			verify:    true,
+			handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/2/auth" {
+					http.NotFound(w, r)
+					return
+				}
+				if r.Header.Get("Authorization") != "Bearer mgmtid:mgmtsecret" {
+					w.WriteHeader(http.StatusUnauthorized)
+					return
+				}
+				w.Header().Set("Content-Type", "application/vnd.api+json")
+				_ = json.NewEncoder(w).Encode(map[string]any{
+					"data": map[string]any{
+						"id":   "mgmt-id",
+						"type": "api-keys",
+						"attributes": map[string]any{
+							"name":     "My Management Key",
+							"key_type": "management",
+						},
+					},
+				})
+			}),
+			want: loginResult{
+				Type:     "management",
+				KeyID:    "mgmt-id",
+				Name:     "My Management Key",
+				Verified: true,
+			},
+		},
+		{
+			name:      "no verify",
+			keyType:   "ingest",
+			keyID:     "myid",
+			keySecret: "mysecret",
+			verify:    false,
+			want: loginResult{
+				Type: "ingest",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var apiURL string
+			if tt.handler != nil {
+				srv := httptest.NewServer(tt.handler)
+				t.Cleanup(srv.Close)
+				apiURL = srv.URL
+			}
+
+			ts := iostreams.Test()
+			opts := &options.RootOptions{
+				IOStreams: ts.IOStreams,
+				Config:    &config.Config{},
+				APIUrl:    apiURL,
+				Format:    "json",
+			}
+
+			kt := config.KeyType(tt.keyType)
+			t.Cleanup(func() { _ = config.DeleteKey("default", kt) })
+
+			err := runAuthLogin(t.Context(), opts, tt.keyType, tt.keyID, tt.keySecret, tt.verify)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			var result loginResult
+			if err := json.Unmarshal(ts.OutBuf.Bytes(), &result); err != nil {
+				t.Fatalf("unmarshal output: %v", err)
+			}
+			if result != tt.want {
+				t.Errorf("got %+v, want %+v", result, tt.want)
+			}
+
+			stored, err := config.GetKey("default", kt)
+			if err != nil {
+				t.Fatal(err)
+			}
+			wantStored := tt.keyID + ":" + tt.keySecret
+			if stored != wantStored {
+				t.Errorf("stored key = %q, want %q", stored, wantStored)
+			}
 		})
-	}))
-	t.Cleanup(srv.Close)
-
-	ts := iostreams.Test()
-	opts := &options.RootOptions{
-		IOStreams: ts.IOStreams,
-		Config:    &config.Config{},
-		APIUrl:    srv.URL,
-		Format:    "json",
-	}
-
-	t.Cleanup(func() { _ = config.DeleteKey("default", config.KeyConfig) })
-
-	err := runAuthLogin(t.Context(), opts, "config", "myid", "mysecret", true)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var result loginResult
-	if err := json.Unmarshal(ts.OutBuf.Bytes(), &result); err != nil {
-		t.Fatalf("unmarshal output: %v", err)
-	}
-	if result.Type != "config" {
-		t.Errorf("type = %q, want %q", result.Type, "config")
-	}
-	if result.Team != "My Team" {
-		t.Errorf("team = %q, want %q", result.Team, "My Team")
-	}
-	if result.Environment != "production" {
-		t.Errorf("environment = %q, want %q", result.Environment, "production")
-	}
-	if !result.Verified {
-		t.Error("verified = false, want true")
-	}
-
-	stored, err := config.GetKey("default", config.KeyConfig)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if stored != "myid:mysecret" {
-		t.Errorf("stored key = %q, want %q", stored, "myid:mysecret")
 	}
 }
 
-func TestAuthLogin_ConfigKey_Invalid(t *testing.T) {
+func TestAuthLogin_InvalidKey(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
@@ -108,105 +175,7 @@ func TestAuthLogin_ConfigKey_Invalid(t *testing.T) {
 	}
 }
 
-func TestAuthLogin_ManagementKey_Valid(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/2/auth" {
-			t.Errorf("unexpected path: %s", r.URL.Path)
-			http.NotFound(w, r)
-			return
-		}
-		if r.Header.Get("Authorization") != "Bearer mgmtid:mgmtsecret" {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-		w.Header().Set("Content-Type", "application/vnd.api+json")
-		writeJSON(t, w, map[string]any{
-			"data": map[string]any{
-				"id":   "mgmt-id",
-				"type": "api-keys",
-				"attributes": map[string]any{
-					"name":     "My Management Key",
-					"key_type": "management",
-				},
-			},
-		})
-	}))
-	t.Cleanup(srv.Close)
-
-	ts := iostreams.Test()
-	opts := &options.RootOptions{
-		IOStreams: ts.IOStreams,
-		Config:    &config.Config{},
-		APIUrl:    srv.URL,
-		Format:    "json",
-	}
-
-	t.Cleanup(func() { _ = config.DeleteKey("default", config.KeyManagement) })
-
-	err := runAuthLogin(t.Context(), opts, "management", "mgmtid", "mgmtsecret", true)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var result loginResult
-	if err := json.Unmarshal(ts.OutBuf.Bytes(), &result); err != nil {
-		t.Fatalf("unmarshal output: %v", err)
-	}
-	if result.Type != "management" {
-		t.Errorf("type = %q, want %q", result.Type, "management")
-	}
-	if result.Name != "My Management Key" {
-		t.Errorf("name = %q, want %q", result.Name, "My Management Key")
-	}
-	if !result.Verified {
-		t.Error("verified = false, want true")
-	}
-
-	stored, err := config.GetKey("default", config.KeyManagement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if stored != "mgmtid:mgmtsecret" {
-		t.Errorf("stored key = %q, want %q", stored, "mgmtid:mgmtsecret")
-	}
-}
-
-func TestAuthLogin_NoVerify(t *testing.T) {
-	ts := iostreams.Test()
-	opts := &options.RootOptions{
-		IOStreams: ts.IOStreams,
-		Config:    &config.Config{},
-		Format:    "json",
-	}
-
-	t.Cleanup(func() { _ = config.DeleteKey("default", config.KeyIngest) })
-
-	err := runAuthLogin(t.Context(), opts, "ingest", "myid", "mysecret", false)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var result loginResult
-	if err := json.Unmarshal(ts.OutBuf.Bytes(), &result); err != nil {
-		t.Fatalf("unmarshal output: %v", err)
-	}
-	if result.Type != "ingest" {
-		t.Errorf("type = %q, want %q", result.Type, "ingest")
-	}
-	if result.Verified {
-		t.Error("verified = true, want false")
-	}
-
-	stored, err := config.GetKey("default", config.KeyIngest)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if stored != "myid:mysecret" {
-		t.Errorf("stored key = %q, want %q", stored, "myid:mysecret")
-	}
-}
-
-func TestAuthLogin_MissingKeyType_NonInteractive(t *testing.T) {
+func TestAuthLogin_MissingKeyType(t *testing.T) {
 	ts := iostreams.Test()
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
