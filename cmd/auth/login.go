@@ -11,8 +11,8 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
 	"gopkg.in/yaml.v3"
 )
 
@@ -73,7 +73,14 @@ func runAuthLogin(ctx context.Context, opts *options.RootOptions, keyType, keyID
 			}
 		}
 		if keySecret == "" {
-			keySecret, err = promptSecret(ios.Out, ios.In, ios.StdinFd(), "Key secret: ")
+			err = huh.NewInput().
+				Title("Key secret").
+				EchoMode(huh.EchoModePassword).
+				Value(&keySecret).
+				Run()
+			if err == huh.ErrUserAborted {
+				return nil
+			}
 			if err != nil {
 				return fmt.Errorf("reading key secret: %w", err)
 			}
@@ -187,19 +194,6 @@ func promptChoice(out io.Writer, in io.Reader, prompt string, choices []string) 
 		}
 		_, _ = fmt.Fprintf(out, "Invalid choice. Options: %s\n", strings.Join(choices, ", "))
 	}
-}
-
-func promptSecret(out io.Writer, in io.Reader, fd uintptr, prompt string) (string, error) {
-	_, _ = fmt.Fprint(out, prompt)
-	if fd != 0 {
-		b, err := term.ReadPassword(int(fd))
-		_, _ = fmt.Fprintln(out)
-		if err != nil {
-			return "", err
-		}
-		return string(b), nil
-	}
-	return readLine(in)
 }
 
 func readLine(r io.Reader) (string, error) {

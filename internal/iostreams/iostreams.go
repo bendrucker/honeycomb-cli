@@ -71,13 +71,6 @@ func (s *IOStreams) IsStdoutTTY() bool {
 	return s.stdoutIsTTY
 }
 
-func (s *IOStreams) StdinFd() uintptr {
-	if f, ok := s.In.(*os.File); ok {
-		return f.Fd()
-	}
-	return 0
-}
-
 func (s *IOStreams) ColorEnabled() bool {
 	if _, ok := os.LookupEnv("NO_COLOR"); ok {
 		return false
