@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
 	"testing"
 )
@@ -22,7 +23,7 @@ var testTable = TableDef{
 
 func TestWrite_JSON(t *testing.T) {
 	var buf bytes.Buffer
-	w := New(&buf, "json")
+	w := New(&buf, FormatJSON)
 
 	items := []testItem{{Name: "a", Count: 1}, {Name: "b", Count: 2}}
 	if err := w.Write(items, testTable); err != nil {
@@ -40,7 +41,7 @@ func TestWrite_JSON(t *testing.T) {
 
 func TestWrite_YAML(t *testing.T) {
 	var buf bytes.Buffer
-	w := New(&buf, "yaml")
+	w := New(&buf, FormatYAML)
 
 	items := []testItem{{Name: "a", Count: 1}}
 	if err := w.Write(items, testTable); err != nil {
@@ -58,7 +59,7 @@ func TestWrite_YAML(t *testing.T) {
 
 func TestWrite_Table(t *testing.T) {
 	var buf bytes.Buffer
-	w := New(&buf, "table")
+	w := New(&buf, FormatTable)
 
 	items := []testItem{{Name: "a", Count: 1}, {Name: "b", Count: 2}}
 	if err := w.Write(items, testTable); err != nil {
@@ -76,7 +77,7 @@ func TestWrite_Table(t *testing.T) {
 
 func TestWrite_Table_Empty(t *testing.T) {
 	var buf bytes.Buffer
-	w := New(&buf, "table")
+	w := New(&buf, FormatTable)
 
 	var items []testItem
 	if err := w.Write(items, testTable); err != nil {
@@ -101,10 +102,82 @@ func TestWrite_UnsupportedFormat(t *testing.T) {
 
 func TestWrite_Table_NonSlice(t *testing.T) {
 	var buf bytes.Buffer
-	w := New(&buf, "table")
+	w := New(&buf, FormatTable)
 
 	err := w.Write("not a slice", testTable)
 	if err == nil || !strings.Contains(err.Error(), "requires a slice") {
 		t.Errorf("err = %v, want requires a slice", err)
+	}
+}
+
+func TestWrite_Table_NoColumns(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(&buf, FormatTable)
+
+	err := w.Write([]testItem{{Name: "a", Count: 1}}, TableDef{})
+	if err == nil || !strings.Contains(err.Error(), "at least one column") {
+		t.Errorf("err = %v, want column definition error", err)
+	}
+}
+
+func TestWriteValue_JSON(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(&buf, FormatJSON)
+
+	item := testItem{Name: "a", Count: 1}
+	if err := w.WriteValue(item, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	var got testItem
+	if err := json.Unmarshal(buf.Bytes(), &got); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if got.Name != "a" || got.Count != 1 {
+		t.Errorf("got %+v", got)
+	}
+}
+
+func TestWriteValue_YAML(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(&buf, FormatYAML)
+
+	item := testItem{Name: "b", Count: 2}
+	if err := w.WriteValue(item, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	out := buf.String()
+	if !strings.Contains(out, "name: b") {
+		t.Errorf("yaml missing 'name: b': %s", out)
+	}
+}
+
+func TestWriteValue_Table(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(&buf, FormatTable)
+
+	item := testItem{Name: "a", Count: 1}
+	err := w.WriteValue(item, func(out io.Writer) error {
+		_, err := fmt.Fprintf(out, "Name:\t%s\nCount:\t%d\n", item.Name, item.Count)
+		return err
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	out := buf.String()
+	if !strings.Contains(out, "Name:") || !strings.Contains(out, "a") {
+		t.Errorf("table output = %q", out)
+	}
+}
+
+func TestWriteValue_UnsupportedFormat(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(&buf, "xml")
+
+	err := w.WriteValue(testItem{}, nil)
+	if err == nil || !strings.Contains(err.Error(), "unsupported format") {
+		t.Errorf("err = %v, want unsupported format", err)
 	}
 }

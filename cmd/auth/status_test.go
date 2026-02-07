@@ -9,6 +9,7 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/bendrucker/honeycomb-cli/internal/iostreams"
+	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/zalando/go-keyring"
 )
 
@@ -28,7 +29,7 @@ func TestAuthStatus_NoKeys(t *testing.T) {
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
 		Config:    &config.Config{},
-		Format:    "json",
+		Format:    output.FormatJSON,
 	}
 
 	err := runAuthStatus(t.Context(), opts, false)
@@ -46,7 +47,7 @@ func TestAuthStatus_Offline(t *testing.T) {
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
 		Config:    &config.Config{},
-		Format:    "json",
+		Format:    output.FormatJSON,
 	}
 
 	if err := config.SetKey("default", config.KeyConfig, "test-key"); err != nil {
@@ -169,7 +170,7 @@ func TestAuthStatus_Verify(t *testing.T) {
 				IOStreams: ts.IOStreams,
 				Config:    &config.Config{},
 				APIUrl:    srv.URL,
-				Format:    "json",
+				Format:    output.FormatJSON,
 			}
 
 			if err := config.SetKey("default", tt.keyType, tt.key); err != nil {
@@ -230,7 +231,7 @@ func TestAuthStatus_MultipleKeys(t *testing.T) {
 		IOStreams: ts.IOStreams,
 		Config:    &config.Config{},
 		APIUrl:    srv.URL,
-		Format:    "json",
+		Format:    output.FormatJSON,
 	}
 
 	if err := config.SetKey("default", config.KeyConfig, "cfg-key"); err != nil {

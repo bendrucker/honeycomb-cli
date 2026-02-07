@@ -10,6 +10,7 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/bendrucker/honeycomb-cli/internal/iostreams"
+	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/zalando/go-keyring"
 )
 
@@ -27,7 +28,7 @@ func setupTest(t *testing.T, handler http.Handler) (*options.RootOptions, *iostr
 		IOStreams: ts.IOStreams,
 		Config:    &config.Config{},
 		APIUrl:    srv.URL,
-		Format:    "json",
+		Format:    output.FormatJSON,
 	}
 
 	if err := config.SetKey("default", config.KeyConfig, "test-key"); err != nil {
@@ -120,7 +121,7 @@ func TestList_NoKey(t *testing.T) {
 		IOStreams: ts.IOStreams,
 		Config:    &config.Config{},
 		APIUrl:    "http://localhost",
-		Format:    "json",
+		Format:    output.FormatJSON,
 	}
 
 	cmd := NewCmd(opts)

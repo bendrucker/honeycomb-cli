@@ -9,6 +9,7 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/bendrucker/honeycomb-cli/internal/iostreams"
+	"github.com/bendrucker/honeycomb-cli/internal/output"
 )
 
 func TestAuthLogin_Success(t *testing.T) {
@@ -113,7 +114,7 @@ func TestAuthLogin_Success(t *testing.T) {
 				IOStreams: ts.IOStreams,
 				Config:    &config.Config{},
 				APIUrl:    apiURL,
-				Format:    "json",
+				Format:    output.FormatJSON,
 			}
 
 			kt := config.KeyType(tt.keyType)
@@ -157,7 +158,7 @@ func TestAuthLogin_InvalidKey(t *testing.T) {
 		IOStreams: ts.IOStreams,
 		Config:    &config.Config{},
 		APIUrl:    srv.URL,
-		Format:    "json",
+		Format:    output.FormatJSON,
 	}
 
 	err := runAuthLogin(t.Context(), opts, "config", "badid", "badsecret", true)
@@ -180,7 +181,7 @@ func TestAuthLogin_MissingKeyType(t *testing.T) {
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
 		Config:    &config.Config{},
-		Format:    "json",
+		Format:    output.FormatJSON,
 	}
 
 	err := runAuthLogin(t.Context(), opts, "", "myid", "mysecret", false)
@@ -200,7 +201,7 @@ func TestAuthLogin_StdinSecret(t *testing.T) {
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
 		Config:    &config.Config{},
-		Format:    "json",
+		Format:    output.FormatJSON,
 	}
 
 	t.Cleanup(func() { _ = config.DeleteKey("default", config.KeyConfig) })

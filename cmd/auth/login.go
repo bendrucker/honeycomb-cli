@@ -8,6 +8,7 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
@@ -151,13 +152,13 @@ func writeLoginResult(opts *options.RootOptions, result loginResult) error {
 	out := opts.IOStreams.Out
 
 	switch opts.ResolveFormat() {
-	case "json":
+	case output.FormatJSON:
 		enc := json.NewEncoder(out)
 		enc.SetIndent("", "  ")
 		return enc.Encode(result)
-	case "yaml":
+	case output.FormatYAML:
 		return yaml.NewEncoder(out).Encode(result)
-	case "table":
+	case output.FormatTable:
 		if result.Verified {
 			if result.Team != "" {
 				_, _ = fmt.Fprintf(out, "Authenticated as %s", result.Team)

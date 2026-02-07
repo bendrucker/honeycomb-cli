@@ -11,6 +11,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	FormatJSON  = "json"
+	FormatYAML  = "yaml"
+	FormatTable = "table"
+)
+
 type Column struct {
 	// Header is the column title, written in Title Case (e.g., "Key Name").
 	// It is automatically uppercased when rendered in a table.
@@ -33,14 +39,29 @@ func New(out io.Writer, format string) *Writer {
 
 func (w *Writer) Write(data any, table TableDef) error {
 	switch w.format {
-	case "json":
+	case FormatJSON:
 		enc := json.NewEncoder(w.out)
 		enc.SetIndent("", "  ")
 		return enc.Encode(data)
-	case "yaml":
+	case FormatYAML:
 		return yaml.NewEncoder(w.out).Encode(data)
-	case "table":
+	case FormatTable:
 		return w.writeTable(data, table)
+	default:
+		return fmt.Errorf("unsupported format: %s", w.format)
+	}
+}
+
+func (w *Writer) WriteValue(data any, writeTable func(io.Writer) error) error {
+	switch w.format {
+	case FormatJSON:
+		enc := json.NewEncoder(w.out)
+		enc.SetIndent("", "  ")
+		return enc.Encode(data)
+	case FormatYAML:
+		return yaml.NewEncoder(w.out).Encode(data)
+	case FormatTable:
+		return writeTable(w.out)
 	default:
 		return fmt.Errorf("unsupported format: %s", w.format)
 	}
@@ -50,6 +71,10 @@ func (w *Writer) writeTable(data any, table TableDef) error {
 	rv := reflect.ValueOf(data)
 	if rv.Kind() != reflect.Slice {
 		return fmt.Errorf("table format requires a slice, got %s", rv.Kind())
+	}
+
+	if len(table.Columns) == 0 {
+		return fmt.Errorf("table format requires at least one column definition")
 	}
 
 	tw := tabwriter.NewWriter(w.out, 0, 0, 2, ' ', 0)

@@ -36,9 +36,9 @@ func (o *RootOptions) ResolveFormat() string {
 		return o.Format
 	}
 	if o.IOStreams.IsStdoutTTY() {
-		return "table"
+		return output.FormatTable
 	}
-	return "json"
+	return output.FormatJSON
 }
 
 func (o *RootOptions) RequireKey(kt config.KeyType) (string, error) {
