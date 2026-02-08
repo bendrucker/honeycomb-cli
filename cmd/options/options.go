@@ -1,14 +1,12 @@
 package options
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
 
 	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/bendrucker/honeycomb-cli/internal/iostreams"
+	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/zalando/go-keyring"
-	"gopkg.in/yaml.v3"
 )
 
 type RootOptions struct {
@@ -38,9 +36,9 @@ func (o *RootOptions) ResolveFormat() string {
 		return o.Format
 	}
 	if o.IOStreams.IsStdoutTTY() {
-		return "table"
+		return output.FormatTable
 	}
-	return "json"
+	return output.FormatJSON
 }
 
 func (o *RootOptions) RequireKey(kt config.KeyType) (string, error) {
@@ -55,20 +53,8 @@ func (o *RootOptions) RequireKey(kt config.KeyType) (string, error) {
 	return key, nil
 }
 
-func (o *RootOptions) WriteFormatted(data any, writeTable func(io.Writer) error) error {
-	out := o.IOStreams.Out
-	switch o.ResolveFormat() {
-	case "json":
-		enc := json.NewEncoder(out)
-		enc.SetIndent("", "  ")
-		return enc.Encode(data)
-	case "yaml":
-		return yaml.NewEncoder(out).Encode(data)
-	case "table":
-		return writeTable(out)
-	default:
-		return fmt.Errorf("unsupported format: %s", o.ResolveFormat())
-	}
+func (o *RootOptions) OutputWriter() *output.Writer {
+	return output.New(o.IOStreams.Out, o.ResolveFormat())
 }
 
 func (o *RootOptions) ResolveAPIUrl() string {

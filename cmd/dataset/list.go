@@ -3,13 +3,12 @@ package dataset
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
-	"text/tabwriter"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -20,6 +19,26 @@ type datasetItem struct {
 	Columns     *int    `json:"columns,omitempty"       yaml:"columns,omitempty"`
 	LastWritten *string `json:"last_written,omitempty"  yaml:"last_written,omitempty"`
 	CreatedAt   string  `json:"created_at"              yaml:"created_at"`
+}
+
+var datasetListTable = output.TableDef{
+	Columns: []output.Column{
+		{Header: "Name", Value: func(v any) string { return v.(datasetItem).Name }},
+		{Header: "Slug", Value: func(v any) string { return v.(datasetItem).Slug }},
+		{Header: "Description", Value: func(v any) string { return v.(datasetItem).Description }},
+		{Header: "Columns", Value: func(v any) string {
+			if c := v.(datasetItem).Columns; c != nil {
+				return fmt.Sprintf("%d", *c)
+			}
+			return "—"
+		}},
+		{Header: "Last Written", Value: func(v any) string {
+			if lw := v.(datasetItem).LastWritten; lw != nil {
+				return *lw
+			}
+			return "—"
+		}},
+	},
 }
 
 func NewListCmd(opts *options.RootOptions) *cobra.Command {
@@ -81,22 +100,7 @@ func runDatasetList(ctx context.Context, opts *options.RootOptions) error {
 		items[i] = item
 	}
 
-	return opts.WriteFormatted(items, func(out io.Writer) error {
-		w := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
-		_, _ = fmt.Fprintln(w, "NAME\tSLUG\tDESCRIPTION\tCOLUMNS\tLAST WRITTEN")
-		for _, item := range items {
-			cols := "—"
-			if item.Columns != nil {
-				cols = fmt.Sprintf("%d", *item.Columns)
-			}
-			lastWritten := "—"
-			if item.LastWritten != nil {
-				lastWritten = *item.LastWritten
-			}
-			_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", item.Name, item.Slug, item.Description, cols, lastWritten)
-		}
-		return w.Flush()
-	})
+	return opts.OutputWriter().Write(items, datasetListTable)
 }
 
 func keyEditor(key string) api.RequestEditorFn {

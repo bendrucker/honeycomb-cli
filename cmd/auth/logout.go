@@ -2,11 +2,10 @@ package auth
 
 import (
 	"fmt"
-	"io"
-	"text/tabwriter"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 	"github.com/zalando/go-keyring"
 )
@@ -61,12 +60,9 @@ func runAuthLogout(opts *options.RootOptions, keyType string) error {
 		return fmt.Errorf("no keys configured for profile %q", profile)
 	}
 
-	return opts.WriteFormatted(deleted, func(out io.Writer) error {
-		w := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
-		_, _ = fmt.Fprintln(w, "TYPE")
-		for _, d := range deleted {
-			_, _ = fmt.Fprintln(w, d.Type)
-		}
-		return w.Flush()
+	return opts.OutputWriter().Write(deleted, output.TableDef{
+		Columns: []output.Column{
+			{Header: "TYPE", Value: func(v any) string { return v.(logoutResult).Type }},
+		},
 	})
 }

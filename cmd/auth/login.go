@@ -1,16 +1,15 @@
 package auth
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"strings"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/bendrucker/honeycomb-cli/internal/output"
+	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -98,7 +97,7 @@ func runAuthLogin(ctx context.Context, opts *options.RootOptions, keyType, keyID
 			return fmt.Errorf("--key-id is required in non-interactive mode")
 		}
 		if keySecret == "" {
-			line, err := readLine(ios.In)
+			line, err := prompt.ReadLine(ios.In)
 			if err != nil {
 				return fmt.Errorf("reading key secret from stdin: %w", err)
 			}
@@ -153,13 +152,13 @@ func writeLoginResult(opts *options.RootOptions, result loginResult) error {
 	out := opts.IOStreams.Out
 
 	switch opts.ResolveFormat() {
-	case "json":
+	case output.FormatJSON:
 		enc := json.NewEncoder(out)
 		enc.SetIndent("", "  ")
 		return enc.Encode(result)
-	case "yaml":
+	case output.FormatYAML:
 		return yaml.NewEncoder(out).Encode(result)
-	case "table":
+	case output.FormatTable:
 		if result.Verified {
 			if result.Team != "" {
 				_, _ = fmt.Fprintf(out, "Authenticated as %s", result.Team)
@@ -179,15 +178,4 @@ func writeLoginResult(opts *options.RootOptions, result loginResult) error {
 	default:
 		return fmt.Errorf("unsupported format: %s", opts.ResolveFormat())
 	}
-}
-
-func readLine(r io.Reader) (string, error) {
-	scanner := bufio.NewScanner(r)
-	if scanner.Scan() {
-		return strings.TrimRight(scanner.Text(), "\r\n"), nil
-	}
-	if err := scanner.Err(); err != nil {
-		return "", err
-	}
-	return "", fmt.Errorf("unexpected end of input")
 }
