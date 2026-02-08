@@ -13,6 +13,8 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 	}
 
 	cmd.AddCommand(NewListCmd(opts))
+	cmd.AddCommand(NewViewCmd(opts))
+	cmd.AddCommand(NewCreateCmd(opts))
 
 	return cmd
 }
