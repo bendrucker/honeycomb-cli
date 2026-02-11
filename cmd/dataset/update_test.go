@@ -8,14 +8,31 @@ import (
 )
 
 func TestUpdate(t *testing.T) {
+	var gotBody map[string]any
+
 	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/1/datasets/production" {
 			t.Errorf("path = %q, want /1/datasets/production", r.URL.Path)
 		}
+		w.Header().Set("Content-Type", "application/json")
+
+		if r.Method == http.MethodGet {
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"name":              "production",
+				"slug":              "production",
+				"description":       "Original description",
+				"expand_json_depth": 2,
+				"created_at":        "2024-06-01T00:00:00Z",
+				"settings":          map[string]any{"delete_protected": true},
+			})
+			return
+		}
+
 		if r.Method != http.MethodPut {
 			t.Errorf("method = %q, want PUT", r.Method)
 		}
-		w.Header().Set("Content-Type", "application/json")
+
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"name":        "production",
 			"slug":        "production",
@@ -36,6 +53,13 @@ func TestUpdate(t *testing.T) {
 	}
 	if detail.Description != "Updated description" {
 		t.Errorf("description = %q, want %q", detail.Description, "Updated description")
+	}
+
+	if gotBody["description"] != "Updated description" {
+		t.Errorf("request body description = %v, want %q", gotBody["description"], "Updated description")
+	}
+	if gotBody["expand_json_depth"] != float64(2) {
+		t.Errorf("request body expand_json_depth = %v, want 2 (preserved from GET)", gotBody["expand_json_depth"])
 	}
 }
 

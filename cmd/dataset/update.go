@@ -46,7 +46,33 @@ func runDatasetUpdate(cmd *cobra.Command, opts *options.RootOptions, slug, descr
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
+	ctx := cmd.Context()
+
+	current, err := client.GetDatasetWithResponse(ctx, slug, keyEditor(key))
+	if err != nil {
+		return fmt.Errorf("getting dataset: %w", err)
+	}
+	if err := api.CheckResponse(current.StatusCode(), current.Body); err != nil {
+		return err
+	}
+	if current.JSON200 == nil {
+		return fmt.Errorf("unexpected response: %s", current.Status())
+	}
+
+	ds := current.JSON200
 	body := api.DatasetUpdatePayload{}
+	if ds.Description != nil {
+		body.Description = *ds.Description
+	}
+	if ds.ExpandJsonDepth != nil {
+		body.ExpandJsonDepth = *ds.ExpandJsonDepth
+	}
+	if ds.Settings != nil && ds.Settings.DeleteProtected != nil {
+		body.Settings = &struct {
+			DeleteProtected *bool `json:"delete_protected,omitempty"`
+		}{DeleteProtected: ds.Settings.DeleteProtected}
+	}
+
 	if cmd.Flags().Changed("description") {
 		body.Description = description
 	}
@@ -56,12 +82,10 @@ func runDatasetUpdate(cmd *cobra.Command, opts *options.RootOptions, slug, descr
 	if cmd.Flags().Changed("delete-protected") {
 		body.Settings = &struct {
 			DeleteProtected *bool `json:"delete_protected,omitempty"`
-		}{
-			DeleteProtected: &deleteProtected,
-		}
+		}{DeleteProtected: &deleteProtected}
 	}
 
-	resp, err := client.UpdateDatasetWithResponse(cmd.Context(), slug, body, keyEditor(key))
+	resp, err := client.UpdateDatasetWithResponse(ctx, slug, body, keyEditor(key))
 	if err != nil {
 		return fmt.Errorf("updating dataset: %w", err)
 	}
