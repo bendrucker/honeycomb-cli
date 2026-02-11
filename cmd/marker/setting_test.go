@@ -220,6 +220,7 @@ func TestSettingDelete_WithYes(t *testing.T) {
 
 func TestSettingDelete_NoYesNonInteractive(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	opts.IOStreams.SetNeverPrompt(true)
 
 	cmd := NewCmd(opts)
 	cmd.SetArgs([]string{"--dataset", "test", "setting", "delete", "ms1"})
