@@ -130,6 +130,7 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 	cmd.AddCommand(NewCreateCmd(opts, &dataset))
 	cmd.AddCommand(NewUpdateCmd(opts, &dataset))
 	cmd.AddCommand(NewDeleteCmd(opts, &dataset))
+	cmd.AddCommand(NewSettingCmd(opts, &dataset))
 
 	return cmd
 }
