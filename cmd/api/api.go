@@ -10,6 +10,8 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	clientapi "github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/bendrucker/honeycomb-cli/internal/fields"
+	"github.com/bendrucker/honeycomb-cli/internal/jq"
 	"github.com/spf13/cobra"
 )
 
@@ -56,7 +58,7 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 }
 
 func run(cmd *cobra.Command, o *apiOptions, path string) error {
-	fields, err := parseFields(o.fields, o.typed, o.root.IOStreams.In)
+	f, err := fields.Parse(o.fields, o.typed, o.root.IOStreams.In)
 	if err != nil {
 		return err
 	}
@@ -89,16 +91,16 @@ func run(cmd *cobra.Command, o *apiOptions, path string) error {
 	client := &http.Client{}
 	ios := o.root.IOStreams
 
-	if isV2Path(path) && body == nil && len(fields) > 0 {
+	if isV2Path(path) && body == nil && len(f) > 0 {
 		switch method {
 		case http.MethodPost, http.MethodPatch, http.MethodPut:
 			resourceType := inferResourceType(method, path)
-			fields = wrapJSONAPI(fields, resourceType)
+			f = wrapJSONAPI(f, resourceType)
 		}
 	}
 
 	for {
-		req, err := buildRequest(method, baseURL, path, fields, body, o.headers)
+		req, err := buildRequest(method, baseURL, path, f, body, o.headers)
 		if err != nil {
 			return err
 		}
@@ -128,7 +130,7 @@ func run(cmd *cobra.Command, o *apiOptions, path string) error {
 		}
 
 		if o.jqExpr != "" {
-			if err := filterJQ(bytes.NewReader(respBody), ios.Out, o.jqExpr); err != nil {
+			if err := jq.Filter(bytes.NewReader(respBody), ios.Out, o.jqExpr); err != nil {
 				return err
 			}
 		} else {
@@ -149,7 +151,7 @@ func run(cmd *cobra.Command, o *apiOptions, path string) error {
 
 		path = next
 		baseURL = ""
-		fields = nil
+		f = nil
 		body = nil
 	}
 
