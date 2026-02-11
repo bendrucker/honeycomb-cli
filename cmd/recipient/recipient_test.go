@@ -27,9 +27,9 @@ func setupTest(t *testing.T, handler http.Handler) (*options.RootOptions, *iostr
 	ts := iostreams.Test()
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
-		Config:   &config.Config{},
-		APIUrl:   srv.URL,
-		Format:   "json",
+		Config:    &config.Config{},
+		APIUrl:    srv.URL,
+		Format:    "json",
 	}
 
 	if err := config.SetKey("default", config.KeyConfig, "test-key"); err != nil {
@@ -229,6 +229,22 @@ func TestDelete_WithYes(t *testing.T) {
 
 	if !strings.Contains(ts.ErrBuf.String(), "Recipient abc123 deleted") {
 		t.Errorf("stderr = %q, want delete message", ts.ErrBuf.String())
+	}
+}
+
+func TestDelete_NoYesNonInteractive(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	opts.NoInteractive = true
+	opts.IOStreams.SetNeverPrompt(true)
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"delete", "abc123"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for missing --yes")
+	}
+	if !strings.Contains(err.Error(), "--yes is required") {
+		t.Errorf("error = %q, want --yes required message", err.Error())
 	}
 }
 
