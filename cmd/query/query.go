@@ -26,6 +26,7 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&dataset, "dataset", "", "Dataset slug (required)")
 	_ = cmd.MarkPersistentFlagRequired("dataset")
 
+	cmd.AddCommand(NewRunCmd(opts, &dataset))
 	cmd.AddCommand(NewListCmd(opts, &dataset))
 	cmd.AddCommand(NewViewCmd(opts, &dataset))
 	cmd.AddCommand(NewCreateCmd(opts, &dataset))
