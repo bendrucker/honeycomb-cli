@@ -44,26 +44,8 @@ func runSettingDelete(ctx context.Context, opts *options.RootOptions, dataset, s
 			return fmt.Errorf("--yes is required in non-interactive mode")
 		}
 
-		listResp, err := client.ListMarkerSettingsWithResponse(ctx, api.DatasetSlugOrAll(dataset), keyEditor(key))
-		if err != nil {
-			return fmt.Errorf("listing marker settings: %w", err)
-		}
-
-		if err := api.CheckResponse(listResp.StatusCode(), listResp.Body); err != nil {
-			return err
-		}
-
-		if listResp.JSON200 == nil {
-			return fmt.Errorf("unexpected response: %s", listResp.Status())
-		}
-
-		s, err := findSetting(*listResp.JSON200, settingID)
-		if err != nil {
-			return err
-		}
-
 		answer, err := prompt.Choice(opts.IOStreams.Err, opts.IOStreams.In,
-			fmt.Sprintf("Delete marker setting %q (type: %s)? (y/N): ", settingID, s.Type),
+			fmt.Sprintf("Delete marker setting %s? (y/N): ", settingID),
 			[]string{"y", "N"},
 		)
 		if err != nil {

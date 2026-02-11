@@ -43,32 +43,12 @@ func runSettingUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, se
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	listResp, err := client.ListMarkerSettingsWithResponse(ctx, api.DatasetSlugOrAll(dataset), keyEditor(key))
-	if err != nil {
-		return fmt.Errorf("listing marker settings: %w", err)
+	body := api.UpdateMarkerSettingsJSONRequestBody{
+		Type:  settingType,
+		Color: color,
 	}
 
-	if err := api.CheckResponse(listResp.StatusCode(), listResp.Body); err != nil {
-		return err
-	}
-
-	if listResp.JSON200 == nil {
-		return fmt.Errorf("unexpected response: %s", listResp.Status())
-	}
-
-	existing, err := findSetting(*listResp.JSON200, settingID)
-	if err != nil {
-		return err
-	}
-
-	if cmd.Flags().Changed("type") {
-		existing.Type = settingType
-	}
-	if cmd.Flags().Changed("color") {
-		existing.Color = color
-	}
-
-	resp, err := client.UpdateMarkerSettingsWithResponse(ctx, api.DatasetSlugOrAll(dataset), settingID, api.UpdateMarkerSettingsJSONRequestBody(existing), keyEditor(key))
+	resp, err := client.UpdateMarkerSettingsWithResponse(ctx, api.DatasetSlugOrAll(dataset), settingID, body, keyEditor(key))
 	if err != nil {
 		return fmt.Errorf("updating marker setting: %w", err)
 	}

@@ -124,15 +124,6 @@ func TestSettingCreate(t *testing.T) {
 
 func TestSettingUpdate(t *testing.T) {
 	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-
-		if r.Method == http.MethodGet {
-			_ = json.NewEncoder(w).Encode([]map[string]any{
-				{"id": "ms1", "type": "deploys", "color": "#F96E11"},
-			})
-			return
-		}
-
 		if r.Method != http.MethodPut {
 			t.Errorf("method = %q, want PUT", r.Method)
 		}
@@ -148,6 +139,7 @@ func TestSettingUpdate(t *testing.T) {
 			t.Errorf("body color = %q, want %q", body["color"], "#00FF00")
 		}
 
+		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"id":    "ms1",
 			"type":  "deploys",
@@ -173,14 +165,6 @@ func TestSettingUpdate(t *testing.T) {
 func TestSettingUpdate_NoFlags(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-
-		if r.Method == http.MethodGet {
-			_ = json.NewEncoder(w).Encode([]map[string]any{
-				{"id": "ms1", "type": "deploys", "color": "#F96E11"},
-			})
-			return
-		}
-
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"id": "ms1", "type": "deploys", "color": "#F96E11",
 		})

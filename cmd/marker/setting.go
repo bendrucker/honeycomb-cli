@@ -58,15 +58,6 @@ func writeSettingDetail(opts *options.RootOptions, item settingItem) error {
 	return tw.Flush()
 }
 
-func findSetting(settings []api.MarkerSetting, id string) (api.MarkerSetting, error) {
-	for _, s := range settings {
-		if s.Id != nil && *s.Id == id {
-			return s, nil
-		}
-	}
-	return api.MarkerSetting{}, fmt.Errorf("marker setting %q not found", id)
-}
-
 func NewSettingCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "setting",
