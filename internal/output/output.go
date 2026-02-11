@@ -99,3 +99,50 @@ func (w *Writer) writeTable(data any, table TableDef) error {
 
 	return tw.Flush()
 }
+
+type DynamicTableDef struct {
+	Headers []string
+	Rows    [][]string
+}
+
+func (w *Writer) WriteDynamic(data any, table DynamicTableDef) error {
+	switch w.format {
+	case FormatJSON:
+		enc := json.NewEncoder(w.out)
+		enc.SetIndent("", "  ")
+		return enc.Encode(data)
+	case FormatYAML:
+		return yaml.NewEncoder(w.out).Encode(data)
+	case FormatTable:
+		return w.writeDynamicTable(table)
+	default:
+		return fmt.Errorf("unsupported format: %s", w.format)
+	}
+}
+
+func (w *Writer) writeDynamicTable(table DynamicTableDef) error {
+	if len(table.Headers) == 0 {
+		return fmt.Errorf("table format requires at least one column definition")
+	}
+
+	tw := tabwriter.NewWriter(w.out, 0, 0, 2, ' ', 0)
+	for i, h := range table.Headers {
+		if i > 0 {
+			_, _ = fmt.Fprint(tw, "\t")
+		}
+		_, _ = fmt.Fprint(tw, strings.ToUpper(h))
+	}
+	_, _ = fmt.Fprintln(tw)
+
+	for _, row := range table.Rows {
+		for i, cell := range row {
+			if i > 0 {
+				_, _ = fmt.Fprint(tw, "\t")
+			}
+			_, _ = fmt.Fprint(tw, cell)
+		}
+		_, _ = fmt.Fprintln(tw)
+	}
+
+	return tw.Flush()
+}
