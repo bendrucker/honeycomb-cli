@@ -1,4 +1,4 @@
-package marker
+package column
 
 import (
 	"context"
@@ -10,18 +10,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewViewCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
+func NewGetCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	return &cobra.Command{
-		Use:   "view <marker-id>",
-		Short: "View a marker",
-		Args:  cobra.ExactArgs(1),
+		Use:     "get <column-id>",
+		Aliases: []string{"view"},
+		Short:   "Get a column",
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runMarkerView(cmd.Context(), opts, *dataset, args[0])
+			return runColumnGet(cmd.Context(), opts, *dataset, args[0])
 		},
 	}
 }
 
-func runMarkerView(ctx context.Context, opts *options.RootOptions, dataset, markerID string) error {
+func runColumnGet(ctx context.Context, opts *options.RootOptions, dataset, columnID string) error {
 	key, err := opts.RequireKey(config.KeyConfig)
 	if err != nil {
 		return err
@@ -32,9 +33,9 @@ func runMarkerView(ctx context.Context, opts *options.RootOptions, dataset, mark
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.GetMarkerWithResponse(ctx, dataset, keyEditor(key))
+	resp, err := client.GetColumnWithResponse(ctx, dataset, columnID, keyEditor(key))
 	if err != nil {
-		return fmt.Errorf("listing markers: %w", err)
+		return fmt.Errorf("getting column: %w", err)
 	}
 
 	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
@@ -45,10 +46,5 @@ func runMarkerView(ctx context.Context, opts *options.RootOptions, dataset, mark
 		return fmt.Errorf("unexpected response: %s", resp.Status())
 	}
 
-	m, err := findMarker(*resp.JSON200, markerID)
-	if err != nil {
-		return err
-	}
-
-	return writeDetail(opts, markerToItem(m))
+	return writeColumnDetail(opts, *resp.JSON200)
 }

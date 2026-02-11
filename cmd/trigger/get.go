@@ -10,18 +10,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewViewCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
+func NewGetCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	return &cobra.Command{
-		Use:   "view <trigger-id>",
-		Short: "View a trigger",
-		Args:  cobra.ExactArgs(1),
+		Use:     "get <trigger-id>",
+		Aliases: []string{"view"},
+		Short:   "Get a trigger",
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runView(cmd.Context(), opts, *dataset, args[0])
+			return runGet(cmd.Context(), opts, *dataset, args[0])
 		},
 	}
 }
 
-func runView(ctx context.Context, opts *options.RootOptions, dataset, triggerID string) error {
+func runGet(ctx context.Context, opts *options.RootOptions, dataset, triggerID string) error {
 	key, err := opts.RequireKey(config.KeyConfig)
 	if err != nil {
 		return err

@@ -127,7 +127,7 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 	_ = cmd.MarkPersistentFlagRequired("dataset")
 
 	cmd.AddCommand(NewListCmd(opts, &dataset))
-	cmd.AddCommand(NewViewCmd(opts, &dataset))
+	cmd.AddCommand(NewGetCmd(opts, &dataset))
 	cmd.AddCommand(NewCreateCmd(opts, &dataset))
 	cmd.AddCommand(NewUpdateCmd(opts, &dataset))
 	cmd.AddCommand(NewDeleteCmd(opts, &dataset))

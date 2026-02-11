@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestView(t *testing.T) {
+func TestGet(t *testing.T) {
 	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode([]map[string]any{
@@ -31,7 +31,7 @@ func TestView(t *testing.T) {
 	}))
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"view", "--dataset", "test-dataset", "abc123"})
+	cmd.SetArgs([]string{"get", "--dataset", "test-dataset", "abc123"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
@@ -51,7 +51,7 @@ func TestView(t *testing.T) {
 	}
 }
 
-func TestView_NotFound(t *testing.T) {
+func TestGet_ViewAlias(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode([]map[string]any{
@@ -60,7 +60,22 @@ func TestView_NotFound(t *testing.T) {
 	}))
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"view", "--dataset", "test-dataset", "zzz999"})
+	cmd.SetArgs([]string{"view", "--dataset", "test-dataset", "abc123"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestGet_NotFound(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]map[string]any{
+			{"id": "abc123", "type": "deploy"},
+		})
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"get", "--dataset", "test-dataset", "zzz999"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for not found")
@@ -70,11 +85,11 @@ func TestView_NotFound(t *testing.T) {
 	}
 }
 
-func TestView_MissingArg(t *testing.T) {
+func TestGet_MissingArg(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"view", "--dataset", "test-dataset"})
+	cmd.SetArgs([]string{"get", "--dataset", "test-dataset"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for missing arg")

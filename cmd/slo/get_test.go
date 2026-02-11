@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestView(t *testing.T) {
+func TestGet(t *testing.T) {
 	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/1/slos/test-dataset/slo-1" {
 			t.Errorf("path = %q, want /1/slos/test-dataset/slo-1", r.URL.Path)
@@ -26,7 +26,7 @@ func TestView(t *testing.T) {
 	}))
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"view", "--dataset", "test-dataset", "slo-1"})
+	cmd.SetArgs([]string{"get", "--dataset", "test-dataset", "slo-1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
@@ -49,7 +49,26 @@ func TestView(t *testing.T) {
 	}
 }
 
-func TestView_Detailed(t *testing.T) {
+func TestGet_ViewAlias(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"id": "slo-1",
+			"name": "Availability",
+			"target_per_million": 999000,
+			"time_period_days": 30,
+			"sli": {"alias": "sli.availability"}
+		}`))
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"view", "--dataset", "test-dataset", "slo-1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestGet_Detailed(t *testing.T) {
 	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("detailed") != "true" {
 			t.Errorf("detailed param = %q, want %q", r.URL.Query().Get("detailed"), "true")
@@ -67,7 +86,7 @@ func TestView_Detailed(t *testing.T) {
 	}))
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"view", "--dataset", "test-dataset", "--detailed", "slo-1"})
+	cmd.SetArgs([]string{"get", "--dataset", "test-dataset", "--detailed", "slo-1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
@@ -84,7 +103,7 @@ func TestView_Detailed(t *testing.T) {
 	}
 }
 
-func TestView_NotFound(t *testing.T) {
+func TestGet_NotFound(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
@@ -92,7 +111,7 @@ func TestView_NotFound(t *testing.T) {
 	}))
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"view", "--dataset", "test-dataset", "nonexistent"})
+	cmd.SetArgs([]string{"get", "--dataset", "test-dataset", "nonexistent"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for 404")
@@ -102,11 +121,11 @@ func TestView_NotFound(t *testing.T) {
 	}
 }
 
-func TestView_MissingArg(t *testing.T) {
+func TestGet_MissingArg(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"view", "--dataset", "test-dataset"})
+	cmd.SetArgs([]string{"get", "--dataset", "test-dataset"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for missing arg")

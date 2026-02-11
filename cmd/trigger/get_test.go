@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestView(t *testing.T) {
+func TestGet(t *testing.T) {
 	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/1/triggers/test-dataset/trigger-1" {
 			t.Errorf("path = %q, want /1/triggers/test-dataset/trigger-1", r.URL.Path)
@@ -36,7 +36,7 @@ func TestView(t *testing.T) {
 	}))
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"view", "--dataset", "test-dataset", "trigger-1"})
+	cmd.SetArgs([]string{"get", "--dataset", "test-dataset", "trigger-1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
@@ -83,7 +83,23 @@ func TestView(t *testing.T) {
 	}
 }
 
-func TestView_NotFound(t *testing.T) {
+func TestGet_ViewAlias(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id":   "trigger-1",
+			"name": "High Latency",
+		})
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"view", "--dataset", "test-dataset", "trigger-1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestGet_NotFound(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
@@ -91,7 +107,7 @@ func TestView_NotFound(t *testing.T) {
 	}))
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"view", "--dataset", "test-dataset", "nonexistent"})
+	cmd.SetArgs([]string{"get", "--dataset", "test-dataset", "nonexistent"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for 404")
@@ -101,11 +117,11 @@ func TestView_NotFound(t *testing.T) {
 	}
 }
 
-func TestView_MissingArg(t *testing.T) {
+func TestGet_MissingArg(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"view", "--dataset", "test-dataset"})
+	cmd.SetArgs([]string{"get", "--dataset", "test-dataset"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for missing arg")
