@@ -12,10 +12,9 @@ import (
 
 func NewGetCmd(opts *options.RootOptions) *cobra.Command {
 	return &cobra.Command{
-		Use:     "get <board-id>",
-		Aliases: []string{"view"},
-		Short:   "Get a board",
-		Args:    cobra.ExactArgs(1),
+		Use:   "get <board-id>",
+		Short: "Get a board",
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runBoardGet(cmd.Context(), opts, args[0])
 		},

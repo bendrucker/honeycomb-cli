@@ -12,10 +12,9 @@ import (
 
 func NewGetCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	return &cobra.Command{
-		Use:     "get <trigger-id>",
-		Aliases: []string{"view"},
-		Short:   "Get a trigger",
-		Args:    cobra.ExactArgs(1),
+		Use:   "get <trigger-id>",
+		Short: "Get a trigger",
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runGet(cmd.Context(), opts, *dataset, args[0])
 		},

@@ -49,25 +49,6 @@ func TestGet(t *testing.T) {
 	}
 }
 
-func TestGet_ViewAlias(t *testing.T) {
-	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{
-			"id": "slo-1",
-			"name": "Availability",
-			"target_per_million": 999000,
-			"time_period_days": 30,
-			"sli": {"alias": "sli.availability"}
-		}`))
-	}))
-
-	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"view", "--dataset", "test-dataset", "slo-1"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatal(err)
-	}
-}
-
 func TestGet_Detailed(t *testing.T) {
 	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("detailed") != "true" {

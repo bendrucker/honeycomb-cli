@@ -12,10 +12,9 @@ import (
 
 func NewGetCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	return &cobra.Command{
-		Use:     "get <column-id>",
-		Aliases: []string{"view"},
-		Short:   "Get a column",
-		Args:    cobra.ExactArgs(1),
+		Use:   "get <column-id>",
+		Short: "Get a column",
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runColumnGet(cmd.Context(), opts, *dataset, args[0])
 		},

@@ -60,23 +60,6 @@ func TestGet(t *testing.T) {
 	}
 }
 
-func TestGet_ViewAlias(t *testing.T) {
-	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"name":       "production",
-			"slug":       "production",
-			"created_at": "2024-06-01T00:00:00Z",
-		})
-	}))
-
-	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"view", "production"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatal(err)
-	}
-}
-
 func TestGet_NotFound(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

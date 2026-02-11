@@ -15,10 +15,9 @@ func NewGetCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	var detailed bool
 
 	cmd := &cobra.Command{
-		Use:     "get <slo-id>",
-		Aliases: []string{"view"},
-		Short:   "Get an SLO",
-		Args:    cobra.ExactArgs(1),
+		Use:   "get <slo-id>",
+		Short: "Get an SLO",
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runSLOGet(cmd.Context(), opts, *dataset, args[0], detailed)
 		},
