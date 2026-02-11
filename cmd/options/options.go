@@ -16,10 +16,12 @@ type RootOptions struct {
 	NoInteractive bool
 	Format        string
 	APIUrl        string
+	MCPUrl        string
 	Profile       string
 }
 
 const defaultAPIUrl = "https://api.honeycomb.io"
+const defaultMCPUrl = "https://mcp.honeycomb.io/mcp"
 
 func (o *RootOptions) ActiveProfile() string {
 	if o.Profile != "" {
@@ -55,6 +57,22 @@ func (o *RootOptions) RequireKey(kt config.KeyType) (string, error) {
 
 func (o *RootOptions) OutputWriter() *output.Writer {
 	return output.New(o.IOStreams.Out, o.ResolveFormat())
+}
+
+func (o *RootOptions) ResolveMCPUrl() string {
+	if o.MCPUrl != "" {
+		return o.MCPUrl
+	}
+	if o.Config != nil {
+		profile := o.ActiveProfile()
+		if p, ok := o.Config.Profiles[profile]; ok && p.MCPUrl != "" {
+			return p.MCPUrl
+		}
+		if o.Config.MCPUrl != "" {
+			return o.Config.MCPUrl
+		}
+	}
+	return defaultMCPUrl
 }
 
 func (o *RootOptions) ResolveAPIUrl() string {

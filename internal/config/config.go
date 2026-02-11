@@ -9,12 +9,14 @@ import (
 
 type Config struct {
 	APIUrl        string              `yaml:"api_url,omitempty"`
+	MCPUrl        string              `yaml:"mcp_url,omitempty"`
 	ActiveProfile string              `yaml:"active_profile,omitempty"`
 	Profiles      map[string]*Profile `yaml:"profiles,omitempty"`
 }
 
 type Profile struct {
 	APIUrl string `yaml:"api_url,omitempty"`
+	MCPUrl string `yaml:"mcp_url,omitempty"`
 }
 
 func DefaultDir() string {
