@@ -11,15 +11,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewViewCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
+func NewGetCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	var detailed bool
 
 	cmd := &cobra.Command{
-		Use:   "view <slo-id>",
-		Short: "View an SLO",
+		Use:   "get <slo-id>",
+		Short: "Get an SLO",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runSLOView(cmd.Context(), opts, *dataset, args[0], detailed)
+			return runSLOGet(cmd.Context(), opts, *dataset, args[0], detailed)
 		},
 	}
 
@@ -28,7 +28,7 @@ func NewViewCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	return cmd
 }
 
-func runSLOView(ctx context.Context, opts *options.RootOptions, dataset, sloID string, detailed bool) error {
+func runSLOGet(ctx context.Context, opts *options.RootOptions, dataset, sloID string, detailed bool) error {
 	key, err := opts.RequireKey(config.KeyConfig)
 	if err != nil {
 		return err

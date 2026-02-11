@@ -10,18 +10,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewViewCmd(opts *options.RootOptions) *cobra.Command {
+func NewGetCmd(opts *options.RootOptions) *cobra.Command {
 	return &cobra.Command{
-		Use:   "view <board-id>",
-		Short: "View a board",
+		Use:   "get <board-id>",
+		Short: "Get a board",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runBoardView(cmd.Context(), opts, args[0])
+			return runBoardGet(cmd.Context(), opts, args[0])
 		},
 	}
 }
 
-func runBoardView(ctx context.Context, opts *options.RootOptions, boardID string) error {
+func runBoardGet(ctx context.Context, opts *options.RootOptions, boardID string) error {
 	key, err := opts.RequireKey(config.KeyConfig)
 	if err != nil {
 		return err

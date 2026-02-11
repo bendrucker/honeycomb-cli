@@ -10,18 +10,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewViewCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
+func NewGetCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	return &cobra.Command{
-		Use:   "view <column-id>",
-		Short: "View a column",
+		Use:   "get <column-id>",
+		Short: "Get a column",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runColumnView(cmd.Context(), opts, *dataset, args[0])
+			return runColumnGet(cmd.Context(), opts, *dataset, args[0])
 		},
 	}
 }
 
-func runColumnView(ctx context.Context, opts *options.RootOptions, dataset, columnID string) error {
+func runColumnGet(ctx context.Context, opts *options.RootOptions, dataset, columnID string) error {
 	key, err := opts.RequireKey(config.KeyConfig)
 	if err != nil {
 		return err

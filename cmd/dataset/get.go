@@ -53,18 +53,18 @@ func mapDatasetDetail(d *api.Dataset) datasetDetail {
 	return detail
 }
 
-func NewViewCmd(opts *options.RootOptions) *cobra.Command {
+func NewGetCmd(opts *options.RootOptions) *cobra.Command {
 	return &cobra.Command{
-		Use:   "view <slug>",
-		Short: "View a dataset",
+		Use:   "get <slug>",
+		Short: "Get a dataset",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runDatasetView(cmd.Context(), opts, args[0])
+			return runDatasetGet(cmd.Context(), opts, args[0])
 		},
 	}
 }
 
-func runDatasetView(ctx context.Context, opts *options.RootOptions, slug string) error {
+func runDatasetGet(ctx context.Context, opts *options.RootOptions, slug string) error {
 	key, err := opts.RequireKey(config.KeyConfig)
 	if err != nil {
 		return err

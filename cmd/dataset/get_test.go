@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestView(t *testing.T) {
+func TestGet(t *testing.T) {
 	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/1/datasets/production" {
 			t.Errorf("path = %q, want /1/datasets/production", r.URL.Path)
@@ -28,7 +28,7 @@ func TestView(t *testing.T) {
 	}))
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"view", "production"})
+	cmd.SetArgs([]string{"get", "production"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
@@ -60,7 +60,7 @@ func TestView(t *testing.T) {
 	}
 }
 
-func TestView_NotFound(t *testing.T) {
+func TestGet_NotFound(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
@@ -68,7 +68,7 @@ func TestView_NotFound(t *testing.T) {
 	}))
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"view", "nonexistent"})
+	cmd.SetArgs([]string{"get", "nonexistent"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for 404")
@@ -78,11 +78,11 @@ func TestView_NotFound(t *testing.T) {
 	}
 }
 
-func TestView_MissingArg(t *testing.T) {
+func TestGet_MissingArg(t *testing.T) {
 	opts, _ := setupTest(t, http.NotFoundHandler())
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"view"})
+	cmd.SetArgs([]string{"get"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for missing arg")
