@@ -143,13 +143,13 @@ The CLI will include an `mcp` subcommand that acts as an MCP client to the Honey
 
 ```
 honeycomb auth login/logout/status
-honeycomb query run/list/view
-honeycomb dataset list/view/create
-honeycomb board list/view/create/delete
-honeycomb slo list/view/create/delete
-honeycomb trigger list/view/create/delete
+honeycomb query run/list/get
+honeycomb dataset list/get/create
+honeycomb board list/get/create/delete
+honeycomb slo list/get/create/delete
+honeycomb trigger list/get/create/delete
 honeycomb marker create/list
-honeycomb column list/view
+honeycomb column list/get
 honeycomb mcp query/...                # MCP client, works on all plans
 honeycomb api <method> <path>          # arbitrary API escape hatch
 ```
