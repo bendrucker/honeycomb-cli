@@ -25,9 +25,9 @@ func setupBurnAlertTest(t *testing.T, handler http.Handler) (*options.RootOption
 	ts := iostreams.Test()
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
-		Config:   &config.Config{},
-		APIUrl:   srv.URL,
-		Format:   "json",
+		Config:    &config.Config{},
+		APIUrl:    srv.URL,
+		Format:    "json",
 	}
 
 	if err := config.SetKey("default", config.KeyConfig, "test-key"); err != nil {
@@ -114,13 +114,13 @@ func TestBurnAlertGet(t *testing.T) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"id":                  "ba-1",
-			"alert_type":          "exhaustion_time",
-			"description":         "Alert when budget exhausted",
-			"slo_id":              "slo-123",
-			"exhaustion_minutes":  240,
-			"created_at":          "2024-01-01T00:00:00Z",
-			"updated_at":          "2024-01-02T00:00:00Z",
+			"id":                 "ba-1",
+			"alert_type":         "exhaustion_time",
+			"description":        "Alert when budget exhausted",
+			"slo_id":             "slo-123",
+			"exhaustion_minutes": 240,
+			"created_at":         "2024-01-01T00:00:00Z",
+			"updated_at":         "2024-01-02T00:00:00Z",
 		})
 	}))
 
@@ -190,9 +190,9 @@ func TestBurnAlertList_NoKey(t *testing.T) {
 	ts := iostreams.Test()
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
-		Config:   &config.Config{},
-		APIUrl:   "http://localhost",
-		Format:   "json",
+		Config:    &config.Config{},
+		APIUrl:    "http://localhost",
+		Format:    "json",
 	}
 
 	cmd := NewCmd(opts)

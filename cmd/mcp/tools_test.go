@@ -49,8 +49,8 @@ func setupMCPTest(t *testing.T) (*server.MCPServer, *options.RootOptions, *iostr
 	ts := iostreams.Test()
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
-		Config:   &config.Config{},
-		Format:   "json",
+		Config:    &config.Config{},
+		Format:    "json",
 	}
 
 	if err := config.SetKey("default", config.KeyConfig, "test-key"); err != nil {
