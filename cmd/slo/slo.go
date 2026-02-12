@@ -27,6 +27,8 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 	cmd.AddCommand(NewCreateCmd(opts, &dataset))
 	cmd.AddCommand(NewUpdateCmd(opts, &dataset))
 	cmd.AddCommand(NewDeleteCmd(opts, &dataset))
+	cmd.AddCommand(NewBurnAlertCmd(opts, &dataset))
+	cmd.AddCommand(NewHistoryCmd(opts, &dataset))
 
 	return cmd
 }
