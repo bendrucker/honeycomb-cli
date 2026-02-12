@@ -36,10 +36,10 @@ func NewCalculatedUpdateCmd(opts *options.RootOptions, dataset *string) *cobra.C
 			}
 
 			return runCalculatedUpdate(cmd.Context(), opts, *dataset, args[0], calculatedUpdateFlags{
-				file:    file,
-				hasFile: hasFile,
-				alias:   alias,
-				hasAlias: hasAlias,
+				file:        file,
+				hasFile:     hasFile,
+				alias:       alias,
+				hasAlias:    hasAlias,
 				expression:  expression,
 				hasExpr:     hasExpr,
 				description: description,
