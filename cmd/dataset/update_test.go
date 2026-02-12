@@ -76,9 +76,9 @@ func TestUpdate_NoKey(t *testing.T) {
 	ts := iostreams.Test()
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
-		Config:   &config.Config{},
-		APIUrl:   "http://localhost",
-		Format:   output.FormatJSON,
+		Config:    &config.Config{},
+		APIUrl:    "http://localhost",
+		Format:    output.FormatJSON,
 	}
 
 	cmd := NewCmd(opts)
