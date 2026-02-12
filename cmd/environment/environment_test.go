@@ -25,9 +25,9 @@ func setupTest(t *testing.T, handler http.Handler) (*options.RootOptions, *iostr
 	ts := iostreams.Test()
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
-		Config:   &config.Config{},
-		APIUrl:   srv.URL,
-		Format:   "json",
+		Config:    &config.Config{},
+		APIUrl:    srv.URL,
+		Format:    "json",
 	}
 
 	if err := config.SetKey("default", config.KeyManagement, "test-mgmt-key"); err != nil {
@@ -131,9 +131,9 @@ func TestList_NoKey(t *testing.T) {
 	ts := iostreams.Test()
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
-		Config:   &config.Config{},
-		APIUrl:   "http://localhost",
-		Format:   "json",
+		Config:    &config.Config{},
+		APIUrl:    "http://localhost",
+		Format:    "json",
 	}
 
 	cmd := NewCmd(opts)
