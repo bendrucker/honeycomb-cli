@@ -1,4 +1,4 @@
-package api
+package jq
 
 import (
 	"bytes"
@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestFilterJQ(t *testing.T) {
+func TestFilter(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
@@ -67,13 +67,13 @@ func TestFilterJQ(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var out bytes.Buffer
-			err := filterJQ(strings.NewReader(tt.input), &out, tt.expr)
+			err := Filter(strings.NewReader(tt.input), &out, tt.expr)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("filterJQ() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Filter() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !tt.wantErr && out.String() != tt.want {
-				t.Errorf("filterJQ() = %q, want %q", out.String(), tt.want)
+				t.Errorf("Filter() = %q, want %q", out.String(), tt.want)
 			}
 		})
 	}

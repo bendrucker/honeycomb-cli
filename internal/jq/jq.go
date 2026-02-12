@@ -1,4 +1,4 @@
-package api
+package jq
 
 import (
 	"encoding/json"
@@ -8,7 +8,7 @@ import (
 	"github.com/itchyny/gojq"
 )
 
-func filterJQ(input io.Reader, output io.Writer, expr string) error {
+func Filter(input io.Reader, output io.Writer, expr string) error {
 	query, err := gojq.Parse(expr)
 	if err != nil {
 		return fmt.Errorf("parsing jq expression: %w", err)

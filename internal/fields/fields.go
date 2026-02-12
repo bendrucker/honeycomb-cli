@@ -1,4 +1,4 @@
-package api
+package fields
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func parseFields(raw, typed []string, stdin io.Reader) (map[string]any, error) {
+func Parse(raw, typed []string, stdin io.Reader) (map[string]any, error) {
 	result := make(map[string]any)
 
 	for _, f := range raw {
@@ -16,7 +16,7 @@ func parseFields(raw, typed []string, stdin io.Reader) (map[string]any, error) {
 		if !ok {
 			return nil, fmt.Errorf("invalid field %q (must be key=value)", f)
 		}
-		setField(result, key, val)
+		SetField(result, key, val)
 	}
 
 	for _, f := range typed {
@@ -24,17 +24,17 @@ func parseFields(raw, typed []string, stdin io.Reader) (map[string]any, error) {
 		if !ok {
 			return nil, fmt.Errorf("invalid field %q (must be key=value)", f)
 		}
-		coerced, err := coerceValue(val, stdin)
+		coerced, err := CoerceValue(val, stdin)
 		if err != nil {
 			return nil, fmt.Errorf("field %q: %w", key, err)
 		}
-		setField(result, key, coerced)
+		SetField(result, key, coerced)
 	}
 
 	return result, nil
 }
 
-func setField(m map[string]any, key string, val any) {
+func SetField(m map[string]any, key string, val any) {
 	bracket := strings.IndexByte(key, '[')
 	if bracket < 0 {
 		m[key] = val
@@ -65,10 +65,10 @@ func setField(m map[string]any, key string, val any) {
 	}
 
 	suffix := rest[close+1:]
-	setField(nested, inner+suffix, val)
+	SetField(nested, inner+suffix, val)
 }
 
-func coerceValue(s string, stdin io.Reader) (any, error) {
+func CoerceValue(s string, stdin io.Reader) (any, error) {
 	switch s {
 	case "true":
 		return true, nil

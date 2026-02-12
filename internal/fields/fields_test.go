@@ -1,4 +1,4 @@
-package api
+package fields
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestParseFields(t *testing.T) {
+func TestParse(t *testing.T) {
 	tests := []struct {
 		name    string
 		raw     []string
@@ -80,9 +80,9 @@ func TestParseFields(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseFields(tt.raw, tt.typed, strings.NewReader(""))
+			got, err := Parse(tt.raw, tt.typed, strings.NewReader(""))
 			if (err != nil) != tt.wantErr {
-				t.Errorf("parseFields() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Parse() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if tt.wantErr {
@@ -94,19 +94,19 @@ func TestParseFields(t *testing.T) {
 				t.Fatal(err)
 			}
 			if string(b) != tt.want {
-				t.Errorf("parseFields() = %s, want %s", b, tt.want)
+				t.Errorf("Parse() = %s, want %s", b, tt.want)
 			}
 		})
 	}
 }
 
-func TestParseFields_AtFile(t *testing.T) {
+func TestParse_AtFile(t *testing.T) {
 	tmp := t.TempDir() + "/data.txt"
 	if err := os.WriteFile(tmp, []byte("file-content"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
-	got, err := parseFields(nil, []string{"data=@" + tmp}, strings.NewReader(""))
+	got, err := Parse(nil, []string{"data=@" + tmp}, strings.NewReader(""))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -116,9 +116,9 @@ func TestParseFields_AtFile(t *testing.T) {
 	}
 }
 
-func TestParseFields_AtStdin(t *testing.T) {
+func TestParse_AtStdin(t *testing.T) {
 	stdin := strings.NewReader("stdin-content")
-	got, err := parseFields(nil, []string{"data=@-"}, stdin)
+	got, err := Parse(nil, []string{"data=@-"}, stdin)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -128,8 +128,8 @@ func TestParseFields_AtStdin(t *testing.T) {
 	}
 }
 
-func TestParseFields_AtFileMissing(t *testing.T) {
-	_, err := parseFields(nil, []string{"data=@/nonexistent/file.txt"}, strings.NewReader(""))
+func TestParse_AtFileMissing(t *testing.T) {
+	_, err := Parse(nil, []string{"data=@/nonexistent/file.txt"}, strings.NewReader(""))
 	if err == nil {
 		t.Fatal("expected error for missing file")
 	}
