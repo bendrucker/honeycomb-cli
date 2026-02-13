@@ -88,17 +88,21 @@ func mapToDetail(raw map[string]any) recipientDetail {
 		d.UpdatedAt = ua
 	}
 
-	details := make(map[string]any)
-	for k, v := range raw {
-		switch k {
-		case "id", "type", "created_at", "updated_at":
-			continue
-		default:
-			details[k] = v
+	if nested, ok := raw["details"].(map[string]any); ok {
+		d.Details = nested
+	} else {
+		details := make(map[string]any)
+		for k, v := range raw {
+			switch k {
+			case "id", "type", "created_at", "updated_at":
+				continue
+			default:
+				details[k] = v
+			}
 		}
-	}
-	if len(details) > 0 {
-		d.Details = details
+		if len(details) > 0 {
+			d.Details = details
+		}
 	}
 
 	return d
@@ -117,17 +121,8 @@ func extractTarget(d recipientDetail) string {
 	if d.Details == nil {
 		return ""
 	}
-	details, ok := d.Details["details"]
-	if !ok {
-		return ""
-	}
-	m, ok := details.(map[string]any)
-	if !ok {
-		return ""
-	}
-
-	for _, field := range []string{"name", "url", "channel", "address", "integration_key", "webhook_url"} {
-		if v, ok := m[field].(string); ok && v != "" {
+	for _, field := range []string{"name", "url", "channel", "address", "email_address", "integration_key", "webhook_url"} {
+		if v, ok := d.Details[field].(string); ok && v != "" {
 			return v
 		}
 	}
