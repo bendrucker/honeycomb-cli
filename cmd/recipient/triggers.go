@@ -46,7 +46,7 @@ func NewTriggersCmd(opts *options.RootOptions) *cobra.Command {
 }
 
 func runTriggers(ctx context.Context, opts *options.RootOptions, recipientID string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func runTriggers(ctx context.Context, opts *options.RootOptions, recipientID str
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.ListTriggersWithRecipientWithResponse(ctx, recipientID, keyEditor(key))
+	resp, err := client.ListTriggersWithRecipientWithResponse(ctx, recipientID, auth)
 	if err != nil {
 		return fmt.Errorf("listing triggers for recipient: %w", err)
 	}

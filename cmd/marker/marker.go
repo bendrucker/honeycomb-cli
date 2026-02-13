@@ -1,14 +1,11 @@
 package marker
 
 import (
-	"context"
 	"fmt"
-	"net/http"
-	"text/tabwriter"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/bendrucker/honeycomb-cli/internal/deref"
 	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -47,55 +44,38 @@ var markerListTable = output.TableDef{
 }
 
 func markerToItem(m api.Marker) markerItem {
-	item := markerItem{
+	return markerItem{
+		ID:        deref.String(m.Id),
+		Type:      deref.String(m.Type),
+		Message:   deref.String(m.Message),
+		URL:       deref.String(m.Url),
 		StartTime: m.StartTime,
 		EndTime:   m.EndTime,
+		Color:     deref.String(m.Color),
+		CreatedAt: deref.String(m.CreatedAt),
+		UpdatedAt: deref.String(m.UpdatedAt),
 	}
-	if m.Id != nil {
-		item.ID = *m.Id
-	}
-	if m.Type != nil {
-		item.Type = *m.Type
-	}
-	if m.Message != nil {
-		item.Message = *m.Message
-	}
-	if m.Url != nil {
-		item.URL = *m.Url
-	}
-	if m.Color != nil {
-		item.Color = *m.Color
-	}
-	if m.CreatedAt != nil {
-		item.CreatedAt = *m.CreatedAt
-	}
-	if m.UpdatedAt != nil {
-		item.UpdatedAt = *m.UpdatedAt
-	}
-	return item
 }
 
 func writeDetail(opts *options.RootOptions, item markerItem) error {
-	format := opts.ResolveFormat()
-	if format != "table" {
-		return opts.OutputWriter().Write(item, output.TableDef{})
+	fields := []output.Field{
+		{Label: "ID", Value: item.ID},
+		{Label: "Type", Value: item.Type},
+		{Label: "Message", Value: item.Message},
+		{Label: "URL", Value: item.URL},
 	}
-
-	tw := tabwriter.NewWriter(opts.IOStreams.Out, 0, 0, 2, ' ', 0)
-	_, _ = fmt.Fprintf(tw, "ID:\t%s\n", item.ID)
-	_, _ = fmt.Fprintf(tw, "Type:\t%s\n", item.Type)
-	_, _ = fmt.Fprintf(tw, "Message:\t%s\n", item.Message)
-	_, _ = fmt.Fprintf(tw, "URL:\t%s\n", item.URL)
 	if item.StartTime != nil {
-		_, _ = fmt.Fprintf(tw, "Start Time:\t%d\n", *item.StartTime)
+		fields = append(fields, output.Field{Label: "Start Time", Value: fmt.Sprintf("%d", *item.StartTime)})
 	}
 	if item.EndTime != nil {
-		_, _ = fmt.Fprintf(tw, "End Time:\t%d\n", *item.EndTime)
+		fields = append(fields, output.Field{Label: "End Time", Value: fmt.Sprintf("%d", *item.EndTime)})
 	}
-	_, _ = fmt.Fprintf(tw, "Color:\t%s\n", item.Color)
-	_, _ = fmt.Fprintf(tw, "Created At:\t%s\n", item.CreatedAt)
-	_, _ = fmt.Fprintf(tw, "Updated At:\t%s\n", item.UpdatedAt)
-	return tw.Flush()
+	fields = append(fields,
+		output.Field{Label: "Color", Value: item.Color},
+		output.Field{Label: "Created At", Value: item.CreatedAt},
+		output.Field{Label: "Updated At", Value: item.UpdatedAt},
+	)
+	return opts.OutputWriter().WriteFields(item, fields)
 }
 
 func findMarker(markers []api.Marker, id string) (api.Marker, error) {
@@ -105,13 +85,6 @@ func findMarker(markers []api.Marker, id string) (api.Marker, error) {
 		}
 	}
 	return api.Marker{}, fmt.Errorf("marker %q not found", id)
-}
-
-func keyEditor(key string) api.RequestEditorFn {
-	return func(_ context.Context, req *http.Request) error {
-		config.ApplyAuth(req, config.KeyConfig, key)
-		return nil
-	}
 }
 
 func NewCmd(opts *options.RootOptions) *cobra.Command {

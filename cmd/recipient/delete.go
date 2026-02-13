@@ -30,7 +30,7 @@ func NewDeleteCmd(opts *options.RootOptions) *cobra.Command {
 }
 
 func runDelete(ctx context.Context, opts *options.RootOptions, recipientID string, yes bool) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func runDelete(ctx context.Context, opts *options.RootOptions, recipientID strin
 		}
 	}
 
-	resp, err := client.DeleteRecipientWithResponse(ctx, recipientID, keyEditor(key))
+	resp, err := client.DeleteRecipientWithResponse(ctx, recipientID, auth)
 	if err != nil {
 		return fmt.Errorf("deleting recipient: %w", err)
 	}

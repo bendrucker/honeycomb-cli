@@ -22,7 +22,7 @@ func NewGetCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 }
 
 func runColumnGet(ctx context.Context, opts *options.RootOptions, dataset, columnID string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -32,7 +32,7 @@ func runColumnGet(ctx context.Context, opts *options.RootOptions, dataset, colum
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.GetColumnWithResponse(ctx, dataset, columnID, keyEditor(key))
+	resp, err := client.GetColumnWithResponse(ctx, dataset, columnID, auth)
 	if err != nil {
 		return fmt.Errorf("getting column: %w", err)
 	}

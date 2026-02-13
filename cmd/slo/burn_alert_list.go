@@ -29,7 +29,7 @@ func NewBurnAlertListCmd(opts *options.RootOptions, dataset *string) *cobra.Comm
 }
 
 func runBurnAlertList(ctx context.Context, opts *options.RootOptions, dataset, sloID string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -40,7 +40,7 @@ func runBurnAlertList(ctx context.Context, opts *options.RootOptions, dataset, s
 	}
 
 	params := &api.ListBurnAlertsBySloParams{SloId: sloID}
-	resp, err := client.ListBurnAlertsBySloWithResponse(ctx, dataset, params, keyEditor(key))
+	resp, err := client.ListBurnAlertsBySloWithResponse(ctx, dataset, params, auth)
 	if err != nil {
 		return fmt.Errorf("listing burn alerts: %w", err)
 	}

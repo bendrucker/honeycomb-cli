@@ -29,7 +29,7 @@ func NewDeleteCmd(opts *options.RootOptions, team *string) *cobra.Command {
 }
 
 func runKeyDelete(ctx context.Context, opts *options.RootOptions, team, id string, yes bool) error {
-	key, err := opts.RequireKey(config.KeyManagement)
+	auth, err := opts.KeyEditor(config.KeyManagement)
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func runKeyDelete(ctx context.Context, opts *options.RootOptions, team, id strin
 		}
 	}
 
-	resp, err := client.DeleteApiKeyWithResponse(ctx, api.TeamSlug(team), api.ID(id), keyEditor(key))
+	resp, err := client.DeleteApiKeyWithResponse(ctx, api.TeamSlug(team), api.ID(id), auth)
 	if err != nil {
 		return fmt.Errorf("deleting API key: %w", err)
 	}

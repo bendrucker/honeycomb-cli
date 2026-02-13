@@ -34,7 +34,7 @@ func NewSettingUpdateCmd(opts *options.RootOptions, dataset *string) *cobra.Comm
 func runSettingUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, settingID, settingType, color string) error {
 	ctx := cmd.Context()
 
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -45,7 +45,7 @@ func runSettingUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, se
 	}
 
 	if settingType == "" || color == "" {
-		existing, err := findMarkerSetting(ctx, client, dataset, settingID, key)
+		existing, err := findMarkerSetting(ctx, client, dataset, settingID, auth)
 		if err != nil {
 			return err
 		}
@@ -62,7 +62,7 @@ func runSettingUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, se
 		Color: color,
 	}
 
-	resp, err := client.UpdateMarkerSettingsWithResponse(ctx, api.DatasetSlugOrAll(dataset), settingID, body, keyEditor(key))
+	resp, err := client.UpdateMarkerSettingsWithResponse(ctx, api.DatasetSlugOrAll(dataset), settingID, body, auth)
 	if err != nil {
 		return fmt.Errorf("updating marker setting: %w", err)
 	}
@@ -78,8 +78,8 @@ func runSettingUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, se
 	return writeSettingDetail(opts, toSettingItem(*resp.JSON200))
 }
 
-func findMarkerSetting(ctx context.Context, client *api.ClientWithResponses, dataset, settingID, key string) (*api.MarkerSetting, error) {
-	resp, err := client.ListMarkerSettingsWithResponse(ctx, api.DatasetSlugOrAll(dataset), keyEditor(key))
+func findMarkerSetting(ctx context.Context, client *api.ClientWithResponses, dataset, settingID string, auth api.RequestEditorFn) (*api.MarkerSetting, error) {
+	resp, err := client.ListMarkerSettingsWithResponse(ctx, api.DatasetSlugOrAll(dataset), auth)
 	if err != nil {
 		return nil, fmt.Errorf("listing marker settings: %w", err)
 	}

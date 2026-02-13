@@ -37,7 +37,7 @@ func NewViewUpdateCmd(opts *options.RootOptions, board *string) *cobra.Command {
 }
 
 func runViewUpdate(cmd *cobra.Command, opts *options.RootOptions, boardID, viewID, file, name string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -50,14 +50,14 @@ func runViewUpdate(cmd *cobra.Command, opts *options.RootOptions, boardID, viewI
 	ctx := cmd.Context()
 
 	if file != "" {
-		return updateViewFromFile(ctx, client, opts, key, boardID, viewID, file)
+		return updateViewFromFile(ctx, client, opts, auth, boardID, viewID, file)
 	}
 
 	if !cmd.Flags().Changed("name") {
 		return fmt.Errorf("--file or --name is required")
 	}
 
-	current, err := getView(ctx, client, key, boardID, viewID)
+	current, err := getView(ctx, client, auth, boardID, viewID)
 	if err != nil {
 		return err
 	}
@@ -70,7 +70,7 @@ func runViewUpdate(cmd *cobra.Command, opts *options.RootOptions, boardID, viewI
 		body.Filters = *current.Filters
 	}
 
-	resp, err := client.UpdateBoardViewWithResponse(ctx, boardID, viewID, body, keyEditor(key))
+	resp, err := client.UpdateBoardViewWithResponse(ctx, boardID, viewID, body, auth)
 	if err != nil {
 		return fmt.Errorf("updating board view: %w", err)
 	}
@@ -86,7 +86,7 @@ func runViewUpdate(cmd *cobra.Command, opts *options.RootOptions, boardID, viewI
 	return writeViewDetail(opts, viewResponseToDetail(*resp.JSON200))
 }
 
-func updateViewFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, key, boardID, viewID, file string) error {
+func updateViewFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, auth api.RequestEditorFn, boardID, viewID, file string) error {
 	var r io.Reader
 	if file == "-" {
 		r = opts.IOStreams.In
@@ -104,7 +104,7 @@ func updateViewFromFile(ctx context.Context, client *api.ClientWithResponses, op
 		return fmt.Errorf("reading file: %w", err)
 	}
 
-	resp, err := client.UpdateBoardViewWithBodyWithResponse(ctx, boardID, viewID, "application/json", bytes.NewReader(data), keyEditor(key))
+	resp, err := client.UpdateBoardViewWithBodyWithResponse(ctx, boardID, viewID, "application/json", bytes.NewReader(data), auth)
 	if err != nil {
 		return fmt.Errorf("updating board view: %w", err)
 	}
@@ -120,8 +120,8 @@ func updateViewFromFile(ctx context.Context, client *api.ClientWithResponses, op
 	return writeViewDetail(opts, viewResponseToDetail(*resp.JSON200))
 }
 
-func getView(ctx context.Context, client *api.ClientWithResponses, key, boardID, viewID string) (*api.BoardViewResponse, error) {
-	resp, err := client.GetBoardViewWithResponse(ctx, boardID, viewID, keyEditor(key))
+func getView(ctx context.Context, client *api.ClientWithResponses, auth api.RequestEditorFn, boardID, viewID string) (*api.BoardViewResponse, error) {
+	resp, err := client.GetBoardViewWithResponse(ctx, boardID, viewID, auth)
 	if err != nil {
 		return nil, fmt.Errorf("getting board view: %w", err)
 	}

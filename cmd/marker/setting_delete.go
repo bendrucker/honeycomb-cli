@@ -29,7 +29,7 @@ func NewSettingDeleteCmd(opts *options.RootOptions, dataset *string) *cobra.Comm
 }
 
 func runSettingDelete(ctx context.Context, opts *options.RootOptions, dataset, settingID string, yes bool) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func runSettingDelete(ctx context.Context, opts *options.RootOptions, dataset, s
 		}
 	}
 
-	resp, err := client.DeleteMarkerSettingsWithResponse(ctx, api.DatasetSlugOrAll(dataset), settingID, keyEditor(key))
+	resp, err := client.DeleteMarkerSettingsWithResponse(ctx, api.DatasetSlugOrAll(dataset), settingID, auth)
 	if err != nil {
 		return fmt.Errorf("deleting marker setting: %w", err)
 	}

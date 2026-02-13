@@ -33,7 +33,7 @@ func NewCreateCmd(opts *options.RootOptions, team *string) *cobra.Command {
 }
 
 func runEnvironmentCreate(cmd *cobra.Command, opts *options.RootOptions, team, name, desc, color string) error {
-	key, err := opts.RequireKey(config.KeyManagement)
+	auth, err := opts.KeyEditor(config.KeyManagement)
 	if err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ func runEnvironmentCreate(cmd *cobra.Command, opts *options.RootOptions, team, n
 		body.Data.Attributes.Color = &c
 	}
 
-	resp, err := client.CreateEnvironmentWithApplicationVndAPIPlusJSONBodyWithResponse(cmd.Context(), team, body, keyEditor(key))
+	resp, err := client.CreateEnvironmentWithApplicationVndAPIPlusJSONBodyWithResponse(cmd.Context(), team, body, auth)
 	if err != nil {
 		return fmt.Errorf("creating environment: %w", err)
 	}

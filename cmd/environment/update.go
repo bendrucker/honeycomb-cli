@@ -37,7 +37,7 @@ func runEnvironmentUpdate(cmd *cobra.Command, opts *options.RootOptions, team, e
 		return fmt.Errorf("--description, --color, or --delete-protected is required")
 	}
 
-	key, err := opts.RequireKey(config.KeyManagement)
+	auth, err := opts.KeyEditor(config.KeyManagement)
 	if err != nil {
 		return err
 	}
@@ -65,7 +65,7 @@ func runEnvironmentUpdate(cmd *cobra.Command, opts *options.RootOptions, team, e
 		}
 	}
 
-	resp, err := client.UpdateEnvironmentWithApplicationVndAPIPlusJSONBodyWithResponse(cmd.Context(), team, envID, body, keyEditor(key))
+	resp, err := client.UpdateEnvironmentWithApplicationVndAPIPlusJSONBodyWithResponse(cmd.Context(), team, envID, body, auth)
 	if err != nil {
 		return fmt.Errorf("updating environment: %w", err)
 	}

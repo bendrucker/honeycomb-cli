@@ -40,7 +40,7 @@ func NewCreateCmd(opts *options.RootOptions) *cobra.Command {
 }
 
 func runBoardCreate(cmd *cobra.Command, opts *options.RootOptions, file, name, desc string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -53,7 +53,7 @@ func runBoardCreate(cmd *cobra.Command, opts *options.RootOptions, file, name, d
 	ctx := cmd.Context()
 
 	if file != "" {
-		return createFromFile(ctx, client, opts, key, file)
+		return createFromFile(ctx, client, opts, auth, file)
 	}
 
 	if name == "" {
@@ -83,7 +83,7 @@ func runBoardCreate(cmd *cobra.Command, opts *options.RootOptions, file, name, d
 		board.Description = &desc
 	}
 
-	resp, err := client.CreateBoardWithResponse(ctx, board, keyEditor(key))
+	resp, err := client.CreateBoardWithResponse(ctx, board, auth)
 	if err != nil {
 		return fmt.Errorf("creating board: %w", err)
 	}
@@ -99,7 +99,7 @@ func runBoardCreate(cmd *cobra.Command, opts *options.RootOptions, file, name, d
 	return writeBoardDetail(opts, boardToDetail(*resp.JSON201))
 }
 
-func createFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, key, file string) error {
+func createFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, auth api.RequestEditorFn, file string) error {
 	var r io.Reader
 	if file == "-" {
 		r = opts.IOStreams.In
@@ -117,7 +117,7 @@ func createFromFile(ctx context.Context, client *api.ClientWithResponses, opts *
 		return fmt.Errorf("reading file: %w", err)
 	}
 
-	resp, err := client.CreateBoardWithBodyWithResponse(ctx, "application/json", bytes.NewReader(data), keyEditor(key))
+	resp, err := client.CreateBoardWithBodyWithResponse(ctx, "application/json", bytes.NewReader(data), auth)
 	if err != nil {
 		return fmt.Errorf("creating board: %w", err)
 	}

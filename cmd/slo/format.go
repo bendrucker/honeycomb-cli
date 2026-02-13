@@ -2,13 +2,12 @@ package slo
 
 import (
 	"fmt"
-	"io"
 	"strings"
-	"text/tabwriter"
-	"time"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
+	"github.com/bendrucker/honeycomb-cli/internal/deref"
+	"github.com/bendrucker/honeycomb-cli/internal/output"
 )
 
 func formatTarget(targetPerMillion int) string {
@@ -64,25 +63,17 @@ type sloDetailedResponse struct {
 
 func sloToDetail(s api.SLO) sloDetail {
 	d := sloDetail{
+		ID:               deref.String(s.Id),
 		Name:             s.Name,
+		Description:      deref.String(s.Description),
 		TargetPerMillion: s.TargetPerMillion,
 		TimePeriodDays:   s.TimePeriodDays,
 		SLIAlias:         s.Sli.Alias,
-	}
-	if s.Id != nil {
-		d.ID = *s.Id
-	}
-	if s.Description != nil {
-		d.Description = *s.Description
-	}
-	if s.CreatedAt != nil {
-		d.CreatedAt = s.CreatedAt.Format(time.RFC3339)
-	}
-	if s.UpdatedAt != nil {
-		d.UpdatedAt = s.UpdatedAt.Format(time.RFC3339)
+		CreatedAt:        deref.Time(s.CreatedAt),
+		UpdatedAt:        deref.Time(s.UpdatedAt),
 	}
 	if s.ResetAt.IsSpecified() && !s.ResetAt.IsNull() {
-		d.ResetAt = s.ResetAt.MustGet().Format(time.RFC3339)
+		d.ResetAt = s.ResetAt.MustGet().Format("2006-01-02T15:04:05Z07:00")
 	}
 	if s.DatasetSlugs != nil {
 		for _, v := range *s.DatasetSlugs {
@@ -102,32 +93,31 @@ func detailedToDetail(s sloDetailedResponse) sloDetail {
 }
 
 func writeSloDetail(opts *options.RootOptions, detail sloDetail) error {
-	return opts.OutputWriter().WriteValue(detail, func(w io.Writer) error {
-		tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-		_, _ = fmt.Fprintf(tw, "ID:\t%s\n", detail.ID)
-		_, _ = fmt.Fprintf(tw, "Name:\t%s\n", detail.Name)
-		_, _ = fmt.Fprintf(tw, "Description:\t%s\n", detail.Description)
-		_, _ = fmt.Fprintf(tw, "SLI Alias:\t%s\n", detail.SLIAlias)
-		_, _ = fmt.Fprintf(tw, "Target:\t%s\n", formatTarget(detail.TargetPerMillion))
-		_, _ = fmt.Fprintf(tw, "Time Period:\t%s\n", formatTimePeriod(detail.TimePeriodDays))
-		if len(detail.DatasetSlugs) > 0 {
-			_, _ = fmt.Fprintf(tw, "Datasets:\t%s\n", strings.Join(detail.DatasetSlugs, ", "))
-		}
-		if detail.CreatedAt != "" {
-			_, _ = fmt.Fprintf(tw, "Created At:\t%s\n", detail.CreatedAt)
-		}
-		if detail.UpdatedAt != "" {
-			_, _ = fmt.Fprintf(tw, "Updated At:\t%s\n", detail.UpdatedAt)
-		}
-		if detail.ResetAt != "" {
-			_, _ = fmt.Fprintf(tw, "Reset At:\t%s\n", detail.ResetAt)
-		}
-		if detail.Compliance != nil {
-			_, _ = fmt.Fprintf(tw, "Compliance:\t%g%%\n", *detail.Compliance)
-		}
-		if detail.BudgetRemaining != nil {
-			_, _ = fmt.Fprintf(tw, "Budget Remaining:\t%g\n", *detail.BudgetRemaining)
-		}
-		return tw.Flush()
-	})
+	fields := []output.Field{
+		{Label: "ID", Value: detail.ID},
+		{Label: "Name", Value: detail.Name},
+		{Label: "Description", Value: detail.Description},
+		{Label: "SLI Alias", Value: detail.SLIAlias},
+		{Label: "Target", Value: formatTarget(detail.TargetPerMillion)},
+		{Label: "Time Period", Value: formatTimePeriod(detail.TimePeriodDays)},
+	}
+	if len(detail.DatasetSlugs) > 0 {
+		fields = append(fields, output.Field{Label: "Datasets", Value: strings.Join(detail.DatasetSlugs, ", ")})
+	}
+	if detail.CreatedAt != "" {
+		fields = append(fields, output.Field{Label: "Created At", Value: detail.CreatedAt})
+	}
+	if detail.UpdatedAt != "" {
+		fields = append(fields, output.Field{Label: "Updated At", Value: detail.UpdatedAt})
+	}
+	if detail.ResetAt != "" {
+		fields = append(fields, output.Field{Label: "Reset At", Value: detail.ResetAt})
+	}
+	if detail.Compliance != nil {
+		fields = append(fields, output.Field{Label: "Compliance", Value: fmt.Sprintf("%g%%", *detail.Compliance)})
+	}
+	if detail.BudgetRemaining != nil {
+		fields = append(fields, output.Field{Label: "Budget Remaining", Value: fmt.Sprintf("%g", *detail.BudgetRemaining)})
+	}
+	return opts.OutputWriter().WriteFields(detail, fields)
 }

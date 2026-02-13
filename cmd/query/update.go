@@ -38,7 +38,7 @@ func NewUpdateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 }
 
 func runAnnotationUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, annotationID, file, name, desc string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -51,14 +51,14 @@ func runAnnotationUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset,
 	ctx := cmd.Context()
 
 	if file != "" {
-		return updateAnnotationFromFile(ctx, client, opts, key, dataset, annotationID, file)
+		return updateAnnotationFromFile(ctx, client, opts, auth, dataset, annotationID, file)
 	}
 
 	if !cmd.Flags().Changed("name") && !cmd.Flags().Changed("description") {
 		return fmt.Errorf("--file, --name, or --description is required")
 	}
 
-	current, err := getAnnotation(ctx, client, key, dataset, annotationID)
+	current, err := getAnnotation(ctx, client, auth, dataset, annotationID)
 	if err != nil {
 		return err
 	}
@@ -70,7 +70,7 @@ func runAnnotationUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset,
 		current.Description = &desc
 	}
 
-	resp, err := client.UpdateQueryAnnotationWithResponse(ctx, dataset, annotationID, *current, keyEditor(key))
+	resp, err := client.UpdateQueryAnnotationWithResponse(ctx, dataset, annotationID, *current, auth)
 	if err != nil {
 		return fmt.Errorf("updating query annotation: %w", err)
 	}
@@ -86,13 +86,13 @@ func runAnnotationUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset,
 	return writeAnnotationDetail(opts, annotationToDetail(*resp.JSON200))
 }
 
-func updateAnnotationFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, key, dataset, annotationID, file string) error {
+func updateAnnotationFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, auth api.RequestEditorFn, dataset, annotationID, file string) error {
 	data, err := readFile(opts, file)
 	if err != nil {
 		return err
 	}
 
-	resp, err := client.UpdateQueryAnnotationWithBodyWithResponse(ctx, dataset, annotationID, "application/json", bytes.NewReader(data), keyEditor(key))
+	resp, err := client.UpdateQueryAnnotationWithBodyWithResponse(ctx, dataset, annotationID, "application/json", bytes.NewReader(data), auth)
 	if err != nil {
 		return fmt.Errorf("updating query annotation: %w", err)
 	}
@@ -108,8 +108,8 @@ func updateAnnotationFromFile(ctx context.Context, client *api.ClientWithRespons
 	return writeAnnotationDetail(opts, annotationToDetail(*resp.JSON200))
 }
 
-func getAnnotation(ctx context.Context, client *api.ClientWithResponses, key, dataset, annotationID string) (*api.QueryAnnotation, error) {
-	resp, err := client.GetQueryAnnotationWithResponse(ctx, dataset, annotationID, keyEditor(key))
+func getAnnotation(ctx context.Context, client *api.ClientWithResponses, auth api.RequestEditorFn, dataset, annotationID string) (*api.QueryAnnotation, error) {
+	resp, err := client.GetQueryAnnotationWithResponse(ctx, dataset, annotationID, auth)
 	if err != nil {
 		return nil, fmt.Errorf("getting query annotation: %w", err)
 	}

@@ -41,7 +41,7 @@ func NewUpdateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 func runMarkerUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, markerID, markerType, message, url string, startTime, endTime int, color string) error {
 	ctx := cmd.Context()
 
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -52,7 +52,7 @@ func runMarkerUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, mar
 	}
 
 	// Fetch existing marker (no individual GET — list and filter)
-	listResp, err := client.GetMarkerWithResponse(ctx, dataset, keyEditor(key))
+	listResp, err := client.GetMarkerWithResponse(ctx, dataset, auth)
 	if err != nil {
 		return fmt.Errorf("listing markers: %w", err)
 	}
@@ -90,7 +90,7 @@ func runMarkerUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, mar
 		existing.Color = &color
 	}
 
-	resp, err := client.UpdateMarkerWithResponse(ctx, dataset, markerID, api.UpdateMarkerJSONRequestBody(existing), keyEditor(key))
+	resp, err := client.UpdateMarkerWithResponse(ctx, dataset, markerID, api.UpdateMarkerJSONRequestBody(existing), auth)
 	if err != nil {
 		return fmt.Errorf("updating marker: %w", err)
 	}

@@ -3,14 +3,13 @@ package dataset
 import (
 	"context"
 	"fmt"
-	"io"
 	"reflect"
 	"strings"
-	"text/tabwriter"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -26,7 +25,7 @@ func NewDefinitionGetCmd(opts *options.RootOptions) *cobra.Command {
 }
 
 func runDefinitionGet(ctx context.Context, opts *options.RootOptions, slug string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -36,7 +35,7 @@ func runDefinitionGet(ctx context.Context, opts *options.RootOptions, slug strin
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.ListDatasetDefinitionsWithResponse(ctx, slug, keyEditor(key))
+	resp, err := client.ListDatasetDefinitionsWithResponse(ctx, slug, auth)
 	if err != nil {
 		return fmt.Errorf("getting dataset definitions: %w", err)
 	}
@@ -53,27 +52,27 @@ func runDefinitionGet(ctx context.Context, opts *options.RootOptions, slug strin
 }
 
 func writeDefinitions(opts *options.RootOptions, defs *api.DatasetDefinitions) error {
-	return opts.OutputWriter().WriteValue(defs, func(out io.Writer) error {
-		tw := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
-		_, _ = fmt.Fprintf(tw, "FIELD\tCOLUMN\tTYPE\n")
+	rv := reflect.ValueOf(*defs)
+	rt := rv.Type()
 
-		rv := reflect.ValueOf(*defs)
-		rt := rv.Type()
-		for i := range rt.NumField() {
-			field := rv.Field(i)
-			if field.IsNil() {
-				continue
-			}
-			def := field.Interface().(*api.DatasetDefinition)
-			jsonTag := rt.Field(i).Tag.Get("json")
-			name, _, _ := strings.Cut(jsonTag, ",")
-			colType := ""
-			if def.ColumnType != nil {
-				colType = string(*def.ColumnType)
-			}
-			_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\n", name, def.Name, colType)
+	var rows [][]string
+	for i := range rt.NumField() {
+		field := rv.Field(i)
+		if field.IsNil() {
+			continue
 		}
+		def := field.Interface().(*api.DatasetDefinition)
+		jsonTag := rt.Field(i).Tag.Get("json")
+		name, _, _ := strings.Cut(jsonTag, ",")
+		colType := ""
+		if def.ColumnType != nil {
+			colType = string(*def.ColumnType)
+		}
+		rows = append(rows, []string{name, def.Name, colType})
+	}
 
-		return tw.Flush()
+	return opts.OutputWriter().WriteDynamic(defs, output.DynamicTableDef{
+		Headers: []string{"Field", "Column", "Type"},
+		Rows:    rows,
 	})
 }

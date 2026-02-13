@@ -23,7 +23,7 @@ func NewListCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 }
 
 func runColumnList(ctx context.Context, opts *options.RootOptions, dataset string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -36,7 +36,7 @@ func runColumnList(ctx context.Context, opts *options.RootOptions, dataset strin
 	// Use the raw ListColumns method because the generated ListColumnsWithResponse
 	// parser cannot unmarshal the response into its union type (JSON200 is
 	// struct { union json.RawMessage } which fails on the JSON array body).
-	resp, err := client.ListColumns(ctx, dataset, nil, keyEditor(key))
+	resp, err := client.ListColumns(ctx, dataset, nil, auth)
 	if err != nil {
 		return fmt.Errorf("listing columns: %w", err)
 	}

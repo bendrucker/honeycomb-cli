@@ -4,12 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"text/tabwriter"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -25,7 +24,7 @@ func NewBurnAlertGetCmd(opts *options.RootOptions, dataset *string) *cobra.Comma
 }
 
 func runBurnAlertGet(ctx context.Context, opts *options.RootOptions, dataset, burnAlertID string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -35,7 +34,7 @@ func runBurnAlertGet(ctx context.Context, opts *options.RootOptions, dataset, bu
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.GetBurnAlertWithResponse(ctx, dataset, burnAlertID, keyEditor(key))
+	resp, err := client.GetBurnAlertWithResponse(ctx, dataset, burnAlertID, auth)
 	if err != nil {
 		return fmt.Errorf("getting burn alert: %w", err)
 	}
@@ -53,31 +52,30 @@ func runBurnAlertGet(ctx context.Context, opts *options.RootOptions, dataset, bu
 }
 
 func writeBurnAlertDetail(opts *options.RootOptions, detail burnAlertDetail) error {
-	return opts.OutputWriter().WriteValue(detail, func(w io.Writer) error {
-		tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-		_, _ = fmt.Fprintf(tw, "ID:\t%s\n", detail.ID)
-		_, _ = fmt.Fprintf(tw, "Alert Type:\t%s\n", detail.AlertType)
-		if detail.Description != "" {
-			_, _ = fmt.Fprintf(tw, "Description:\t%s\n", detail.Description)
-		}
-		if detail.SloID != "" {
-			_, _ = fmt.Fprintf(tw, "SLO ID:\t%s\n", detail.SloID)
-		}
-		if detail.ExhaustionMinutes != nil {
-			_, _ = fmt.Fprintf(tw, "Exhaustion Minutes:\t%d\n", *detail.ExhaustionMinutes)
-		}
-		if detail.BudgetRateDecreaseThresholdPerMillion != nil {
-			_, _ = fmt.Fprintf(tw, "Budget Rate Threshold:\t%d\n", *detail.BudgetRateDecreaseThresholdPerMillion)
-		}
-		if detail.BudgetRateWindowMinutes != nil {
-			_, _ = fmt.Fprintf(tw, "Budget Rate Window:\t%d min\n", *detail.BudgetRateWindowMinutes)
-		}
-		if detail.CreatedAt != "" {
-			_, _ = fmt.Fprintf(tw, "Created At:\t%s\n", detail.CreatedAt)
-		}
-		if detail.UpdatedAt != "" {
-			_, _ = fmt.Fprintf(tw, "Updated At:\t%s\n", detail.UpdatedAt)
-		}
-		return tw.Flush()
-	})
+	fields := []output.Field{
+		{Label: "ID", Value: detail.ID},
+		{Label: "Alert Type", Value: detail.AlertType},
+	}
+	if detail.Description != "" {
+		fields = append(fields, output.Field{Label: "Description", Value: detail.Description})
+	}
+	if detail.SloID != "" {
+		fields = append(fields, output.Field{Label: "SLO ID", Value: detail.SloID})
+	}
+	if detail.ExhaustionMinutes != nil {
+		fields = append(fields, output.Field{Label: "Exhaustion Minutes", Value: fmt.Sprintf("%d", *detail.ExhaustionMinutes)})
+	}
+	if detail.BudgetRateDecreaseThresholdPerMillion != nil {
+		fields = append(fields, output.Field{Label: "Budget Rate Threshold", Value: fmt.Sprintf("%d", *detail.BudgetRateDecreaseThresholdPerMillion)})
+	}
+	if detail.BudgetRateWindowMinutes != nil {
+		fields = append(fields, output.Field{Label: "Budget Rate Window", Value: fmt.Sprintf("%d min", *detail.BudgetRateWindowMinutes)})
+	}
+	if detail.CreatedAt != "" {
+		fields = append(fields, output.Field{Label: "Created At", Value: detail.CreatedAt})
+	}
+	if detail.UpdatedAt != "" {
+		fields = append(fields, output.Field{Label: "Updated At", Value: detail.UpdatedAt})
+	}
+	return opts.OutputWriter().WriteFields(detail, fields)
 }

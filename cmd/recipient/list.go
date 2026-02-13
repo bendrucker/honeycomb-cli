@@ -30,7 +30,7 @@ func NewListCmd(opts *options.RootOptions) *cobra.Command {
 }
 
 func runList(ctx context.Context, opts *options.RootOptions) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -40,7 +40,7 @@ func runList(ctx context.Context, opts *options.RootOptions) error {
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.ListRecipientsWithResponse(ctx, keyEditor(key))
+	resp, err := client.ListRecipientsWithResponse(ctx, auth)
 	if err != nil {
 		return fmt.Errorf("listing recipients: %w", err)
 	}

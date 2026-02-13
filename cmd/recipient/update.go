@@ -30,7 +30,7 @@ func NewUpdateCmd(opts *options.RootOptions) *cobra.Command {
 }
 
 func runUpdate(ctx context.Context, opts *options.RootOptions, recipientID, file string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -45,7 +45,7 @@ func runUpdate(ctx context.Context, opts *options.RootOptions, recipientID, file
 		return err
 	}
 
-	resp, err := client.UpdateRecipientWithBodyWithResponse(ctx, recipientID, "application/json", bytes.NewReader(data), keyEditor(key))
+	resp, err := client.UpdateRecipientWithBodyWithResponse(ctx, recipientID, "application/json", bytes.NewReader(data), auth)
 	if err != nil {
 		return fmt.Errorf("updating recipient: %w", err)
 	}

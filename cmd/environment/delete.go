@@ -30,7 +30,7 @@ func NewDeleteCmd(opts *options.RootOptions, team *string) *cobra.Command {
 }
 
 func runEnvironmentDelete(ctx context.Context, opts *options.RootOptions, team, envID string, yes bool) error {
-	key, err := opts.RequireKey(config.KeyManagement)
+	auth, err := opts.KeyEditor(config.KeyManagement)
 	if err != nil {
 		return err
 	}
@@ -45,7 +45,7 @@ func runEnvironmentDelete(ctx context.Context, opts *options.RootOptions, team, 
 			return fmt.Errorf("--yes is required in non-interactive mode")
 		}
 
-		getResp, err := client.GetEnvironmentWithResponse(ctx, team, envID, keyEditor(key))
+		getResp, err := client.GetEnvironmentWithResponse(ctx, team, envID, auth)
 		if err != nil {
 			return fmt.Errorf("getting environment: %w", err)
 		}
@@ -67,7 +67,7 @@ func runEnvironmentDelete(ctx context.Context, opts *options.RootOptions, team, 
 		}
 	}
 
-	resp, err := client.DeleteEnvironmentWithResponse(ctx, team, envID, keyEditor(key))
+	resp, err := client.DeleteEnvironmentWithResponse(ctx, team, envID, auth)
 	if err != nil {
 		return fmt.Errorf("deleting environment: %w", err)
 	}

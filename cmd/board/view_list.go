@@ -21,7 +21,7 @@ func NewViewListCmd(opts *options.RootOptions, board *string) *cobra.Command {
 }
 
 func runViewList(ctx context.Context, opts *options.RootOptions, boardID string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -31,7 +31,7 @@ func runViewList(ctx context.Context, opts *options.RootOptions, boardID string)
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.ListBoardViewsWithResponse(ctx, boardID, keyEditor(key))
+	resp, err := client.ListBoardViewsWithResponse(ctx, boardID, auth)
 	if err != nil {
 		return fmt.Errorf("listing board views: %w", err)
 	}

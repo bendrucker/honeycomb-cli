@@ -1,15 +1,11 @@
 package column
 
 import (
-	"context"
-	"fmt"
-	"io"
-	"net/http"
-	"text/tabwriter"
+	"strconv"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/bendrucker/honeycomb-cli/internal/deref"
 	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -51,46 +47,29 @@ var columnListTable = output.TableDef{
 }
 
 func columnToDetail(c api.Column) columnDetail {
-	d := columnDetail{
-		KeyName: c.KeyName,
+	return columnDetail{
+		ID:          deref.String(c.Id),
+		KeyName:     c.KeyName,
+		Type:        deref.Enum(c.Type),
+		Description: deref.String(c.Description),
+		Hidden:      deref.Bool(c.Hidden),
+		LastWritten: deref.String(c.LastWritten),
+		CreatedAt:   deref.String(c.CreatedAt),
+		UpdatedAt:   deref.String(c.UpdatedAt),
 	}
-	if c.Id != nil {
-		d.ID = *c.Id
-	}
-	if c.Type != nil {
-		d.Type = string(*c.Type)
-	}
-	if c.Description != nil {
-		d.Description = *c.Description
-	}
-	if c.Hidden != nil {
-		d.Hidden = *c.Hidden
-	}
-	if c.LastWritten != nil {
-		d.LastWritten = *c.LastWritten
-	}
-	if c.CreatedAt != nil {
-		d.CreatedAt = *c.CreatedAt
-	}
-	if c.UpdatedAt != nil {
-		d.UpdatedAt = *c.UpdatedAt
-	}
-	return d
 }
 
 func writeColumnDetail(opts *options.RootOptions, c api.Column) error {
 	d := columnToDetail(c)
-	return opts.OutputWriter().WriteValue(d, func(w io.Writer) error {
-		tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-		_, _ = fmt.Fprintf(tw, "ID:\t%s\n", d.ID)
-		_, _ = fmt.Fprintf(tw, "Key Name:\t%s\n", d.KeyName)
-		_, _ = fmt.Fprintf(tw, "Type:\t%s\n", d.Type)
-		_, _ = fmt.Fprintf(tw, "Description:\t%s\n", d.Description)
-		_, _ = fmt.Fprintf(tw, "Hidden:\t%v\n", d.Hidden)
-		_, _ = fmt.Fprintf(tw, "Last Written:\t%s\n", d.LastWritten)
-		_, _ = fmt.Fprintf(tw, "Created At:\t%s\n", d.CreatedAt)
-		_, _ = fmt.Fprintf(tw, "Updated At:\t%s\n", d.UpdatedAt)
-		return tw.Flush()
+	return opts.OutputWriter().WriteFields(d, []output.Field{
+		{Label: "ID", Value: d.ID},
+		{Label: "Key Name", Value: d.KeyName},
+		{Label: "Type", Value: d.Type},
+		{Label: "Description", Value: d.Description},
+		{Label: "Hidden", Value: strconv.FormatBool(d.Hidden)},
+		{Label: "Last Written", Value: d.LastWritten},
+		{Label: "Created At", Value: d.CreatedAt},
+		{Label: "Updated At", Value: d.UpdatedAt},
 	})
 }
 
@@ -116,9 +95,3 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 	return cmd
 }
 
-func keyEditor(key string) api.RequestEditorFn {
-	return func(_ context.Context, req *http.Request) error {
-		config.ApplyAuth(req, config.KeyConfig, key)
-		return nil
-	}
-}

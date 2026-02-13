@@ -30,7 +30,7 @@ func NewUpdateCmd(opts *options.RootOptions, team *string) *cobra.Command {
 }
 
 func runKeyUpdate(ctx context.Context, opts *options.RootOptions, team, id, file string) error {
-	key, err := opts.RequireKey(config.KeyManagement)
+	auth, err := opts.KeyEditor(config.KeyManagement)
 	if err != nil {
 		return err
 	}
@@ -45,7 +45,7 @@ func runKeyUpdate(ctx context.Context, opts *options.RootOptions, team, id, file
 		return err
 	}
 
-	resp, err := client.UpdateApiKeyWithBodyWithResponse(ctx, api.TeamSlug(team), api.ID(id), "application/vnd.api+json", bytes.NewReader(data), keyEditor(key))
+	resp, err := client.UpdateApiKeyWithBodyWithResponse(ctx, api.TeamSlug(team), api.ID(id), "application/vnd.api+json", bytes.NewReader(data), auth)
 	if err != nil {
 		return fmt.Errorf("updating API key: %w", err)
 	}

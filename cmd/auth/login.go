@@ -2,13 +2,12 @@ package auth
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"io"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
-	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
@@ -148,31 +147,22 @@ func runAuthLogin(ctx context.Context, opts *options.RootOptions, keyType, keyID
 }
 
 func writeLoginResult(opts *options.RootOptions, result loginResult) error {
-	out := opts.IOStreams.Out
-
-	switch opts.ResolveFormat() {
-	case output.FormatJSON:
-		enc := json.NewEncoder(out)
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
-	case output.FormatTable:
+	return opts.OutputWriter().WriteValue(result, func(w io.Writer) error {
 		if result.Verified {
 			if result.Team != "" {
-				_, _ = fmt.Fprintf(out, "Authenticated as %s", result.Team)
+				_, _ = fmt.Fprintf(w, "Authenticated as %s", result.Team)
 				if result.Environment != "" {
-					_, _ = fmt.Fprintf(out, " (%s)", result.Environment)
+					_, _ = fmt.Fprintf(w, " (%s)", result.Environment)
 				}
-				_, _ = fmt.Fprintln(out)
+				_, _ = fmt.Fprintln(w)
 			} else if result.Name != "" {
-				_, _ = fmt.Fprintf(out, "Authenticated with key %q\n", result.Name)
+				_, _ = fmt.Fprintf(w, "Authenticated with key %q\n", result.Name)
 			} else {
-				_, _ = fmt.Fprintln(out, "Key verified and stored.")
+				_, _ = fmt.Fprintln(w, "Key verified and stored.")
 			}
 		} else {
-			_, _ = fmt.Fprintln(out, "Key stored (unverified).")
+			_, _ = fmt.Fprintln(w, "Key stored (unverified).")
 		}
 		return nil
-	default:
-		return fmt.Errorf("unsupported format: %s", opts.ResolveFormat())
-	}
+	})
 }

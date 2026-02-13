@@ -36,7 +36,7 @@ func NewRunCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 }
 
 func runQueryRun(ctx context.Context, opts *options.RootOptions, dataset, file, annotation string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func runQueryRun(ctx context.Context, opts *options.RootOptions, dataset, file, 
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	queryID, err := resolveQueryID(ctx, opts, client, dataset, key, file, annotation)
+	queryID, err := resolveQueryID(ctx, opts, client, dataset, auth, file, annotation)
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func runQueryRun(ctx context.Context, opts *options.RootOptions, dataset, file, 
 	resultResp, err := client.CreateQueryResultWithResponse(ctx, dataset, api.CreateQueryResultRequest{
 		QueryId:       &queryID,
 		DisableSeries: ptr(true),
-	}, keyEditor(key))
+	}, auth)
 	if err != nil {
 		return fmt.Errorf("creating query result: %w", err)
 	}
@@ -74,7 +74,7 @@ func runQueryRun(ctx context.Context, opts *options.RootOptions, dataset, file, 
 		Interactive: opts.IOStreams.CanPrompt(),
 	}
 	details, err := poll.Poll(ctx, cfg, func(ctx context.Context) (*api.QueryResultDetails, bool, error) {
-		resp, err := client.GetQueryResultWithResponse(ctx, dataset, resultID, keyEditor(key))
+		resp, err := client.GetQueryResultWithResponse(ctx, dataset, resultID, auth)
 		if err != nil {
 			return nil, false, fmt.Errorf("getting query result: %w", err)
 		}
@@ -98,26 +98,26 @@ func runQueryRun(ctx context.Context, opts *options.RootOptions, dataset, file, 
 	return opts.OutputWriter().WriteDynamic(details, buildResultTable(details))
 }
 
-func resolveQueryID(ctx context.Context, opts *options.RootOptions, client *api.ClientWithResponses, dataset, key, file, annotation string) (string, error) {
+func resolveQueryID(ctx context.Context, opts *options.RootOptions, client *api.ClientWithResponses, dataset string, auth api.RequestEditorFn, file, annotation string) (string, error) {
 	switch {
 	case file != "":
-		return createQueryFromFile(ctx, opts, client, dataset, key, file)
+		return createQueryFromFile(ctx, opts, client, dataset, auth, file)
 	case annotation != "":
-		return queryIDFromAnnotation(ctx, client, dataset, key, annotation)
+		return queryIDFromAnnotation(ctx, client, dataset, auth, annotation)
 	case opts.IOStreams.CanPrompt():
-		return promptQueryID(ctx, opts, client, dataset, key)
+		return promptQueryID(ctx, opts, client, dataset, auth)
 	default:
 		return "", fmt.Errorf("either --file or --annotation is required")
 	}
 }
 
-func createQueryFromFile(ctx context.Context, opts *options.RootOptions, client *api.ClientWithResponses, dataset, key, file string) (string, error) {
+func createQueryFromFile(ctx context.Context, opts *options.RootOptions, client *api.ClientWithResponses, dataset string, auth api.RequestEditorFn, file string) (string, error) {
 	data, err := readFile(opts, file)
 	if err != nil {
 		return "", err
 	}
 
-	resp, err := client.CreateQueryWithBodyWithResponse(ctx, dataset, "application/json", bytes.NewReader(data), keyEditor(key))
+	resp, err := client.CreateQueryWithBodyWithResponse(ctx, dataset, "application/json", bytes.NewReader(data), auth)
 	if err != nil {
 		return "", fmt.Errorf("creating query: %w", err)
 	}
@@ -133,8 +133,8 @@ func createQueryFromFile(ctx context.Context, opts *options.RootOptions, client 
 	return *resp.JSON200.Id, nil
 }
 
-func queryIDFromAnnotation(ctx context.Context, client *api.ClientWithResponses, dataset, key, annotationID string) (string, error) {
-	resp, err := client.GetQueryAnnotationWithResponse(ctx, dataset, annotationID, keyEditor(key))
+func queryIDFromAnnotation(ctx context.Context, client *api.ClientWithResponses, dataset string, auth api.RequestEditorFn, annotationID string) (string, error) {
+	resp, err := client.GetQueryAnnotationWithResponse(ctx, dataset, annotationID, auth)
 	if err != nil {
 		return "", fmt.Errorf("getting query annotation: %w", err)
 	}
@@ -147,7 +147,7 @@ func queryIDFromAnnotation(ctx context.Context, client *api.ClientWithResponses,
 	return resp.JSON200.QueryId, nil
 }
 
-func promptQueryID(ctx context.Context, opts *options.RootOptions, client *api.ClientWithResponses, dataset, key string) (string, error) {
+func promptQueryID(ctx context.Context, opts *options.RootOptions, client *api.ClientWithResponses, dataset string, auth api.RequestEditorFn) (string, error) {
 	mode, err := prompt.Choice(opts.IOStreams.Out, opts.IOStreams.In, "Query source (file, annotation): ", []string{"file", "annotation"})
 	if err != nil {
 		return "", err
@@ -159,13 +159,13 @@ func promptQueryID(ctx context.Context, opts *options.RootOptions, client *api.C
 		if err != nil {
 			return "", err
 		}
-		return createQueryFromFile(ctx, opts, client, dataset, key, path)
+		return createQueryFromFile(ctx, opts, client, dataset, auth, path)
 	case "annotation":
 		id, err := prompt.Line(opts.IOStreams.Out, opts.IOStreams.In, "Annotation ID: ")
 		if err != nil {
 			return "", err
 		}
-		return queryIDFromAnnotation(ctx, client, dataset, key, id)
+		return queryIDFromAnnotation(ctx, client, dataset, auth, id)
 	default:
 		return "", fmt.Errorf("unexpected mode: %s", mode)
 	}

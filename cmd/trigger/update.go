@@ -80,7 +80,7 @@ type updateFlags struct {
 }
 
 func runUpdate(ctx context.Context, opts *options.RootOptions, dataset, triggerID string, flags updateFlags) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func runUpdate(ctx context.Context, opts *options.RootOptions, dataset, triggerI
 			return fmt.Errorf("parsing trigger JSON: %w", err)
 		}
 	} else {
-		resp, err := client.GetTriggerWithResponse(ctx, dataset, triggerID, keyEditor(key))
+		resp, err := client.GetTriggerWithResponse(ctx, dataset, triggerID, auth)
 		if err != nil {
 			return fmt.Errorf("getting trigger: %w", err)
 		}
@@ -128,7 +128,7 @@ func runUpdate(ctx context.Context, opts *options.RootOptions, dataset, triggerI
 		}
 	}
 
-	resp, err := client.UpdateTriggerWithResponse(ctx, dataset, triggerID, body, keyEditor(key))
+	resp, err := client.UpdateTriggerWithResponse(ctx, dataset, triggerID, body, auth)
 	if err != nil {
 		return fmt.Errorf("updating trigger: %w", err)
 	}

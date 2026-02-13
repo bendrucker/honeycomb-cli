@@ -31,7 +31,7 @@ func NewCreateCmd(opts *options.RootOptions, team *string) *cobra.Command {
 }
 
 func runKeyCreate(ctx context.Context, opts *options.RootOptions, team, file string) error {
-	key, err := opts.RequireKey(config.KeyManagement)
+	auth, err := opts.KeyEditor(config.KeyManagement)
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func runKeyCreate(ctx context.Context, opts *options.RootOptions, team, file str
 		return err
 	}
 
-	resp, err := client.CreateApiKeyWithBodyWithResponse(ctx, api.TeamSlug(team), "application/vnd.api+json", bytes.NewReader(data), keyEditor(key))
+	resp, err := client.CreateApiKeyWithBodyWithResponse(ctx, api.TeamSlug(team), "application/vnd.api+json", bytes.NewReader(data), auth)
 	if err != nil {
 		return fmt.Errorf("creating API key: %w", err)
 	}

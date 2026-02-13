@@ -22,7 +22,7 @@ func NewViewGetCmd(opts *options.RootOptions, board *string) *cobra.Command {
 }
 
 func runViewGet(ctx context.Context, opts *options.RootOptions, boardID, viewID string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -32,7 +32,7 @@ func runViewGet(ctx context.Context, opts *options.RootOptions, boardID, viewID 
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.GetBoardViewWithResponse(ctx, boardID, viewID, keyEditor(key))
+	resp, err := client.GetBoardViewWithResponse(ctx, boardID, viewID, auth)
 	if err != nil {
 		return fmt.Errorf("getting board view: %w", err)
 	}

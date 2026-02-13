@@ -29,7 +29,7 @@ func NewDeleteCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 }
 
 func runMarkerDelete(ctx context.Context, opts *options.RootOptions, dataset, markerID string, yes bool) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -45,7 +45,7 @@ func runMarkerDelete(ctx context.Context, opts *options.RootOptions, dataset, ma
 		}
 
 		// Fetch marker for confirmation display
-		listResp, err := client.GetMarkerWithResponse(ctx, dataset, keyEditor(key))
+		listResp, err := client.GetMarkerWithResponse(ctx, dataset, auth)
 		if err != nil {
 			return fmt.Errorf("listing markers: %w", err)
 		}
@@ -80,7 +80,7 @@ func runMarkerDelete(ctx context.Context, opts *options.RootOptions, dataset, ma
 		}
 	}
 
-	resp, err := client.DeleteMarkerWithResponse(ctx, dataset, markerID, keyEditor(key))
+	resp, err := client.DeleteMarkerWithResponse(ctx, dataset, markerID, auth)
 	if err != nil {
 		return fmt.Errorf("deleting marker: %w", err)
 	}

@@ -1,16 +1,12 @@
 package environment
 
 import (
-	"context"
 	"encoding/json"
-	"fmt"
-	"io"
-	"net/http"
-	"text/tabwriter"
+	"strconv"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -33,13 +29,6 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 	cmd.AddCommand(NewDeleteCmd(opts, &team))
 
 	return cmd
-}
-
-func keyEditor(key string) api.RequestEditorFn {
-	return func(_ context.Context, req *http.Request) error {
-		config.ApplyAuth(req, config.KeyManagement, key)
-		return nil
-	}
 }
 
 type environmentItem struct {
@@ -93,14 +82,12 @@ func envToDetail(e api.Environment) environmentDetail {
 }
 
 func writeEnvironmentDetail(opts *options.RootOptions, detail environmentDetail) error {
-	return opts.OutputWriter().WriteValue(detail, func(w io.Writer) error {
-		tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-		_, _ = fmt.Fprintf(tw, "ID:\t%s\n", detail.ID)
-		_, _ = fmt.Fprintf(tw, "Name:\t%s\n", detail.Name)
-		_, _ = fmt.Fprintf(tw, "Slug:\t%s\n", detail.Slug)
-		_, _ = fmt.Fprintf(tw, "Description:\t%s\n", detail.Description)
-		_, _ = fmt.Fprintf(tw, "Color:\t%s\n", detail.Color)
-		_, _ = fmt.Fprintf(tw, "Delete Protected:\t%t\n", detail.DeleteProtected)
-		return tw.Flush()
+	return opts.OutputWriter().WriteFields(detail, []output.Field{
+		{Label: "ID", Value: detail.ID},
+		{Label: "Name", Value: detail.Name},
+		{Label: "Slug", Value: detail.Slug},
+		{Label: "Description", Value: detail.Description},
+		{Label: "Color", Value: detail.Color},
+		{Label: "Delete Protected", Value: strconv.FormatBool(detail.DeleteProtected)},
 	})
 }

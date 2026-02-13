@@ -77,7 +77,7 @@ func NewCalculatedCreateCmd(opts *options.RootOptions, dataset *string) *cobra.C
 }
 
 func runCalculatedCreateFromFile(ctx context.Context, opts *options.RootOptions, dataset, file string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -104,7 +104,7 @@ func runCalculatedCreateFromFile(ctx context.Context, opts *options.RootOptions,
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.CreateCalculatedFieldWithBodyWithResponse(ctx, dataset, "application/json", bytes.NewReader(data), keyEditor(key))
+	resp, err := client.CreateCalculatedFieldWithBodyWithResponse(ctx, dataset, "application/json", bytes.NewReader(data), auth)
 	if err != nil {
 		return fmt.Errorf("creating calculated column: %w", err)
 	}
@@ -121,7 +121,7 @@ func runCalculatedCreateFromFile(ctx context.Context, opts *options.RootOptions,
 }
 
 func runCalculatedCreate(ctx context.Context, opts *options.RootOptions, dataset string, body api.CreateCalculatedFieldJSONRequestBody) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -131,7 +131,7 @@ func runCalculatedCreate(ctx context.Context, opts *options.RootOptions, dataset
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.CreateCalculatedFieldWithResponse(ctx, dataset, body, keyEditor(key))
+	resp, err := client.CreateCalculatedFieldWithResponse(ctx, dataset, body, auth)
 	if err != nil {
 		return fmt.Errorf("creating calculated column: %w", err)
 	}

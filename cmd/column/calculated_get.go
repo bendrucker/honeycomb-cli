@@ -22,7 +22,7 @@ func NewCalculatedGetCmd(opts *options.RootOptions, dataset *string) *cobra.Comm
 }
 
 func runCalculatedGet(ctx context.Context, opts *options.RootOptions, dataset, id string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -32,7 +32,7 @@ func runCalculatedGet(ctx context.Context, opts *options.RootOptions, dataset, i
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.GetCalculatedFieldWithResponse(ctx, dataset, id, keyEditor(key))
+	resp, err := client.GetCalculatedFieldWithResponse(ctx, dataset, id, auth)
 	if err != nil {
 		return fmt.Errorf("getting calculated column: %w", err)
 	}

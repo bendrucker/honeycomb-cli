@@ -3,13 +3,12 @@ package query
 import (
 	"context"
 	"fmt"
-	"io"
 	"strings"
-	"text/tabwriter"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -30,7 +29,7 @@ func NewViewCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 }
 
 func runAnnotationView(ctx context.Context, opts *options.RootOptions, dataset, annotationID string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -40,7 +39,7 @@ func runAnnotationView(ctx context.Context, opts *options.RootOptions, dataset, 
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.GetQueryAnnotationWithResponse(ctx, dataset, annotationID, keyEditor(key))
+	resp, err := client.GetQueryAnnotationWithResponse(ctx, dataset, annotationID, auth)
 	if err != nil {
 		return fmt.Errorf("getting query annotation: %w", err)
 	}
@@ -55,7 +54,7 @@ func runAnnotationView(ctx context.Context, opts *options.RootOptions, dataset, 
 
 	annotation := resp.JSON200
 
-	queryResp, err := client.GetQueryWithResponse(ctx, dataset, annotation.QueryId, keyEditor(key))
+	queryResp, err := client.GetQueryWithResponse(ctx, dataset, annotation.QueryId, auth)
 	if err != nil {
 		return fmt.Errorf("getting query: %w", err)
 	}
@@ -69,59 +68,52 @@ func runAnnotationView(ctx context.Context, opts *options.RootOptions, dataset, 
 		Query:            queryResp.JSON200,
 	}
 
-	return opts.OutputWriter().WriteValue(combined, func(w io.Writer) error {
-		tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-		_, _ = fmt.Fprintf(tw, "ID:\t%s\n", combined.ID)
-		_, _ = fmt.Fprintf(tw, "Name:\t%s\n", combined.Name)
-		_, _ = fmt.Fprintf(tw, "Description:\t%s\n", combined.Description)
-		_, _ = fmt.Fprintf(tw, "Query ID:\t%s\n", combined.QueryID)
-		if combined.Source != "" {
-			_, _ = fmt.Fprintf(tw, "Source:\t%s\n", combined.Source)
-		}
-		if combined.CreatedAt != "" {
-			_, _ = fmt.Fprintf(tw, "Created At:\t%s\n", combined.CreatedAt)
-		}
-		if combined.UpdatedAt != "" {
-			_, _ = fmt.Fprintf(tw, "Updated At:\t%s\n", combined.UpdatedAt)
-		}
+	fields := []output.Field{
+		{Label: "ID", Value: combined.ID},
+		{Label: "Name", Value: combined.Name},
+		{Label: "Description", Value: combined.Description},
+		{Label: "Query ID", Value: combined.QueryID},
+	}
+	if combined.Source != "" {
+		fields = append(fields, output.Field{Label: "Source", Value: combined.Source})
+	}
+	if combined.CreatedAt != "" {
+		fields = append(fields, output.Field{Label: "Created At", Value: combined.CreatedAt})
+	}
+	if combined.UpdatedAt != "" {
+		fields = append(fields, output.Field{Label: "Updated At", Value: combined.UpdatedAt})
+	}
 
-		if q := combined.Query; q != nil {
-			_, _ = fmt.Fprintln(tw)
-			_, _ = fmt.Fprintln(tw, "Query:")
-			if q.TimeRange != nil {
-				_, _ = fmt.Fprintf(tw, "  Time Range:\t%ds\n", *q.TimeRange)
-			}
-			if q.Breakdowns != nil && len(*q.Breakdowns) > 0 {
-				_, _ = fmt.Fprintf(tw, "  Breakdowns:\t%s\n", strings.Join(*q.Breakdowns, ", "))
-			}
-			if q.Calculations != nil {
-				for _, calc := range *q.Calculations {
-					col := ""
-					if calc.Column.IsSpecified() && !calc.Column.IsNull() {
-						col = calc.Column.MustGet()
-					}
-					if col != "" {
-						_, _ = fmt.Fprintf(tw, "  Calculation:\t%s(%s)\n", calc.Op, col)
-					} else {
-						_, _ = fmt.Fprintf(tw, "  Calculation:\t%s\n", calc.Op)
-					}
+	if q := combined.Query; q != nil {
+		if q.TimeRange != nil {
+			fields = append(fields, output.Field{Label: "Time Range", Value: fmt.Sprintf("%ds", *q.TimeRange)})
+		}
+		if q.Breakdowns != nil && len(*q.Breakdowns) > 0 {
+			fields = append(fields, output.Field{Label: "Breakdowns", Value: strings.Join(*q.Breakdowns, ", ")})
+		}
+		if q.Calculations != nil {
+			for _, calc := range *q.Calculations {
+				col := ""
+				if calc.Column.IsSpecified() && !calc.Column.IsNull() {
+					col = calc.Column.MustGet()
 				}
-			}
-			if q.Filters != nil {
-				for _, f := range *q.Filters {
-					col := ""
-					if f.Column.IsSpecified() && !f.Column.IsNull() {
-						col = f.Column.MustGet()
-					}
-					val := ""
-					if f.Value != nil {
-						val = fmt.Sprintf("%v", f.Value)
-					}
-					_, _ = fmt.Fprintf(tw, "  Filter:\t%s %s %s\n", col, f.Op, val)
-				}
+				fields = append(fields, output.Field{Label: "Calculation", Value: calcColumnName(string(calc.Op), col)})
 			}
 		}
+		if q.Filters != nil {
+			for _, f := range *q.Filters {
+				col := ""
+				if f.Column.IsSpecified() && !f.Column.IsNull() {
+					col = f.Column.MustGet()
+				}
+				val := ""
+				if f.Value != nil {
+					val = fmt.Sprintf("%v", f.Value)
+				}
+				fields = append(fields, output.Field{Label: "Filter", Value: fmt.Sprintf("%s %s %s", col, f.Op, val)})
+			}
+		}
+	}
 
-		return tw.Flush()
-	})
+	return opts.OutputWriter().WriteFields(combined, fields)
 }

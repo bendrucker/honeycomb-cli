@@ -32,7 +32,7 @@ func NewCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 }
 
 func runSLOCreate(ctx context.Context, opts *options.RootOptions, dataset, file string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	editor, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -60,7 +60,7 @@ func runSLOCreate(ctx context.Context, opts *options.RootOptions, dataset, file 
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.CreateSloWithBodyWithResponse(ctx, dataset, "application/json", bytes.NewReader(data), keyEditor(key))
+	resp, err := client.CreateSloWithBodyWithResponse(ctx, dataset, "application/json", bytes.NewReader(data), editor)
 	if err != nil {
 		return fmt.Errorf("creating SLO: %w", err)
 	}

@@ -22,7 +22,7 @@ func NewGetCmd(opts *options.RootOptions, team *string) *cobra.Command {
 }
 
 func runKeyGet(ctx context.Context, opts *options.RootOptions, team, id string) error {
-	key, err := opts.RequireKey(config.KeyManagement)
+	auth, err := opts.KeyEditor(config.KeyManagement)
 	if err != nil {
 		return err
 	}
@@ -32,7 +32,7 @@ func runKeyGet(ctx context.Context, opts *options.RootOptions, team, id string) 
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.GetApiKeyWithResponse(ctx, api.TeamSlug(team), api.ID(id), keyEditor(key))
+	resp, err := client.GetApiKeyWithResponse(ctx, api.TeamSlug(team), api.ID(id), auth)
 	if err != nil {
 		return fmt.Errorf("getting API key: %w", err)
 	}

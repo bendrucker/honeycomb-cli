@@ -7,6 +7,7 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/bendrucker/honeycomb-cli/internal/deref"
 	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -39,7 +40,7 @@ func NewListCmd(opts *options.RootOptions) *cobra.Command {
 }
 
 func runBoardList(ctx context.Context, opts *options.RootOptions) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -49,7 +50,7 @@ func runBoardList(ctx context.Context, opts *options.RootOptions) error {
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.ListBoardsWithResponse(ctx, keyEditor(key))
+	resp, err := client.ListBoardsWithResponse(ctx, auth)
 	if err != nil {
 		return fmt.Errorf("listing boards: %w", err)
 	}
@@ -65,19 +66,13 @@ func runBoardList(ctx context.Context, opts *options.RootOptions) error {
 	items := make([]boardListItem, len(*resp.JSON200))
 	for i, b := range *resp.JSON200 {
 		item := boardListItem{
-			Name: b.Name,
+			ID:           deref.String(b.Id),
+			Name:         b.Name,
+			Description:  deref.String(b.Description),
+			ColumnLayout: deref.Enum(b.LayoutGeneration),
 		}
-		if b.Id != nil {
-			item.ID = *b.Id
-		}
-		if b.Description != nil {
-			item.Description = *b.Description
-		}
-		if b.LayoutGeneration != nil {
-			item.ColumnLayout = string(*b.LayoutGeneration)
-		}
-		if b.Links != nil && b.Links.BoardUrl != nil {
-			item.URL = *b.Links.BoardUrl
+		if b.Links != nil {
+			item.URL = deref.String(b.Links.BoardUrl)
 		}
 		items[i] = item
 	}

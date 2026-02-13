@@ -46,7 +46,7 @@ func NewUpdateCmd(opts *options.RootOptions) *cobra.Command {
 }
 
 func runDatasetUpdate(ctx context.Context, opts *options.RootOptions, slug string, description *string, expandJsonDepth *int, deleteProtected *bool) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func runDatasetUpdate(ctx context.Context, opts *options.RootOptions, slug strin
 		}
 	}
 
-	resp, err := client.UpdateDatasetWithResponse(ctx, slug, body, keyEditor(key))
+	resp, err := client.UpdateDatasetWithResponse(ctx, slug, body, auth)
 	if err != nil {
 		return fmt.Errorf("updating dataset: %w", err)
 	}

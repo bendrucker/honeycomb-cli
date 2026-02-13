@@ -43,7 +43,7 @@ func NewUpdateCmd(opts *options.RootOptions) *cobra.Command {
 }
 
 func runBoardUpdate(cmd *cobra.Command, opts *options.RootOptions, boardID, file string, replace bool, name, desc string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -56,14 +56,14 @@ func runBoardUpdate(cmd *cobra.Command, opts *options.RootOptions, boardID, file
 	ctx := cmd.Context()
 
 	if file != "" {
-		return updateFromFile(ctx, client, opts, key, boardID, file, replace)
+		return updateFromFile(ctx, client, opts, auth, boardID, file, replace)
 	}
 
 	if !cmd.Flags().Changed("name") && !cmd.Flags().Changed("description") {
 		return fmt.Errorf("--file, --name, or --description is required")
 	}
 
-	current, err := getBoard(ctx, client, key, boardID)
+	current, err := getBoard(ctx, client, auth, boardID)
 	if err != nil {
 		return err
 	}
@@ -75,7 +75,7 @@ func runBoardUpdate(cmd *cobra.Command, opts *options.RootOptions, boardID, file
 		current.Description = &desc
 	}
 
-	resp, err := client.UpdateBoardWithResponse(ctx, boardID, *current, keyEditor(key))
+	resp, err := client.UpdateBoardWithResponse(ctx, boardID, *current, auth)
 	if err != nil {
 		return fmt.Errorf("updating board: %w", err)
 	}
@@ -91,7 +91,7 @@ func runBoardUpdate(cmd *cobra.Command, opts *options.RootOptions, boardID, file
 	return writeBoardDetail(opts, boardToDetail(*resp.JSON200))
 }
 
-func updateFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, key, boardID, file string, replace bool) error {
+func updateFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, auth api.RequestEditorFn, boardID, file string, replace bool) error {
 	var r io.Reader
 	if file == "-" {
 		r = opts.IOStreams.In
@@ -118,7 +118,7 @@ func updateFromFile(ctx context.Context, client *api.ClientWithResponses, opts *
 			return err
 		}
 
-		current, err := getBoard(ctx, client, key, boardID)
+		current, err := getBoard(ctx, client, auth, boardID)
 		if err != nil {
 			return err
 		}
@@ -131,7 +131,7 @@ func updateFromFile(ctx context.Context, client *api.ClientWithResponses, opts *
 		}
 	}
 
-	resp, err := client.UpdateBoardWithBodyWithResponse(ctx, boardID, "application/json", bytes.NewReader(data), keyEditor(key))
+	resp, err := client.UpdateBoardWithBodyWithResponse(ctx, boardID, "application/json", bytes.NewReader(data), auth)
 	if err != nil {
 		return fmt.Errorf("updating board: %w", err)
 	}
@@ -147,8 +147,8 @@ func updateFromFile(ctx context.Context, client *api.ClientWithResponses, opts *
 	return writeBoardDetail(opts, boardToDetail(*resp.JSON200))
 }
 
-func getBoard(ctx context.Context, client *api.ClientWithResponses, key, boardID string) (*api.Board, error) {
-	resp, err := client.GetBoardWithResponse(ctx, boardID, keyEditor(key))
+func getBoard(ctx context.Context, client *api.ClientWithResponses, auth api.RequestEditorFn, boardID string) (*api.Board, error) {
+	resp, err := client.GetBoardWithResponse(ctx, boardID, auth)
 	if err != nil {
 		return nil, fmt.Errorf("getting board: %w", err)
 	}
