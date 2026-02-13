@@ -15,7 +15,7 @@ import (
 
 type annotationWithQuery struct {
 	annotationDetail
-	Query *api.Query `json:"query,omitempty" yaml:"query,omitempty"`
+	Query *api.Query `json:"query,omitempty"`
 }
 
 func NewViewCmd(opts *options.RootOptions, dataset *string) *cobra.Command {

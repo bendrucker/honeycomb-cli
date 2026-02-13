@@ -134,14 +134,14 @@ func writeCallResult(o *callOptions, result *mcp.CallToolResult) error {
 	ios := o.root.IOStreams
 	format := o.root.ResolveFormat()
 
-	if format == "json" || format == "yaml" || o.jqExpr != "" {
+	if format == "json" || o.jqExpr != "" {
 		type contentItem struct {
-			Type string `json:"type"           yaml:"type"`
-			Text string `json:"text,omitempty" yaml:"text,omitempty"`
+			Type string `json:"type"`
+			Text string `json:"text,omitempty"`
 		}
 		type callResult struct {
-			Content []contentItem `json:"content" yaml:"content"`
-			IsError bool          `json:"isError" yaml:"isError"`
+			Content []contentItem `json:"content"`
+			IsError bool          `json:"isError"`
 		}
 
 		out := callResult{IsError: result.IsError}

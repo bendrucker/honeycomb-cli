@@ -14,15 +14,15 @@ import (
 )
 
 type markerItem struct {
-	ID        string `json:"id"                     yaml:"id"`
-	Type      string `json:"type,omitempty"          yaml:"type,omitempty"`
-	Message   string `json:"message,omitempty"       yaml:"message,omitempty"`
-	URL       string `json:"url,omitempty"           yaml:"url,omitempty"`
-	StartTime *int   `json:"start_time,omitempty"    yaml:"start_time,omitempty"`
-	EndTime   *int   `json:"end_time,omitempty"      yaml:"end_time,omitempty"`
-	Color     string `json:"color,omitempty"         yaml:"color,omitempty"`
-	CreatedAt string `json:"created_at,omitempty"    yaml:"created_at,omitempty"`
-	UpdatedAt string `json:"updated_at,omitempty"    yaml:"updated_at,omitempty"`
+	ID        string `json:"id"`
+	Type      string `json:"type,omitempty"`
+	Message   string `json:"message,omitempty"`
+	URL       string `json:"url,omitempty"`
+	StartTime *int   `json:"start_time,omitempty"`
+	EndTime   *int   `json:"end_time,omitempty"`
+	Color     string `json:"color,omitempty"`
+	CreatedAt string `json:"created_at,omitempty"`
+	UpdatedAt string `json:"updated_at,omitempty"`
 }
 
 var markerListTable = output.TableDef{

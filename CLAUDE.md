@@ -30,7 +30,7 @@ internal/
   iostreams/iostreams.go         IO abstraction with TTY detection
   agent/agent.go                 AI coding agent detection
   config/
-    config.go                    YAML config (~/.config/honeycomb/config.yaml)
+    config.go                    JSON config (~/.config/honeycomb/config.json)
     keyring.go                   OS keyring with timeout wrapper
 api.json                         Honeycomb OpenAPI 3.1 source spec
 overlay.yaml                     OpenAPI overlay for 3.1→3.0 compatibility
@@ -54,14 +54,14 @@ Run `go generate ./internal/api/...` to regenerate. The generated file is commit
 - **Error handling** — return errors, don't panic. Wrap with `fmt.Errorf("context: %w", err)`.
 - **Naming** — `NewXxx` constructors, unexported fields, `opts` for option structs.
 - **Testing** — table-driven tests with `t.Run`. Use `t.Setenv` for env vars. No testify.
-- **No Viper** — config is parsed with `gopkg.in/yaml.v3` directly.
+- **No Viper** — config is parsed with `encoding/json` directly.
 
 ## Dependencies
 
 | Package | Purpose |
 |---------|---------|
 | `spf13/cobra` | CLI framework |
-| `gopkg.in/yaml.v3` | Config parsing |
+| `encoding/json` | Config parsing (stdlib) |
 | `zalando/go-keyring` | OS keyring for secrets |
 | `mattn/go-isatty` | TTY detection |
 | `oapi-codegen/runtime` | Generated client runtime |
@@ -99,7 +99,7 @@ A Honeycomb MCP server is configured and available as a reference implementation
 
 ## Output Formats
 
-The `--format` flag supports `json`, `table`, and `yaml`. Commands should implement all three. Default is `table` in TTY, `json` otherwise.
+The `--format` flag supports `json` and `table`. Default is `table` in TTY, `json` otherwise.
 
 ## Command Design
 

@@ -43,20 +43,20 @@ func keyEditor(key string) api.RequestEditorFn {
 }
 
 type environmentItem struct {
-	ID          string `json:"id"                     yaml:"id"`
-	Name        string `json:"name"                   yaml:"name"`
-	Slug        string `json:"slug"                   yaml:"slug"`
-	Description string `json:"description,omitempty"   yaml:"description,omitempty"`
-	Color       string `json:"color,omitempty"         yaml:"color,omitempty"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Slug        string `json:"slug"`
+	Description string `json:"description,omitempty"`
+	Color       string `json:"color,omitempty"`
 }
 
 type environmentDetail struct {
-	ID              string `json:"id"                      yaml:"id"`
-	Name            string `json:"name"                    yaml:"name"`
-	Slug            string `json:"slug"                    yaml:"slug"`
-	Description     string `json:"description,omitempty"   yaml:"description,omitempty"`
-	Color           string `json:"color,omitempty"         yaml:"color,omitempty"`
-	DeleteProtected bool   `json:"delete_protected"        yaml:"delete_protected"`
+	ID              string `json:"id"`
+	Name            string `json:"name"`
+	Slug            string `json:"slug"`
+	Description     string `json:"description,omitempty"`
+	Color           string `json:"color,omitempty"`
+	DeleteProtected bool   `json:"delete_protected"`
 }
 
 func colorString(c api.Environment_Attributes_Color) string {

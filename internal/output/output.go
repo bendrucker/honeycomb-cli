@@ -7,13 +7,10 @@ import (
 	"reflect"
 	"strings"
 	"text/tabwriter"
-
-	"gopkg.in/yaml.v3"
 )
 
 const (
 	FormatJSON  = "json"
-	FormatYAML  = "yaml"
 	FormatTable = "table"
 )
 
@@ -43,8 +40,6 @@ func (w *Writer) Write(data any, table TableDef) error {
 		enc := json.NewEncoder(w.out)
 		enc.SetIndent("", "  ")
 		return enc.Encode(data)
-	case FormatYAML:
-		return yaml.NewEncoder(w.out).Encode(data)
 	case FormatTable:
 		return w.writeTable(data, table)
 	default:
@@ -58,8 +53,6 @@ func (w *Writer) WriteValue(data any, writeTable func(io.Writer) error) error {
 		enc := json.NewEncoder(w.out)
 		enc.SetIndent("", "  ")
 		return enc.Encode(data)
-	case FormatYAML:
-		return yaml.NewEncoder(w.out).Encode(data)
 	case FormatTable:
 		return writeTable(w.out)
 	default:
@@ -111,8 +104,6 @@ func (w *Writer) WriteDynamic(data any, table DynamicTableDef) error {
 		enc := json.NewEncoder(w.out)
 		enc.SetIndent("", "  ")
 		return enc.Encode(data)
-	case FormatYAML:
-		return yaml.NewEncoder(w.out).Encode(data)
 	case FormatTable:
 		return w.writeDynamicTable(table)
 	default:

@@ -7,22 +7,22 @@ import (
 )
 
 type burnAlertItem struct {
-	ID        string `json:"id"                   yaml:"id"`
-	AlertType string `json:"alert_type"           yaml:"alert_type"`
-	SloID     string `json:"slo_id,omitempty"     yaml:"slo_id,omitempty"`
-	CreatedAt string `json:"created_at,omitempty" yaml:"created_at,omitempty"`
+	ID        string `json:"id"`
+	AlertType string `json:"alert_type"`
+	SloID     string `json:"slo_id,omitempty"`
+	CreatedAt string `json:"created_at,omitempty"`
 }
 
 type burnAlertDetail struct {
-	ID                                    string `json:"id"                                                  yaml:"id"`
-	AlertType                             string `json:"alert_type"                                          yaml:"alert_type"`
-	Description                           string `json:"description,omitempty"                               yaml:"description,omitempty"`
-	SloID                                 string `json:"slo_id,omitempty"                                    yaml:"slo_id,omitempty"`
-	CreatedAt                             string `json:"created_at,omitempty"                                yaml:"created_at,omitempty"`
-	UpdatedAt                             string `json:"updated_at,omitempty"                                yaml:"updated_at,omitempty"`
-	ExhaustionMinutes                     *int   `json:"exhaustion_minutes,omitempty"                        yaml:"exhaustion_minutes,omitempty"`
-	BudgetRateDecreaseThresholdPerMillion *int   `json:"budget_rate_decrease_threshold_per_million,omitempty" yaml:"budget_rate_decrease_threshold_per_million,omitempty"`
-	BudgetRateWindowMinutes               *int   `json:"budget_rate_window_minutes,omitempty"                yaml:"budget_rate_window_minutes,omitempty"`
+	ID                                    string `json:"id"`
+	AlertType                             string `json:"alert_type"`
+	Description                           string `json:"description,omitempty"`
+	SloID                                 string `json:"slo_id,omitempty"`
+	CreatedAt                             string `json:"created_at,omitempty"`
+	UpdatedAt                             string `json:"updated_at,omitempty"`
+	ExhaustionMinutes                     *int   `json:"exhaustion_minutes,omitempty"`
+	BudgetRateDecreaseThresholdPerMillion *int   `json:"budget_rate_decrease_threshold_per_million,omitempty"`
+	BudgetRateWindowMinutes               *int   `json:"budget_rate_window_minutes,omitempty"`
 }
 
 var burnAlertListTable = output.TableDef{

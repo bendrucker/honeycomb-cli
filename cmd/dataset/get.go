@@ -13,14 +13,14 @@ import (
 )
 
 type datasetDetail struct {
-	Name            string  `json:"name"                          yaml:"name"`
-	Slug            string  `json:"slug"                          yaml:"slug"`
-	Description     string  `json:"description,omitempty"         yaml:"description,omitempty"`
-	ExpandJsonDepth *int    `json:"expand_json_depth,omitempty"   yaml:"expand_json_depth,omitempty"`
-	Columns         *int    `json:"columns,omitempty"             yaml:"columns,omitempty"`
-	LastWritten     *string `json:"last_written,omitempty"        yaml:"last_written,omitempty"`
-	DeleteProtected bool    `json:"delete_protected"              yaml:"delete_protected"`
-	CreatedAt       string  `json:"created_at"                    yaml:"created_at"`
+	Name            string  `json:"name"`
+	Slug            string  `json:"slug"`
+	Description     string  `json:"description,omitempty"`
+	ExpandJsonDepth *int    `json:"expand_json_depth,omitempty"`
+	Columns         *int    `json:"columns,omitempty"`
+	LastWritten     *string `json:"last_written,omitempty"`
+	DeleteProtected bool    `json:"delete_protected"`
+	CreatedAt       string  `json:"created_at"`
 }
 
 func mapDatasetDetail(d *api.Dataset) datasetDetail {

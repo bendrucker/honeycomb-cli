@@ -1,22 +1,23 @@
 package config
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
-
-	"gopkg.in/yaml.v3"
 )
 
+const configFile = "config.json"
+
 type Config struct {
-	APIUrl        string              `yaml:"api_url,omitempty"`
-	MCPUrl        string              `yaml:"mcp_url,omitempty"`
-	ActiveProfile string              `yaml:"active_profile,omitempty"`
-	Profiles      map[string]*Profile `yaml:"profiles,omitempty"`
+	APIUrl        string              `json:"api_url,omitempty"`
+	MCPUrl        string              `json:"mcp_url,omitempty"`
+	ActiveProfile string              `json:"active_profile,omitempty"`
+	Profiles      map[string]*Profile `json:"profiles,omitempty"`
 }
 
 type Profile struct {
-	APIUrl string `yaml:"api_url,omitempty"`
-	MCPUrl string `yaml:"mcp_url,omitempty"`
+	APIUrl string `json:"api_url,omitempty"`
+	MCPUrl string `json:"mcp_url,omitempty"`
 }
 
 func DefaultDir() string {
@@ -28,7 +29,7 @@ func DefaultDir() string {
 }
 
 func DefaultPath() string {
-	return filepath.Join(DefaultDir(), "config.yaml")
+	return filepath.Join(DefaultDir(), configFile)
 }
 
 func Load(path string) (*Config, error) {
@@ -41,7 +42,7 @@ func Load(path string) (*Config, error) {
 	}
 
 	var cfg Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
+	if err := json.Unmarshal(data, &cfg); err != nil {
 		return nil, err
 	}
 	return &cfg, nil
@@ -52,9 +53,10 @@ func (c *Config) Save(path string) error {
 		return err
 	}
 
-	data, err := yaml.Marshal(c)
+	data, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
 		return err
 	}
+	data = append(data, '\n')
 	return os.WriteFile(path, data, 0o644)
 }

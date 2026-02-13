@@ -39,22 +39,21 @@ func keyEditor(key string) api.RequestEditorFn {
 }
 
 type boardListItem struct {
-	ID           string `json:"id"                      yaml:"id"`
-	Name         string `json:"name"                    yaml:"name"`
-	Description  string `json:"description,omitempty"    yaml:"description,omitempty"`
-	ColumnLayout string `json:"column_layout,omitempty"  yaml:"column_layout,omitempty"`
-	URL          string `json:"url,omitempty"            yaml:"url,omitempty"`
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	Description  string `json:"description,omitempty"`
+	ColumnLayout string `json:"column_layout,omitempty"`
+	URL          string `json:"url,omitempty"`
 }
 
 type boardDetail struct {
-	ID           string          `json:"id"                        yaml:"id"`
-	Name         string          `json:"name"                      yaml:"name"`
-	Description  string          `json:"description,omitempty"     yaml:"description,omitempty"`
-	Type         string          `json:"type"                      yaml:"type"`
-	ColumnLayout string          `json:"column_layout,omitempty"   yaml:"column_layout,omitempty"`
-	URL          string          `json:"url,omitempty"             yaml:"url,omitempty"`
-	Panels       json.RawMessage `json:"panels,omitempty"          yaml:"-"`
-	PanelsAny    any             `json:"-"                         yaml:"panels,omitempty"`
+	ID           string          `json:"id"`
+	Name         string          `json:"name"`
+	Description  string          `json:"description,omitempty"`
+	Type         string          `json:"type"`
+	ColumnLayout string          `json:"column_layout,omitempty"`
+	URL          string          `json:"url,omitempty"`
+	Panels       json.RawMessage `json:"panels,omitempty"`
 }
 
 func writeBoardDetail(opts *options.RootOptions, detail boardDetail) error {
@@ -103,9 +102,6 @@ func boardToDetail(b api.Board) boardDetail {
 	if b.Panels != nil {
 		raw, _ := json.Marshal(b.Panels)
 		d.Panels = raw
-		var panels any
-		_ = json.Unmarshal(raw, &panels)
-		d.PanelsAny = panels
 	}
 	return d
 }

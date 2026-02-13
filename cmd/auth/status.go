@@ -14,13 +14,13 @@ import (
 )
 
 type KeyStatus struct {
-	Type        string `json:"type" yaml:"type"`
-	Status      string `json:"status" yaml:"status"`
-	Team        string `json:"team,omitempty" yaml:"team,omitempty"`
-	Environment string `json:"environment,omitempty" yaml:"environment,omitempty"`
-	KeyID       string `json:"key_id,omitempty" yaml:"key_id,omitempty"`
-	Name        string `json:"name,omitempty" yaml:"name,omitempty"`
-	Error       string `json:"error,omitempty" yaml:"error,omitempty"`
+	Type        string `json:"type"`
+	Status      string `json:"status"`
+	Team        string `json:"team,omitempty"`
+	Environment string `json:"environment,omitempty"`
+	KeyID       string `json:"key_id,omitempty"`
+	Name        string `json:"name,omitempty"`
+	Error       string `json:"error,omitempty"`
 }
 
 var statusTable = output.TableDef{

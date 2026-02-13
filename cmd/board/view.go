@@ -13,15 +13,14 @@ import (
 )
 
 type viewItem struct {
-	ID   string `json:"id"   yaml:"id"`
-	Name string `json:"name" yaml:"name"`
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 type viewDetail struct {
-	ID         string          `json:"id"                    yaml:"id"`
-	Name       string          `json:"name"                  yaml:"name"`
-	Filters    json.RawMessage `json:"filters,omitempty"     yaml:"-"`
-	FiltersAny any             `json:"-"                     yaml:"filters,omitempty"`
+	ID      string          `json:"id"`
+	Name    string          `json:"name"`
+	Filters json.RawMessage `json:"filters,omitempty"`
 }
 
 var viewListTable = output.TableDef{
@@ -53,9 +52,6 @@ func viewResponseToDetail(v api.BoardViewResponse) viewDetail {
 	if v.Filters != nil {
 		raw, _ := json.Marshal(v.Filters)
 		d.Filters = raw
-		var filters any
-		_ = json.Unmarshal(raw, &filters)
-		d.FiltersAny = filters
 	}
 	return d
 }
