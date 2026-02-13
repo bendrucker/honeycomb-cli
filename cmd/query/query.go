@@ -1,16 +1,12 @@
 package query
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
-	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -34,13 +30,6 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 	cmd.AddCommand(NewDeleteCmd(opts, &dataset))
 
 	return cmd
-}
-
-func keyEditor(key string) api.RequestEditorFn {
-	return func(_ context.Context, req *http.Request) error {
-		config.ApplyAuth(req, config.KeyConfig, key)
-		return nil
-	}
 }
 
 func readFile(opts *options.RootOptions, file string) ([]byte, error) {

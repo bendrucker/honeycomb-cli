@@ -35,7 +35,7 @@ func NewListCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 }
 
 func runList(ctx context.Context, opts *options.RootOptions, dataset string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -45,7 +45,7 @@ func runList(ctx context.Context, opts *options.RootOptions, dataset string) err
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.ListTriggersWithResponse(ctx, dataset, keyEditor(key))
+	resp, err := client.ListTriggersWithResponse(ctx, dataset, auth)
 	if err != nil {
 		return fmt.Errorf("listing triggers: %w", err)
 	}

@@ -7,6 +7,7 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/bendrucker/honeycomb-cli/internal/deref"
 	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -33,7 +34,7 @@ func NewListCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 }
 
 func runSLOList(ctx context.Context, opts *options.RootOptions, dataset string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -43,7 +44,7 @@ func runSLOList(ctx context.Context, opts *options.RootOptions, dataset string) 
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.ListSlosWithResponse(ctx, dataset, keyEditor(key))
+	resp, err := client.ListSlosWithResponse(ctx, dataset, auth)
 	if err != nil {
 		return fmt.Errorf("listing SLOs: %w", err)
 	}
@@ -58,19 +59,14 @@ func runSLOList(ctx context.Context, opts *options.RootOptions, dataset string) 
 
 	items := make([]sloItem, len(*resp.JSON200))
 	for i, s := range *resp.JSON200 {
-		item := sloItem{
+		items[i] = sloItem{
+			ID:               deref.String(s.Id),
 			Name:             s.Name,
+			Description:      deref.String(s.Description),
 			TargetPerMillion: s.TargetPerMillion,
 			TimePeriodDays:   s.TimePeriodDays,
 			SLIAlias:         s.Sli.Alias,
 		}
-		if s.Id != nil {
-			item.ID = *s.Id
-		}
-		if s.Description != nil {
-			item.Description = *s.Description
-		}
-		items[i] = item
 	}
 
 	return opts.OutputWriter().Write(items, sloListTable)

@@ -21,7 +21,7 @@ func NewListCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 }
 
 func runMarkerList(ctx context.Context, opts *options.RootOptions, dataset string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -31,7 +31,7 @@ func runMarkerList(ctx context.Context, opts *options.RootOptions, dataset strin
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.GetMarkerWithResponse(ctx, dataset, keyEditor(key))
+	resp, err := client.GetMarkerWithResponse(ctx, dataset, auth)
 	if err != nil {
 		return fmt.Errorf("listing markers: %w", err)
 	}

@@ -22,7 +22,7 @@ func NewGetCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 }
 
 func runGet(ctx context.Context, opts *options.RootOptions, dataset, triggerID string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -32,7 +32,7 @@ func runGet(ctx context.Context, opts *options.RootOptions, dataset, triggerID s
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.GetTriggerWithResponse(ctx, dataset, triggerID, keyEditor(key))
+	resp, err := client.GetTriggerWithResponse(ctx, dataset, triggerID, auth)
 	if err != nil {
 		return fmt.Errorf("getting trigger: %w", err)
 	}

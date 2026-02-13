@@ -1,8 +1,11 @@
 package options
 
 import (
+	"context"
 	"fmt"
+	"net/http"
 
+	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/bendrucker/honeycomb-cli/internal/iostreams"
 	"github.com/bendrucker/honeycomb-cli/internal/output"
@@ -53,6 +56,17 @@ func (o *RootOptions) RequireKey(kt config.KeyType) (string, error) {
 		return "", fmt.Errorf("reading %s key: %w", kt, err)
 	}
 	return key, nil
+}
+
+func (o *RootOptions) KeyEditor(kt config.KeyType) (api.RequestEditorFn, error) {
+	key, err := o.RequireKey(kt)
+	if err != nil {
+		return nil, err
+	}
+	return func(_ context.Context, req *http.Request) error {
+		config.ApplyAuth(req, kt, key)
+		return nil
+	}, nil
 }
 
 func (o *RootOptions) OutputWriter() *output.Writer {

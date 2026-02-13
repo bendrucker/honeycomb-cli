@@ -22,7 +22,7 @@ func NewGetCmd(opts *options.RootOptions, team *string) *cobra.Command {
 }
 
 func runEnvironmentGet(ctx context.Context, opts *options.RootOptions, team, envID string) error {
-	key, err := opts.RequireKey(config.KeyManagement)
+	auth, err := opts.KeyEditor(config.KeyManagement)
 	if err != nil {
 		return err
 	}
@@ -32,7 +32,7 @@ func runEnvironmentGet(ctx context.Context, opts *options.RootOptions, team, env
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.GetEnvironmentWithResponse(ctx, team, envID, keyEditor(key))
+	resp, err := client.GetEnvironmentWithResponse(ctx, team, envID, auth)
 	if err != nil {
 		return fmt.Errorf("getting environment: %w", err)
 	}

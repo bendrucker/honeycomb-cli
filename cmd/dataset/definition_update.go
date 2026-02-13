@@ -33,7 +33,7 @@ func NewDefinitionUpdateCmd(opts *options.RootOptions) *cobra.Command {
 }
 
 func runDefinitionUpdate(ctx context.Context, opts *options.RootOptions, slug, file string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func runDefinitionUpdate(ctx context.Context, opts *options.RootOptions, slug, f
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.PatchDatasetDefinitionsWithBodyWithResponse(ctx, slug, "application/json", bytes.NewReader(data), keyEditor(key))
+	resp, err := client.PatchDatasetDefinitionsWithBodyWithResponse(ctx, slug, "application/json", bytes.NewReader(data), auth)
 	if err != nil {
 		return fmt.Errorf("updating dataset definitions: %w", err)
 	}

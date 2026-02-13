@@ -54,7 +54,7 @@ func NewCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 }
 
 func runColumnCreate(cmd *cobra.Command, opts *options.RootOptions, dataset, keyName, colType, description string, hidden bool) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -78,7 +78,7 @@ func runColumnCreate(cmd *cobra.Command, opts *options.RootOptions, dataset, key
 		body.Hidden = &hidden
 	}
 
-	resp, err := client.CreateColumnWithResponse(cmd.Context(), dataset, body, keyEditor(key))
+	resp, err := client.CreateColumnWithResponse(cmd.Context(), dataset, body, auth)
 	if err != nil {
 		return fmt.Errorf("creating column: %w", err)
 	}

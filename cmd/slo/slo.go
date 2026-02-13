@@ -1,12 +1,7 @@
 package slo
 
 import (
-	"context"
-	"net/http"
-
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
-	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -31,11 +26,4 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 	cmd.AddCommand(NewHistoryCmd(opts, &dataset))
 
 	return cmd
-}
-
-func keyEditor(key string) api.RequestEditorFn {
-	return func(_ context.Context, req *http.Request) error {
-		config.ApplyAuth(req, config.KeyConfig, key)
-		return nil
-	}
 }

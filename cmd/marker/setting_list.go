@@ -21,7 +21,7 @@ func NewSettingListCmd(opts *options.RootOptions, dataset *string) *cobra.Comman
 }
 
 func runSettingList(ctx context.Context, opts *options.RootOptions, dataset string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -31,7 +31,7 @@ func runSettingList(ctx context.Context, opts *options.RootOptions, dataset stri
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.ListMarkerSettingsWithResponse(ctx, api.DatasetSlugOrAll(dataset), keyEditor(key))
+	resp, err := client.ListMarkerSettingsWithResponse(ctx, api.DatasetSlugOrAll(dataset), auth)
 	if err != nil {
 		return fmt.Errorf("listing marker settings: %w", err)
 	}

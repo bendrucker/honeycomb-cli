@@ -3,12 +3,13 @@ package dataset
 import (
 	"context"
 	"fmt"
-	"io"
-	"text/tabwriter"
+	"strconv"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/bendrucker/honeycomb-cli/internal/deref"
+	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -25,20 +26,12 @@ type datasetDetail struct {
 
 func mapDatasetDetail(d *api.Dataset) datasetDetail {
 	detail := datasetDetail{
-		Name: d.Name,
+		Name:        d.Name,
+		Slug:        deref.String(d.Slug),
+		Description: deref.String(d.Description),
+		CreatedAt:   deref.String(d.CreatedAt),
 	}
-	if d.Slug != nil {
-		detail.Slug = *d.Slug
-	}
-	if d.Description != nil {
-		detail.Description = *d.Description
-	}
-	if d.ExpandJsonDepth != nil {
-		detail.ExpandJsonDepth = d.ExpandJsonDepth
-	}
-	if d.CreatedAt != nil {
-		detail.CreatedAt = *d.CreatedAt
-	}
+	detail.ExpandJsonDepth = d.ExpandJsonDepth
 	if d.RegularColumnsCount.IsSpecified() && !d.RegularColumnsCount.IsNull() {
 		v := d.RegularColumnsCount.MustGet()
 		detail.Columns = &v
@@ -47,8 +40,8 @@ func mapDatasetDetail(d *api.Dataset) datasetDetail {
 		v := d.LastWrittenAt.MustGet()
 		detail.LastWritten = &v
 	}
-	if d.Settings != nil && d.Settings.DeleteProtected != nil {
-		detail.DeleteProtected = *d.Settings.DeleteProtected
+	if d.Settings != nil {
+		detail.DeleteProtected = deref.Bool(d.Settings.DeleteProtected)
 	}
 	return detail
 }
@@ -65,7 +58,7 @@ func NewGetCmd(opts *options.RootOptions) *cobra.Command {
 }
 
 func runDatasetGet(ctx context.Context, opts *options.RootOptions, slug string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -75,7 +68,7 @@ func runDatasetGet(ctx context.Context, opts *options.RootOptions, slug string) 
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.GetDatasetWithResponse(ctx, slug, keyEditor(key))
+	resp, err := client.GetDatasetWithResponse(ctx, slug, auth)
 	if err != nil {
 		return fmt.Errorf("getting dataset: %w", err)
 	}
@@ -93,24 +86,25 @@ func runDatasetGet(ctx context.Context, opts *options.RootOptions, slug string) 
 }
 
 func writeDatasetDetail(opts *options.RootOptions, detail datasetDetail) error {
-	return opts.OutputWriter().WriteValue(detail, func(out io.Writer) error {
-		tw := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
-		_, _ = fmt.Fprintf(tw, "Name:\t%s\n", detail.Name)
-		_, _ = fmt.Fprintf(tw, "Slug:\t%s\n", detail.Slug)
-		if detail.Description != "" {
-			_, _ = fmt.Fprintf(tw, "Description:\t%s\n", detail.Description)
-		}
-		if detail.ExpandJsonDepth != nil {
-			_, _ = fmt.Fprintf(tw, "Expand JSON Depth:\t%d\n", *detail.ExpandJsonDepth)
-		}
-		if detail.Columns != nil {
-			_, _ = fmt.Fprintf(tw, "Columns:\t%d\n", *detail.Columns)
-		}
-		if detail.LastWritten != nil {
-			_, _ = fmt.Fprintf(tw, "Last Written:\t%s\n", *detail.LastWritten)
-		}
-		_, _ = fmt.Fprintf(tw, "Delete Protected:\t%t\n", detail.DeleteProtected)
-		_, _ = fmt.Fprintf(tw, "Created At:\t%s\n", detail.CreatedAt)
-		return tw.Flush()
-	})
+	fields := []output.Field{
+		{Label: "Name", Value: detail.Name},
+		{Label: "Slug", Value: detail.Slug},
+	}
+	if detail.Description != "" {
+		fields = append(fields, output.Field{Label: "Description", Value: detail.Description})
+	}
+	if detail.ExpandJsonDepth != nil {
+		fields = append(fields, output.Field{Label: "Expand JSON Depth", Value: fmt.Sprintf("%d", *detail.ExpandJsonDepth)})
+	}
+	if detail.Columns != nil {
+		fields = append(fields, output.Field{Label: "Columns", Value: fmt.Sprintf("%d", *detail.Columns)})
+	}
+	if detail.LastWritten != nil {
+		fields = append(fields, output.Field{Label: "Last Written", Value: *detail.LastWritten})
+	}
+	fields = append(fields,
+		output.Field{Label: "Delete Protected", Value: strconv.FormatBool(detail.DeleteProtected)},
+		output.Field{Label: "Created At", Value: detail.CreatedAt},
+	)
+	return opts.OutputWriter().WriteFields(detail, fields)
 }

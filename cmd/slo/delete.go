@@ -30,7 +30,7 @@ func NewDeleteCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 }
 
 func runSLODelete(ctx context.Context, opts *options.RootOptions, dataset, sloID string, yes bool) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -45,7 +45,7 @@ func runSLODelete(ctx context.Context, opts *options.RootOptions, dataset, sloID
 			return fmt.Errorf("--yes is required in non-interactive mode")
 		}
 
-		s, err := getSLO(ctx, client, key, dataset, sloID)
+		s, err := getSLO(ctx, client, auth, dataset, sloID)
 		if err != nil {
 			return err
 		}
@@ -59,7 +59,7 @@ func runSLODelete(ctx context.Context, opts *options.RootOptions, dataset, sloID
 		}
 	}
 
-	resp, err := client.DeleteSloWithResponse(ctx, dataset, sloID, keyEditor(key))
+	resp, err := client.DeleteSloWithResponse(ctx, dataset, sloID, auth)
 	if err != nil {
 		return fmt.Errorf("deleting SLO: %w", err)
 	}

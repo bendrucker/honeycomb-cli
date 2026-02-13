@@ -27,7 +27,7 @@ func NewListCmd(opts *options.RootOptions, team *string) *cobra.Command {
 }
 
 func runKeyList(ctx context.Context, opts *options.RootOptions, team, filterType string) error {
-	key, err := opts.RequireKey(config.KeyManagement)
+	auth, err := opts.KeyEditor(config.KeyManagement)
 	if err != nil {
 		return err
 	}
@@ -43,7 +43,7 @@ func runKeyList(ctx context.Context, opts *options.RootOptions, team, filterType
 		params = &api.ListApiKeysParams{FilterType: &ft}
 	}
 
-	resp, err := client.ListApiKeysWithResponse(ctx, api.TeamSlug(team), params, keyEditor(key))
+	resp, err := client.ListApiKeysWithResponse(ctx, api.TeamSlug(team), params, auth)
 	if err != nil {
 		return fmt.Errorf("listing API keys: %w", err)
 	}

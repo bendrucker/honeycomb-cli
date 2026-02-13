@@ -48,12 +48,15 @@ func TestWrite_Table(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
-	if len(lines) != 3 {
-		t.Fatalf("got %d lines, want 3 (header + 2 rows)", len(lines))
+	out := buf.String()
+	if !strings.Contains(out, "NAME") || !strings.Contains(out, "COUNT") {
+		t.Errorf("missing headers in output:\n%s", out)
 	}
-	if !strings.Contains(lines[0], "NAME") || !strings.Contains(lines[0], "COUNT") {
-		t.Errorf("header = %q", lines[0])
+	if !strings.Contains(out, "a") || !strings.Contains(out, "b") {
+		t.Errorf("missing data in output:\n%s", out)
+	}
+	if !strings.Contains(out, "╭") {
+		t.Errorf("expected rounded border in output:\n%s", out)
 	}
 }
 
@@ -66,9 +69,9 @@ func TestWrite_Table_Empty(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
-	if len(lines) != 1 {
-		t.Fatalf("got %d lines, want 1 (header only)", len(lines))
+	out := buf.String()
+	if !strings.Contains(out, "NAME") {
+		t.Errorf("expected headers in empty table:\n%s", out)
 	}
 }
 
@@ -146,5 +149,82 @@ func TestWriteValue_UnsupportedFormat(t *testing.T) {
 	err := w.WriteValue(testItem{}, nil)
 	if err == nil || !strings.Contains(err.Error(), "unsupported format") {
 		t.Errorf("err = %v, want unsupported format", err)
+	}
+}
+
+func TestWriteFields_JSON(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(&buf, FormatJSON)
+
+	item := testItem{Name: "a", Count: 1}
+	fields := []Field{
+		{"Name", item.Name},
+		{"Count", fmt.Sprintf("%d", item.Count)},
+	}
+	if err := w.WriteFields(item, fields); err != nil {
+		t.Fatal(err)
+	}
+
+	var got testItem
+	if err := json.Unmarshal(buf.Bytes(), &got); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if got.Name != "a" || got.Count != 1 {
+		t.Errorf("got %+v", got)
+	}
+}
+
+func TestWriteFields_Table(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(&buf, FormatTable)
+
+	fields := []Field{
+		{"Name", "a"},
+		{"Count", "1"},
+	}
+	if err := w.WriteFields(testItem{Name: "a", Count: 1}, fields); err != nil {
+		t.Fatal(err)
+	}
+
+	out := buf.String()
+	if !strings.Contains(out, "Name") || !strings.Contains(out, "a") {
+		t.Errorf("missing Name field in output:\n%s", out)
+	}
+	if !strings.Contains(out, "Count") || !strings.Contains(out, "1") {
+		t.Errorf("missing Count field in output:\n%s", out)
+	}
+	if !strings.Contains(out, "╭") {
+		t.Errorf("expected rounded border in output:\n%s", out)
+	}
+}
+
+func TestWriteFields_UnsupportedFormat(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(&buf, "xml")
+
+	err := w.WriteFields(testItem{}, nil)
+	if err == nil || !strings.Contains(err.Error(), "unsupported format") {
+		t.Errorf("err = %v, want unsupported format", err)
+	}
+}
+
+func TestWriteDynamic_Table(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(&buf, FormatTable)
+
+	td := DynamicTableDef{
+		Headers: []string{"Col A", "Col B"},
+		Rows:    [][]string{{"1", "2"}, {"3", "4"}},
+	}
+	if err := w.WriteDynamic(nil, td); err != nil {
+		t.Fatal(err)
+	}
+
+	out := buf.String()
+	if !strings.Contains(out, "COL A") || !strings.Contains(out, "COL B") {
+		t.Errorf("missing headers in output:\n%s", out)
+	}
+	if !strings.Contains(out, "╭") {
+		t.Errorf("expected rounded border in output:\n%s", out)
 	}
 }

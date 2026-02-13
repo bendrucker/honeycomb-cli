@@ -30,7 +30,7 @@ func NewBurnAlertCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Co
 }
 
 func runBurnAlertCreate(ctx context.Context, opts *options.RootOptions, dataset, file string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -58,7 +58,7 @@ func runBurnAlertCreate(ctx context.Context, opts *options.RootOptions, dataset,
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.CreateBurnAlertWithBodyWithResponse(ctx, dataset, "application/json", bytes.NewReader(data), keyEditor(key))
+	resp, err := client.CreateBurnAlertWithBodyWithResponse(ctx, dataset, "application/json", bytes.NewReader(data), auth)
 	if err != nil {
 		return fmt.Errorf("creating burn alert: %w", err)
 	}

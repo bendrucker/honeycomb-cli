@@ -2,12 +2,10 @@ package board
 
 import (
 	"encoding/json"
-	"fmt"
-	"io"
-	"text/tabwriter"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
+	"github.com/bendrucker/honeycomb-cli/internal/deref"
 	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -31,23 +29,16 @@ var viewListTable = output.TableDef{
 }
 
 func viewResponseToItem(v api.BoardViewResponse) viewItem {
-	item := viewItem{}
-	if v.Id != nil {
-		item.ID = *v.Id
+	return viewItem{
+		ID:   deref.String(v.Id),
+		Name: deref.String(v.Name),
 	}
-	if v.Name != nil {
-		item.Name = *v.Name
-	}
-	return item
 }
 
 func viewResponseToDetail(v api.BoardViewResponse) viewDetail {
-	d := viewDetail{}
-	if v.Id != nil {
-		d.ID = *v.Id
-	}
-	if v.Name != nil {
-		d.Name = *v.Name
+	d := viewDetail{
+		ID:   deref.String(v.Id),
+		Name: deref.String(v.Name),
 	}
 	if v.Filters != nil {
 		raw, _ := json.Marshal(v.Filters)
@@ -57,11 +48,9 @@ func viewResponseToDetail(v api.BoardViewResponse) viewDetail {
 }
 
 func writeViewDetail(opts *options.RootOptions, detail viewDetail) error {
-	return opts.OutputWriter().WriteValue(detail, func(w io.Writer) error {
-		tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-		_, _ = fmt.Fprintf(tw, "ID:\t%s\n", detail.ID)
-		_, _ = fmt.Fprintf(tw, "Name:\t%s\n", detail.Name)
-		return tw.Flush()
+	return opts.OutputWriter().WriteFields(detail, []output.Field{
+		{Label: "ID", Value: detail.ID},
+		{Label: "Name", Value: detail.Name},
 	})
 }
 

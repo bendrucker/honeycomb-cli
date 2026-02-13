@@ -53,7 +53,7 @@ func NewSettingCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Comm
 }
 
 func runSettingCreate(ctx context.Context, opts *options.RootOptions, dataset string, body api.CreateMarkerSettingJSONRequestBody) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,7 @@ func runSettingCreate(ctx context.Context, opts *options.RootOptions, dataset st
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.CreateMarkerSettingWithResponse(ctx, api.DatasetSlugOrAll(dataset), body, keyEditor(key))
+	resp, err := client.CreateMarkerSettingWithResponse(ctx, api.DatasetSlugOrAll(dataset), body, auth)
 	if err != nil {
 		return fmt.Errorf("creating marker setting: %w", err)
 	}

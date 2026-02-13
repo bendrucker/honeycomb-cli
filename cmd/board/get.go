@@ -22,7 +22,7 @@ func NewGetCmd(opts *options.RootOptions) *cobra.Command {
 }
 
 func runBoardGet(ctx context.Context, opts *options.RootOptions, boardID string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -32,7 +32,7 @@ func runBoardGet(ctx context.Context, opts *options.RootOptions, boardID string)
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.GetBoardWithResponse(ctx, boardID, keyEditor(key))
+	resp, err := client.GetBoardWithResponse(ctx, boardID, auth)
 	if err != nil {
 		return fmt.Errorf("getting board: %w", err)
 	}

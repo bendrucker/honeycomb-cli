@@ -37,7 +37,7 @@ func NewViewCreateCmd(opts *options.RootOptions, board *string) *cobra.Command {
 }
 
 func runViewCreate(cmd *cobra.Command, opts *options.RootOptions, boardID, file, name string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -50,7 +50,7 @@ func runViewCreate(cmd *cobra.Command, opts *options.RootOptions, boardID, file,
 	ctx := cmd.Context()
 
 	if file != "" {
-		return createViewFromFile(ctx, client, opts, key, boardID, file)
+		return createViewFromFile(ctx, client, opts, auth, boardID, file)
 	}
 
 	if name == "" {
@@ -71,7 +71,7 @@ func runViewCreate(cmd *cobra.Command, opts *options.RootOptions, boardID, file,
 		Filters: []api.BoardViewFilter{},
 	}
 
-	resp, err := client.CreateBoardViewWithResponse(ctx, boardID, body, keyEditor(key))
+	resp, err := client.CreateBoardViewWithResponse(ctx, boardID, body, auth)
 	if err != nil {
 		return fmt.Errorf("creating board view: %w", err)
 	}
@@ -87,7 +87,7 @@ func runViewCreate(cmd *cobra.Command, opts *options.RootOptions, boardID, file,
 	return writeViewDetail(opts, viewResponseToDetail(*resp.JSON201))
 }
 
-func createViewFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, key, boardID, file string) error {
+func createViewFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, auth api.RequestEditorFn, boardID, file string) error {
 	var r io.Reader
 	if file == "-" {
 		r = opts.IOStreams.In
@@ -105,7 +105,7 @@ func createViewFromFile(ctx context.Context, client *api.ClientWithResponses, op
 		return fmt.Errorf("reading file: %w", err)
 	}
 
-	resp, err := client.CreateBoardViewWithBodyWithResponse(ctx, boardID, "application/json", bytes.NewReader(data), keyEditor(key))
+	resp, err := client.CreateBoardViewWithBodyWithResponse(ctx, boardID, "application/json", bytes.NewReader(data), auth)
 	if err != nil {
 		return fmt.Errorf("creating board view: %w", err)
 	}

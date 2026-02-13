@@ -30,7 +30,7 @@ func NewCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 }
 
 func runAnnotationCreate(ctx context.Context, opts *options.RootOptions, dataset, file string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -58,7 +58,7 @@ func runAnnotationCreate(ctx context.Context, opts *options.RootOptions, dataset
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.CreateQueryAnnotationWithBodyWithResponse(ctx, dataset, "application/json", bytes.NewReader(data), keyEditor(key))
+	resp, err := client.CreateQueryAnnotationWithBodyWithResponse(ctx, dataset, "application/json", bytes.NewReader(data), auth)
 	if err != nil {
 		return fmt.Errorf("creating query annotation: %w", err)
 	}

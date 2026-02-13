@@ -30,7 +30,7 @@ func NewCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 }
 
 func runCreate(ctx context.Context, opts *options.RootOptions, dataset, file string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func runCreate(ctx context.Context, opts *options.RootOptions, dataset, file str
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.CreateTriggerWithBodyWithResponse(ctx, dataset, "application/json", bytes.NewReader(data), keyEditor(key))
+	resp, err := client.CreateTriggerWithBodyWithResponse(ctx, dataset, "application/json", bytes.NewReader(data), auth)
 	if err != nil {
 		return fmt.Errorf("creating trigger: %w", err)
 	}

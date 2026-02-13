@@ -72,7 +72,7 @@ type calculatedUpdateFlags struct {
 }
 
 func runCalculatedUpdate(ctx context.Context, opts *options.RootOptions, dataset, id string, flags calculatedUpdateFlags) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -105,7 +105,7 @@ func runCalculatedUpdate(ctx context.Context, opts *options.RootOptions, dataset
 			return fmt.Errorf("parsing calculated column JSON: %w", err)
 		}
 	} else {
-		getResp, err := client.GetCalculatedFieldWithResponse(ctx, dataset, id, keyEditor(key))
+		getResp, err := client.GetCalculatedFieldWithResponse(ctx, dataset, id, auth)
 		if err != nil {
 			return fmt.Errorf("getting calculated column: %w", err)
 		}
@@ -132,7 +132,7 @@ func runCalculatedUpdate(ctx context.Context, opts *options.RootOptions, dataset
 	body.CreatedAt = nil
 	body.UpdatedAt = nil
 
-	resp, err := client.UpdateCalculatedFieldWithResponse(ctx, dataset, id, body, keyEditor(key))
+	resp, err := client.UpdateCalculatedFieldWithResponse(ctx, dataset, id, body, auth)
 	if err != nil {
 		return fmt.Errorf("updating calculated column: %w", err)
 	}

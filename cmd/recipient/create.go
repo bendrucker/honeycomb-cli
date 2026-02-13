@@ -31,7 +31,7 @@ func NewCreateCmd(opts *options.RootOptions) *cobra.Command {
 }
 
 func runCreate(ctx context.Context, opts *options.RootOptions, file string) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func runCreate(ctx context.Context, opts *options.RootOptions, file string) erro
 		return err
 	}
 
-	resp, err := client.CreateRecipientWithBodyWithResponse(ctx, "application/json", bytes.NewReader(data), keyEditor(key))
+	resp, err := client.CreateRecipientWithBodyWithResponse(ctx, "application/json", bytes.NewReader(data), auth)
 	if err != nil {
 		return fmt.Errorf("creating recipient: %w", err)
 	}

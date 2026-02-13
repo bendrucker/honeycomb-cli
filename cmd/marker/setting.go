@@ -1,11 +1,9 @@
 package marker
 
 import (
-	"fmt"
-	"text/tabwriter"
-
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
+	"github.com/bendrucker/honeycomb-cli/internal/deref"
 	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -28,14 +26,10 @@ var settingListTable = output.TableDef{
 
 func toSettingItem(s api.MarkerSetting) settingItem {
 	item := settingItem{
-		Type:  s.Type,
-		Color: s.Color,
-	}
-	if s.Id != nil {
-		item.ID = *s.Id
-	}
-	if s.CreatedAt != nil {
-		item.CreatedAt = *s.CreatedAt
+		ID:        deref.String(s.Id),
+		Type:      s.Type,
+		Color:     s.Color,
+		CreatedAt: deref.String(s.CreatedAt),
 	}
 	if s.UpdatedAt.IsSpecified() && !s.UpdatedAt.IsNull() {
 		item.UpdatedAt = s.UpdatedAt.MustGet()
@@ -44,18 +38,13 @@ func toSettingItem(s api.MarkerSetting) settingItem {
 }
 
 func writeSettingDetail(opts *options.RootOptions, item settingItem) error {
-	format := opts.ResolveFormat()
-	if format != "table" {
-		return opts.OutputWriter().Write(item, output.TableDef{})
-	}
-
-	tw := tabwriter.NewWriter(opts.IOStreams.Out, 0, 0, 2, ' ', 0)
-	_, _ = fmt.Fprintf(tw, "ID:\t%s\n", item.ID)
-	_, _ = fmt.Fprintf(tw, "Type:\t%s\n", item.Type)
-	_, _ = fmt.Fprintf(tw, "Color:\t%s\n", item.Color)
-	_, _ = fmt.Fprintf(tw, "Created At:\t%s\n", item.CreatedAt)
-	_, _ = fmt.Fprintf(tw, "Updated At:\t%s\n", item.UpdatedAt)
-	return tw.Flush()
+	return opts.OutputWriter().WriteFields(item, []output.Field{
+		{Label: "ID", Value: item.ID},
+		{Label: "Type", Value: item.Type},
+		{Label: "Color", Value: item.Color},
+		{Label: "Created At", Value: item.CreatedAt},
+		{Label: "Updated At", Value: item.UpdatedAt},
+	})
 }
 
 func NewSettingCmd(opts *options.RootOptions, dataset *string) *cobra.Command {

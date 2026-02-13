@@ -1,16 +1,11 @@
 package recipient
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-	"text/tabwriter"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
-	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -29,13 +24,6 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 	cmd.AddCommand(NewTriggersCmd(opts))
 
 	return cmd
-}
-
-func keyEditor(key string) api.RequestEditorFn {
-	return func(_ context.Context, req *http.Request) error {
-		config.ApplyAuth(req, config.KeyConfig, key)
-		return nil
-	}
 }
 
 type recipientItem struct {
@@ -130,20 +118,18 @@ func extractTarget(d recipientDetail) string {
 }
 
 func writeRecipientDetail(opts *options.RootOptions, detail recipientDetail) error {
-	return opts.OutputWriter().WriteValue(detail, func(w io.Writer) error {
-		tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-		_, _ = fmt.Fprintf(tw, "ID:\t%s\n", detail.ID)
-		_, _ = fmt.Fprintf(tw, "Type:\t%s\n", detail.Type)
-		target := extractTarget(detail)
-		if target != "" {
-			_, _ = fmt.Fprintf(tw, "Target:\t%s\n", target)
-		}
-		if detail.CreatedAt != "" {
-			_, _ = fmt.Fprintf(tw, "Created At:\t%s\n", detail.CreatedAt)
-		}
-		if detail.UpdatedAt != "" {
-			_, _ = fmt.Fprintf(tw, "Updated At:\t%s\n", detail.UpdatedAt)
-		}
-		return tw.Flush()
-	})
+	fields := []output.Field{
+		{Label: "ID", Value: detail.ID},
+		{Label: "Type", Value: detail.Type},
+	}
+	if target := extractTarget(detail); target != "" {
+		fields = append(fields, output.Field{Label: "Target", Value: target})
+	}
+	if detail.CreatedAt != "" {
+		fields = append(fields, output.Field{Label: "Created At", Value: detail.CreatedAt})
+	}
+	if detail.UpdatedAt != "" {
+		fields = append(fields, output.Field{Label: "Updated At", Value: detail.UpdatedAt})
+	}
+	return opts.OutputWriter().WriteFields(detail, fields)
 }

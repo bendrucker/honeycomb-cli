@@ -32,7 +32,7 @@ func NewListCmd(opts *options.RootOptions, team *string) *cobra.Command {
 }
 
 func runEnvironmentList(ctx context.Context, opts *options.RootOptions, team string) error {
-	key, err := opts.RequireKey(config.KeyManagement)
+	auth, err := opts.KeyEditor(config.KeyManagement)
 	if err != nil {
 		return err
 	}
@@ -42,7 +42,7 @@ func runEnvironmentList(ctx context.Context, opts *options.RootOptions, team str
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.ListEnvironmentsWithResponse(ctx, team, nil, keyEditor(key))
+	resp, err := client.ListEnvironmentsWithResponse(ctx, team, nil, auth)
 	if err != nil {
 		return fmt.Errorf("listing environments: %w", err)
 	}

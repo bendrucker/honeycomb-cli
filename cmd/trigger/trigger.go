@@ -1,18 +1,14 @@
 package trigger
 
 import (
-	"context"
 	"fmt"
-	"io"
-	"net/http"
 	"strconv"
 	"strings"
-	"text/tabwriter"
-	"time"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/bendrucker/honeycomb-cli/internal/deref"
+	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -90,84 +86,46 @@ func formatThreshold(t *api.TriggerResponse) string {
 }
 
 func toItem(t api.TriggerResponse) triggerItem {
-	item := triggerItem{
-		Threshold: formatThreshold(&t),
+	return triggerItem{
+		ID:          deref.String(t.Id),
+		Name:        deref.String(t.Name),
+		Description: deref.String(t.Description),
+		Disabled:    deref.Bool(t.Disabled),
+		Triggered:   deref.Bool(t.Triggered),
+		AlertType:   deref.Enum(t.AlertType),
+		Threshold:   formatThreshold(&t),
 	}
-	if t.Id != nil {
-		item.ID = *t.Id
-	}
-	if t.Name != nil {
-		item.Name = *t.Name
-	}
-	if t.Description != nil {
-		item.Description = *t.Description
-	}
-	if t.Disabled != nil {
-		item.Disabled = *t.Disabled
-	}
-	if t.Triggered != nil {
-		item.Triggered = *t.Triggered
-	}
-	if t.AlertType != nil {
-		item.AlertType = string(*t.AlertType)
-	}
-	return item
 }
 
 func toDetail(t api.TriggerResponse) triggerDetail {
-	d := triggerDetail{}
-	if t.Id != nil {
-		d.ID = *t.Id
-	}
-	if t.Name != nil {
-		d.Name = *t.Name
-	}
-	if t.Description != nil {
-		d.Description = *t.Description
-	}
-	if t.DatasetSlug != nil {
-		d.DatasetSlug = *t.DatasetSlug
-	}
-	if t.Disabled != nil {
-		d.Disabled = *t.Disabled
-	}
-	if t.Triggered != nil {
-		d.Triggered = *t.Triggered
-	}
-	if t.AlertType != nil {
-		d.AlertType = string(*t.AlertType)
-	}
-	if t.Frequency != nil {
-		d.Frequency = *t.Frequency
+	d := triggerDetail{
+		ID:          deref.String(t.Id),
+		Name:        deref.String(t.Name),
+		Description: deref.String(t.Description),
+		DatasetSlug: deref.String(t.DatasetSlug),
+		Disabled:    deref.Bool(t.Disabled),
+		Triggered:   deref.Bool(t.Triggered),
+		AlertType:   deref.Enum(t.AlertType),
+		Frequency:   deref.Int(t.Frequency),
+		QueryID:     deref.String(t.QueryId),
+		HasQuery:    t.Query != nil,
+		CreatedAt:   deref.Time(t.CreatedAt),
+		UpdatedAt:   deref.Time(t.UpdatedAt),
 	}
 	if t.Threshold != nil {
 		d.Threshold = &triggerThreshold{
-			Op:    string(t.Threshold.Op),
-			Value: float64(t.Threshold.Value),
+			Op:            string(t.Threshold.Op),
+			Value:         float64(t.Threshold.Value),
+			ExceededLimit: deref.Int(t.Threshold.ExceededLimit),
 		}
-		if t.Threshold.ExceededLimit != nil {
-			d.Threshold.ExceededLimit = *t.Threshold.ExceededLimit
-		}
-	}
-	if t.QueryId != nil {
-		d.QueryID = *t.QueryId
-	}
-	if t.Query != nil {
-		d.HasQuery = true
 	}
 	if t.Recipients != nil {
 		for _, r := range *t.Recipients {
-			ri := recipientItem{}
-			if r.Id != nil {
-				ri.ID = *r.Id
-			}
-			if r.Type != nil {
-				ri.Type = string(*r.Type)
-			}
-			if r.Target != nil {
-				ri.Target = *r.Target
-			}
-			d.Recipients = append(d.Recipients, ri)
+			d.Recipients = append(d.Recipients, recipientItem{
+				ID:     deref.String(r.Id),
+				Type:   deref.Enum(r.Type),
+				Target: deref.String(r.Target),
+			})
 		}
 	}
 	if t.Tags != nil {
@@ -175,50 +133,50 @@ func toDetail(t api.TriggerResponse) triggerDetail {
 			d.Tags = append(d.Tags, tagItem{Key: tag.Key, Value: tag.Value})
 		}
 	}
-	if t.CreatedAt != nil {
-		d.CreatedAt = t.CreatedAt.Format(time.RFC3339)
-	}
-	if t.UpdatedAt != nil {
-		d.UpdatedAt = t.UpdatedAt.Format(time.RFC3339)
-	}
 	return d
 }
 
 func writeTriggerDetail(opts *options.RootOptions, detail triggerDetail) error {
-	return opts.OutputWriter().WriteValue(detail, func(out io.Writer) error {
-		tw := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
-		_, _ = fmt.Fprintf(tw, "ID:\t%s\n", detail.ID)
-		_, _ = fmt.Fprintf(tw, "Name:\t%s\n", detail.Name)
-		_, _ = fmt.Fprintf(tw, "Description:\t%s\n", detail.Description)
-		_, _ = fmt.Fprintf(tw, "Disabled:\t%s\n", strconv.FormatBool(detail.Disabled))
-		_, _ = fmt.Fprintf(tw, "Triggered:\t%s\n", strconv.FormatBool(detail.Triggered))
-		_, _ = fmt.Fprintf(tw, "Alert Type:\t%s\n", detail.AlertType)
-		_, _ = fmt.Fprintf(tw, "Dataset Slug:\t%s\n", detail.DatasetSlug)
-		_, _ = fmt.Fprintf(tw, "Frequency:\t%d\n", detail.Frequency)
-		_, _ = fmt.Fprintf(tw, "Threshold:\t%s\n", formatThresholdDetail(detail.Threshold))
-		if detail.QueryID != "" {
-			_, _ = fmt.Fprintf(tw, "Query ID:\t%s\n", detail.QueryID)
-		} else if detail.HasQuery {
-			_, _ = fmt.Fprintf(tw, "Query ID:\t(inline)\n")
+	fields := []output.Field{
+		{Label: "ID", Value: detail.ID},
+		{Label: "Name", Value: detail.Name},
+		{Label: "Description", Value: detail.Description},
+		{Label: "Disabled", Value: strconv.FormatBool(detail.Disabled)},
+		{Label: "Triggered", Value: strconv.FormatBool(detail.Triggered)},
+		{Label: "Alert Type", Value: detail.AlertType},
+		{Label: "Dataset Slug", Value: detail.DatasetSlug},
+		{Label: "Frequency", Value: strconv.Itoa(detail.Frequency)},
+		{Label: "Threshold", Value: formatThresholdDetail(detail.Threshold)},
+	}
+
+	if detail.QueryID != "" {
+		fields = append(fields, output.Field{Label: "Query ID", Value: detail.QueryID})
+	} else if detail.HasQuery {
+		fields = append(fields, output.Field{Label: "Query ID", Value: "(inline)"})
+	}
+
+	fields = append(fields,
+		output.Field{Label: "Created At", Value: detail.CreatedAt},
+		output.Field{Label: "Updated At", Value: detail.UpdatedAt},
+	)
+
+	if len(detail.Recipients) > 0 {
+		targets := make([]string, len(detail.Recipients))
+		for i, r := range detail.Recipients {
+			targets[i] = r.Target
 		}
-		_, _ = fmt.Fprintf(tw, "Created At:\t%s\n", detail.CreatedAt)
-		_, _ = fmt.Fprintf(tw, "Updated At:\t%s\n", detail.UpdatedAt)
-		if len(detail.Recipients) > 0 {
-			targets := make([]string, len(detail.Recipients))
-			for i, r := range detail.Recipients {
-				targets[i] = r.Target
-			}
-			_, _ = fmt.Fprintf(tw, "Recipients:\t%s\n", strings.Join(targets, ", "))
+		fields = append(fields, output.Field{Label: "Recipients", Value: strings.Join(targets, ", ")})
+	}
+
+	if len(detail.Tags) > 0 {
+		tags := make([]string, len(detail.Tags))
+		for i, t := range detail.Tags {
+			tags[i] = t.Key + "=" + t.Value
 		}
-		if len(detail.Tags) > 0 {
-			tags := make([]string, len(detail.Tags))
-			for i, t := range detail.Tags {
-				tags[i] = t.Key + "=" + t.Value
-			}
-			_, _ = fmt.Fprintf(tw, "Tags:\t%s\n", strings.Join(tags, ", "))
-		}
-		return tw.Flush()
-	})
+		fields = append(fields, output.Field{Label: "Tags", Value: strings.Join(tags, ", ")})
+	}
+
+	return opts.OutputWriter().WriteFields(detail, fields)
 }
 
 func formatThresholdDetail(t *triggerThreshold) string {
@@ -226,11 +184,4 @@ func formatThresholdDetail(t *triggerThreshold) string {
 		return ""
 	}
 	return fmt.Sprintf("%s %g", t.Op, t.Value)
-}
-
-func keyEditor(key string) api.RequestEditorFn {
-	return func(_ context.Context, req *http.Request) error {
-		config.ApplyAuth(req, config.KeyConfig, key)
-		return nil
-	}
 }

@@ -1,13 +1,10 @@
 package query
 
 import (
-	"fmt"
-	"io"
-	"text/tabwriter"
-	"time"
-
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
+	"github.com/bendrucker/honeycomb-cli/internal/deref"
+	"github.com/bendrucker/honeycomb-cli/internal/output"
 )
 
 type annotationItem struct {
@@ -28,44 +25,32 @@ type annotationDetail struct {
 }
 
 func annotationToDetail(a api.QueryAnnotation) annotationDetail {
-	d := annotationDetail{
-		Name:    a.Name,
-		QueryID: a.QueryId,
+	return annotationDetail{
+		ID:          deref.String(a.Id),
+		Name:        a.Name,
+		Description: deref.String(a.Description),
+		QueryID:     a.QueryId,
+		Source:      deref.Enum(a.Source),
+		CreatedAt:   deref.Time(a.CreatedAt),
+		UpdatedAt:   deref.Time(a.UpdatedAt),
 	}
-	if a.Id != nil {
-		d.ID = *a.Id
-	}
-	if a.Description != nil {
-		d.Description = *a.Description
-	}
-	if a.Source != nil {
-		d.Source = string(*a.Source)
-	}
-	if a.CreatedAt != nil {
-		d.CreatedAt = a.CreatedAt.Format(time.RFC3339)
-	}
-	if a.UpdatedAt != nil {
-		d.UpdatedAt = a.UpdatedAt.Format(time.RFC3339)
-	}
-	return d
 }
 
 func writeAnnotationDetail(opts *options.RootOptions, detail annotationDetail) error {
-	return opts.OutputWriter().WriteValue(detail, func(w io.Writer) error {
-		tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-		_, _ = fmt.Fprintf(tw, "ID:\t%s\n", detail.ID)
-		_, _ = fmt.Fprintf(tw, "Name:\t%s\n", detail.Name)
-		_, _ = fmt.Fprintf(tw, "Description:\t%s\n", detail.Description)
-		_, _ = fmt.Fprintf(tw, "Query ID:\t%s\n", detail.QueryID)
-		if detail.Source != "" {
-			_, _ = fmt.Fprintf(tw, "Source:\t%s\n", detail.Source)
-		}
-		if detail.CreatedAt != "" {
-			_, _ = fmt.Fprintf(tw, "Created At:\t%s\n", detail.CreatedAt)
-		}
-		if detail.UpdatedAt != "" {
-			_, _ = fmt.Fprintf(tw, "Updated At:\t%s\n", detail.UpdatedAt)
-		}
-		return tw.Flush()
-	})
+	fields := []output.Field{
+		{Label: "ID", Value: detail.ID},
+		{Label: "Name", Value: detail.Name},
+		{Label: "Description", Value: detail.Description},
+		{Label: "Query ID", Value: detail.QueryID},
+	}
+	if detail.Source != "" {
+		fields = append(fields, output.Field{Label: "Source", Value: detail.Source})
+	}
+	if detail.CreatedAt != "" {
+		fields = append(fields, output.Field{Label: "Created At", Value: detail.CreatedAt})
+	}
+	if detail.UpdatedAt != "" {
+		fields = append(fields, output.Field{Label: "Updated At", Value: detail.UpdatedAt})
+	}
+	return opts.OutputWriter().WriteFields(detail, fields)
 }

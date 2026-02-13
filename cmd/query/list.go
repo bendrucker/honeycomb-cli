@@ -37,7 +37,7 @@ func NewListCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 }
 
 func runAnnotationList(ctx context.Context, opts *options.RootOptions, dataset string, includeBoardAnnotations bool) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -52,7 +52,7 @@ func runAnnotationList(ctx context.Context, opts *options.RootOptions, dataset s
 		params.IncludeBoardAnnotations = ptr(true)
 	}
 
-	resp, err := client.ListQueryAnnotationsWithResponse(ctx, dataset, params, keyEditor(key))
+	resp, err := client.ListQueryAnnotationsWithResponse(ctx, dataset, params, auth)
 	if err != nil {
 		return fmt.Errorf("listing query annotations: %w", err)
 	}

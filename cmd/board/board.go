@@ -1,16 +1,14 @@
 package board
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
-	"text/tabwriter"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/bendrucker/honeycomb-cli/internal/deref"
+	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -29,13 +27,6 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 	cmd.AddCommand(NewViewCmd(opts))
 
 	return cmd
-}
-
-func keyEditor(key string) api.RequestEditorFn {
-	return func(_ context.Context, req *http.Request) error {
-		config.ApplyAuth(req, config.KeyConfig, key)
-		return nil
-	}
 }
 
 type boardListItem struct {
@@ -57,15 +48,13 @@ type boardDetail struct {
 }
 
 func writeBoardDetail(opts *options.RootOptions, detail boardDetail) error {
-	return opts.OutputWriter().WriteValue(detail, func(w io.Writer) error {
-		tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-		_, _ = fmt.Fprintf(tw, "ID:\t%s\n", detail.ID)
-		_, _ = fmt.Fprintf(tw, "Name:\t%s\n", detail.Name)
-		_, _ = fmt.Fprintf(tw, "Description:\t%s\n", detail.Description)
-		_, _ = fmt.Fprintf(tw, "Type:\t%s\n", detail.Type)
-		_, _ = fmt.Fprintf(tw, "Column Layout:\t%s\n", detail.ColumnLayout)
-		_, _ = fmt.Fprintf(tw, "URL:\t%s\n", detail.URL)
-		return tw.Flush()
+	return opts.OutputWriter().WriteFields(detail, []output.Field{
+		{Label: "ID", Value: detail.ID},
+		{Label: "Name", Value: detail.Name},
+		{Label: "Description", Value: detail.Description},
+		{Label: "Type", Value: detail.Type},
+		{Label: "Column Layout", Value: detail.ColumnLayout},
+		{Label: "URL", Value: detail.URL},
 	})
 }
 
@@ -84,20 +73,14 @@ func readBoardJSON(r io.Reader) (api.Board, error) {
 
 func boardToDetail(b api.Board) boardDetail {
 	d := boardDetail{
-		Name: b.Name,
-		Type: string(b.Type),
+		ID:           deref.String(b.Id),
+		Name:         b.Name,
+		Type:         string(b.Type),
+		Description:  deref.String(b.Description),
+		ColumnLayout: deref.Enum(b.LayoutGeneration),
 	}
-	if b.Id != nil {
-		d.ID = *b.Id
-	}
-	if b.Description != nil {
-		d.Description = *b.Description
-	}
-	if b.LayoutGeneration != nil {
-		d.ColumnLayout = string(*b.LayoutGeneration)
-	}
-	if b.Links != nil && b.Links.BoardUrl != nil {
-		d.URL = *b.Links.BoardUrl
+	if b.Links != nil {
+		d.URL = deref.String(b.Links.BoardUrl)
 	}
 	if b.Panels != nil {
 		raw, _ := json.Marshal(b.Panels)

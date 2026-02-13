@@ -39,7 +39,7 @@ func NewHistoryCmd(opts *options.RootOptions, _ *string) *cobra.Command {
 }
 
 func runHistory(ctx context.Context, opts *options.RootOptions, sloIDs []string, startTime, endTime int) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -60,7 +60,7 @@ func runHistory(ctx context.Context, opts *options.RootOptions, sloIDs []string,
 		EndTime:   endTime,
 	}
 
-	resp, err := client.GetSloHistoryWithResponse(ctx, body, keyEditor(key))
+	resp, err := client.GetSloHistoryWithResponse(ctx, body, auth)
 	if err != nil {
 		return fmt.Errorf("getting SLO history: %w", err)
 	}

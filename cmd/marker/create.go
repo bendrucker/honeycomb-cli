@@ -76,7 +76,7 @@ func NewCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 }
 
 func runMarkerCreate(ctx context.Context, opts *options.RootOptions, dataset string, body api.CreateMarkerJSONRequestBody) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -86,7 +86,7 @@ func runMarkerCreate(ctx context.Context, opts *options.RootOptions, dataset str
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.CreateMarkerWithResponse(ctx, dataset, body, keyEditor(key))
+	resp, err := client.CreateMarkerWithResponse(ctx, dataset, body, auth)
 	if err != nil {
 		return fmt.Errorf("creating marker: %w", err)
 	}

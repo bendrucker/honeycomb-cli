@@ -31,7 +31,7 @@ func NewDeleteCmd(opts *options.RootOptions) *cobra.Command {
 }
 
 func runDatasetDelete(ctx context.Context, opts *options.RootOptions, slug string, yes bool) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func runDatasetDelete(ctx context.Context, opts *options.RootOptions, slug strin
 			return fmt.Errorf("--yes is required in non-interactive mode")
 		}
 
-		resp, err := client.GetDatasetWithResponse(ctx, slug, keyEditor(key))
+		resp, err := client.GetDatasetWithResponse(ctx, slug, auth)
 		if err != nil {
 			return fmt.Errorf("getting dataset: %w", err)
 		}
@@ -66,7 +66,7 @@ func runDatasetDelete(ctx context.Context, opts *options.RootOptions, slug strin
 		}
 	}
 
-	httpResp, err := client.DeleteDataset(ctx, slug, keyEditor(key))
+	httpResp, err := client.DeleteDataset(ctx, slug, auth)
 	if err != nil {
 		return fmt.Errorf("deleting dataset: %w", err)
 	}

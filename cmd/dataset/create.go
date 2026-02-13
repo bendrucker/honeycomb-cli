@@ -60,7 +60,7 @@ func runDatasetCreate(ctx context.Context, opts *options.RootOptions, name, desc
 		}
 	}
 
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func runDatasetCreate(ctx context.Context, opts *options.RootOptions, name, desc
 		body.ExpandJsonDepth = expandJsonDepth
 	}
 
-	resp, err := client.CreateDatasetWithResponse(ctx, body, keyEditor(key))
+	resp, err := client.CreateDatasetWithResponse(ctx, body, auth)
 	if err != nil {
 		return fmt.Errorf("creating dataset: %w", err)
 	}

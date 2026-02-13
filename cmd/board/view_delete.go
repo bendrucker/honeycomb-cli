@@ -30,7 +30,7 @@ func NewViewDeleteCmd(opts *options.RootOptions, board *string) *cobra.Command {
 }
 
 func runViewDelete(ctx context.Context, opts *options.RootOptions, boardID, viewID string, yes bool) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -45,7 +45,7 @@ func runViewDelete(ctx context.Context, opts *options.RootOptions, boardID, view
 			return fmt.Errorf("--yes is required in non-interactive mode")
 		}
 
-		view, err := getView(ctx, client, key, boardID, viewID)
+		view, err := getView(ctx, client, auth, boardID, viewID)
 		if err != nil {
 			return err
 		}
@@ -64,7 +64,7 @@ func runViewDelete(ctx context.Context, opts *options.RootOptions, boardID, view
 		}
 	}
 
-	resp, err := client.DeleteBoardViewWithResponse(ctx, boardID, viewID, keyEditor(key))
+	resp, err := client.DeleteBoardViewWithResponse(ctx, boardID, viewID, auth)
 	if err != nil {
 		return fmt.Errorf("deleting board view: %w", err)
 	}

@@ -31,7 +31,7 @@ func NewUpdateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 }
 
 func runColumnUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, columnID, description string, hidden bool) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -43,7 +43,7 @@ func runColumnUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, col
 
 	ctx := cmd.Context()
 
-	getResp, err := client.GetColumnWithResponse(ctx, dataset, columnID, keyEditor(key))
+	getResp, err := client.GetColumnWithResponse(ctx, dataset, columnID, auth)
 	if err != nil {
 		return fmt.Errorf("getting column: %w", err)
 	}
@@ -65,7 +65,7 @@ func runColumnUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, col
 		col.Hidden = &hidden
 	}
 
-	resp, err := client.UpdateColumnWithResponse(ctx, dataset, columnID, col, keyEditor(key))
+	resp, err := client.UpdateColumnWithResponse(ctx, dataset, columnID, col, auth)
 	if err != nil {
 		return fmt.Errorf("updating column: %w", err)
 	}

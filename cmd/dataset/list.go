@@ -3,11 +3,11 @@ package dataset
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/bendrucker/honeycomb-cli/internal/deref"
 	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -52,7 +52,7 @@ func NewListCmd(opts *options.RootOptions) *cobra.Command {
 }
 
 func runDatasetList(ctx context.Context, opts *options.RootOptions) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -62,7 +62,7 @@ func runDatasetList(ctx context.Context, opts *options.RootOptions) error {
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.ListDatasetsWithResponse(ctx, keyEditor(key))
+	resp, err := client.ListDatasetsWithResponse(ctx, auth)
 	if err != nil {
 		return fmt.Errorf("listing datasets: %w", err)
 	}
@@ -78,16 +78,10 @@ func runDatasetList(ctx context.Context, opts *options.RootOptions) error {
 	items := make([]datasetItem, len(*resp.JSON200))
 	for i, d := range *resp.JSON200 {
 		item := datasetItem{
-			Name: d.Name,
-		}
-		if d.Slug != nil {
-			item.Slug = *d.Slug
-		}
-		if d.Description != nil {
-			item.Description = *d.Description
-		}
-		if d.CreatedAt != nil {
-			item.CreatedAt = *d.CreatedAt
+			Name:        d.Name,
+			Slug:        deref.String(d.Slug),
+			Description: deref.String(d.Description),
+			CreatedAt:   deref.String(d.CreatedAt),
 		}
 		if d.RegularColumnsCount.IsSpecified() && !d.RegularColumnsCount.IsNull() {
 			v := d.RegularColumnsCount.MustGet()
@@ -101,11 +95,4 @@ func runDatasetList(ctx context.Context, opts *options.RootOptions) error {
 	}
 
 	return opts.OutputWriter().Write(items, datasetListTable)
-}
-
-func keyEditor(key string) api.RequestEditorFn {
-	return func(_ context.Context, req *http.Request) error {
-		config.ApplyAuth(req, config.KeyConfig, key)
-		return nil
-	}
 }

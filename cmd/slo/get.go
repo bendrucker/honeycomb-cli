@@ -29,7 +29,7 @@ func NewGetCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 }
 
 func runSLOGet(ctx context.Context, opts *options.RootOptions, dataset, sloID string, detailed bool) error {
-	key, err := opts.RequireKey(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -44,7 +44,7 @@ func runSLOGet(ctx context.Context, opts *options.RootOptions, dataset, sloID st
 		params.Detailed = ptr(true)
 	}
 
-	resp, err := client.GetSloWithResponse(ctx, dataset, sloID, params, keyEditor(key))
+	resp, err := client.GetSloWithResponse(ctx, dataset, sloID, params, auth)
 	if err != nil {
 		return fmt.Errorf("getting SLO: %w", err)
 	}
