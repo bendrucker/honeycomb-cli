@@ -12,7 +12,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-
 var triggerListTable = output.TableDef{
 	Columns: []output.Column{
 		{Header: "ID", Value: func(v any) string { return v.(triggerItem).ID }},

@@ -49,16 +49,6 @@ func TestInt(t *testing.T) {
 	}
 }
 
-func TestFloat64(t *testing.T) {
-	if got := Float64(nil); got != 0 {
-		t.Errorf("got %f, want 0", got)
-	}
-	f := 3.14
-	if got := Float64(&f); got != 3.14 {
-		t.Errorf("got %f, want 3.14", got)
-	}
-}
-
 func TestTime(t *testing.T) {
 	if got := Time(nil); got != "" {
 		t.Errorf("got %q, want empty", got)

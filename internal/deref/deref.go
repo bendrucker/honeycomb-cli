@@ -22,10 +22,6 @@ func Int(p *int) int {
 	return Val(p)
 }
 
-func Float64(p *float64) float64 {
-	return Val(p)
-}
-
 func Time(p *time.Time) string {
 	if p == nil {
 		return ""

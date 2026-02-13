@@ -9,6 +9,7 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/bendrucker/honeycomb-cli/internal/deref"
 	"github.com/spf13/cobra"
 )
 
@@ -58,25 +59,14 @@ func runColumnList(ctx context.Context, opts *options.RootOptions, dataset strin
 
 	items := make([]columnItem, len(columns))
 	for i, c := range columns {
-		item := columnItem{
-			KeyName: c.KeyName,
+		items[i] = columnItem{
+			ID:          deref.String(c.Id),
+			KeyName:     c.KeyName,
+			Type:        deref.Enum(c.Type),
+			Description: deref.String(c.Description),
+			Hidden:      deref.Bool(c.Hidden),
+			LastWritten: deref.String(c.LastWritten),
 		}
-		if c.Id != nil {
-			item.ID = *c.Id
-		}
-		if c.Type != nil {
-			item.Type = string(*c.Type)
-		}
-		if c.Description != nil {
-			item.Description = *c.Description
-		}
-		if c.Hidden != nil {
-			item.Hidden = *c.Hidden
-		}
-		if c.LastWritten != nil {
-			item.LastWritten = *c.LastWritten
-		}
-		items[i] = item
 	}
 
 	return opts.OutputWriter().Write(items, columnListTable)

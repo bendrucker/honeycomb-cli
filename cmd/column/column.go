@@ -94,4 +94,3 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 
 	return cmd
 }
-

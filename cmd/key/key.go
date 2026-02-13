@@ -7,6 +7,7 @@ import (
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
+	"github.com/bendrucker/honeycomb-cli/internal/deref"
 	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -70,9 +71,8 @@ func writeKeyDetail(opts *options.RootOptions, detail keyDetail) error {
 }
 
 func objectToItem(obj api.ApiKeyObject) keyItem {
-	item := keyItem{}
-	if obj.Id != nil {
-		item.ID = *obj.Id
+	item := keyItem{
+		ID: deref.String(obj.Id),
 	}
 	if obj.Attributes != nil {
 		fillFromAttributes(&item.Name, &item.KeyType, &item.Disabled, *obj.Attributes)
@@ -81,9 +81,8 @@ func objectToItem(obj api.ApiKeyObject) keyItem {
 }
 
 func objectToDetail(obj api.ApiKeyObject) keyDetail {
-	detail := keyDetail{}
-	if obj.Id != nil {
-		detail.ID = *obj.Id
+	detail := keyDetail{
+		ID: deref.String(obj.Id),
 	}
 	if obj.Attributes != nil {
 		fillFromAttributes(&detail.Name, &detail.KeyType, &detail.Disabled, *obj.Attributes)
@@ -95,17 +94,13 @@ func fillFromAttributes(name *string, keyType *string, disabled *bool, attrs api
 	if ingest, err := attrs.AsIngestKeyAttributes(); err == nil {
 		*name = ingest.Name
 		*keyType = string(ingest.KeyType)
-		if ingest.Disabled != nil {
-			*disabled = *ingest.Disabled
-		}
+		*disabled = deref.Bool(ingest.Disabled)
 		return
 	}
 	if cfg, err := attrs.AsConfigurationKeyAttributes(); err == nil {
 		*name = cfg.Name
 		*keyType = string(cfg.KeyType)
-		if cfg.Disabled != nil {
-			*disabled = *cfg.Disabled
-		}
+		*disabled = deref.Bool(cfg.Disabled)
 		return
 	}
 }

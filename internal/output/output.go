@@ -25,6 +25,10 @@ var styleFunc = func(row, col int) lipgloss.Style {
 	return cellStyle
 }
 
+var fieldsStyleFunc = func(row, col int) lipgloss.Style {
+	return cellStyle
+}
+
 type Column struct {
 	// Header is the column title, written in Title Case (e.g., "Key Name").
 	// It is automatically uppercased when rendered in a table.
@@ -125,9 +129,7 @@ func (w *Writer) writeTable(data any, td TableDef) error {
 func (w *Writer) writeFieldsTable(fields []Field) error {
 	t := table.New().
 		Border(lipgloss.RoundedBorder()).
-		StyleFunc(func(row, col int) lipgloss.Style {
-			return cellStyle
-		}).
+		StyleFunc(fieldsStyleFunc).
 		BorderHeader(false)
 
 	for _, f := range fields {

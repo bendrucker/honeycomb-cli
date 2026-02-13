@@ -45,7 +45,7 @@ func NewUpdateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 }
 
 func runSLOUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, sloID, file, name, desc string, target, timePeriod int) error {
-	editor, err := opts.KeyEditor(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -58,14 +58,14 @@ func runSLOUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, sloID,
 	ctx := cmd.Context()
 
 	if file != "" {
-		return updateFromFile(ctx, client, opts, editor, dataset, sloID, file)
+		return updateFromFile(ctx, client, opts, auth, dataset, sloID, file)
 	}
 
 	if !cmd.Flags().Changed("name") && !cmd.Flags().Changed("description") && !cmd.Flags().Changed("target") && !cmd.Flags().Changed("time-period") {
 		return fmt.Errorf("--file, --name, --description, --target, or --time-period is required")
 	}
 
-	current, err := getSLO(ctx, client, editor, dataset, sloID)
+	current, err := getSLO(ctx, client, auth, dataset, sloID)
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func runSLOUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, sloID,
 		current.TimePeriodDays = timePeriod
 	}
 
-	resp, err := client.UpdateSloWithResponse(ctx, dataset, sloID, *current, editor)
+	resp, err := client.UpdateSloWithResponse(ctx, dataset, sloID, *current, auth)
 	if err != nil {
 		return fmt.Errorf("updating SLO: %w", err)
 	}
@@ -99,13 +99,13 @@ func runSLOUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, sloID,
 	return writeSloDetail(opts, sloToDetail(*resp.JSON200))
 }
 
-func updateFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, editor api.RequestEditorFn, dataset, sloID, file string) error {
+func updateFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, auth api.RequestEditorFn, dataset, sloID, file string) error {
 	data, err := readFile(opts, file)
 	if err != nil {
 		return err
 	}
 
-	resp, err := client.UpdateSloWithBodyWithResponse(ctx, dataset, sloID, "application/json", bytes.NewReader(data), editor)
+	resp, err := client.UpdateSloWithBodyWithResponse(ctx, dataset, sloID, "application/json", bytes.NewReader(data), auth)
 	if err != nil {
 		return fmt.Errorf("updating SLO: %w", err)
 	}
@@ -121,8 +121,8 @@ func updateFromFile(ctx context.Context, client *api.ClientWithResponses, opts *
 	return writeSloDetail(opts, sloToDetail(*resp.JSON200))
 }
 
-func getSLO(ctx context.Context, client *api.ClientWithResponses, editor api.RequestEditorFn, dataset, sloID string) (*api.SLO, error) {
-	resp, err := client.GetSloWithResponse(ctx, dataset, sloID, &api.GetSloParams{}, editor)
+func getSLO(ctx context.Context, client *api.ClientWithResponses, auth api.RequestEditorFn, dataset, sloID string) (*api.SLO, error) {
+	resp, err := client.GetSloWithResponse(ctx, dataset, sloID, &api.GetSloParams{}, auth)
 	if err != nil {
 		return nil, fmt.Errorf("getting SLO: %w", err)
 	}

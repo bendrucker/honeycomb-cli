@@ -185,4 +185,3 @@ func formatThresholdDetail(t *triggerThreshold) string {
 	}
 	return fmt.Sprintf("%s %g", t.Op, t.Value)
 }
-

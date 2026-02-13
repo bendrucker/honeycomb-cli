@@ -8,6 +8,7 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/bendrucker/honeycomb-cli/internal/deref"
 	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -78,24 +79,13 @@ func runTriggers(ctx context.Context, opts *options.RootOptions, recipientID str
 }
 
 func toTriggerItem(t api.TriggerResponse) triggerItem {
-	item := triggerItem{}
-	if t.Id != nil {
-		item.ID = *t.Id
-	}
-	if t.Name != nil {
-		item.Name = *t.Name
-	}
-	if t.Description != nil {
-		item.Description = *t.Description
-	}
-	if t.Disabled != nil {
-		item.Disabled = *t.Disabled
-	}
-	if t.Triggered != nil {
-		item.Triggered = *t.Triggered
-	}
-	if t.AlertType != nil {
-		item.AlertType = string(*t.AlertType)
+	item := triggerItem{
+		ID:          deref.String(t.Id),
+		Name:        deref.String(t.Name),
+		Description: deref.String(t.Description),
+		Disabled:    deref.Bool(t.Disabled),
+		Triggered:   deref.Bool(t.Triggered),
+		AlertType:   deref.Enum(t.AlertType),
 	}
 	if t.Threshold != nil {
 		item.Threshold = fmt.Sprintf("%s %g", t.Threshold.Op, t.Threshold.Value)

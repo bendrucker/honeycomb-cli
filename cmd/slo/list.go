@@ -34,7 +34,7 @@ func NewListCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 }
 
 func runSLOList(ctx context.Context, opts *options.RootOptions, dataset string) error {
-	editor, err := opts.KeyEditor(config.KeyConfig)
+	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -44,7 +44,7 @@ func runSLOList(ctx context.Context, opts *options.RootOptions, dataset string) 
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	resp, err := client.ListSlosWithResponse(ctx, dataset, editor)
+	resp, err := client.ListSlosWithResponse(ctx, dataset, auth)
 	if err != nil {
 		return fmt.Errorf("listing SLOs: %w", err)
 	}

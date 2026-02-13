@@ -10,6 +10,7 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/bendrucker/honeycomb-cli/internal/deref"
 	"github.com/spf13/cobra"
 )
 
@@ -69,28 +70,21 @@ func runKeyCreate(ctx context.Context, opts *options.RootOptions, team, file str
 }
 
 func createResponseToDetail(resp *api.ApiKeyCreateResponse) keyDetail {
-	detail := keyDetail{}
-	if resp.Data.Id != nil {
-		detail.ID = *resp.Data.Id
-	}
-	if resp.Data.Attributes.Secret != nil {
-		detail.Secret = *resp.Data.Attributes.Secret
+	detail := keyDetail{
+		ID:     deref.String(resp.Data.Id),
+		Secret: deref.String(resp.Data.Attributes.Secret),
 	}
 
 	if ingest, err := resp.Data.Attributes.AsIngestKeyAttributes(); err == nil {
 		detail.Name = ingest.Name
 		detail.KeyType = string(ingest.KeyType)
-		if ingest.Disabled != nil {
-			detail.Disabled = *ingest.Disabled
-		}
+		detail.Disabled = deref.Bool(ingest.Disabled)
 		return detail
 	}
 	if cfg, err := resp.Data.Attributes.AsConfigurationKeyAttributes(); err == nil {
 		detail.Name = cfg.Name
 		detail.KeyType = string(cfg.KeyType)
-		if cfg.Disabled != nil {
-			detail.Disabled = *cfg.Disabled
-		}
+		detail.Disabled = deref.Bool(cfg.Disabled)
 		return detail
 	}
 

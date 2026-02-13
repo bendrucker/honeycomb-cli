@@ -7,6 +7,7 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/bendrucker/honeycomb-cli/internal/deref"
 	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -77,16 +78,10 @@ func runDatasetList(ctx context.Context, opts *options.RootOptions) error {
 	items := make([]datasetItem, len(*resp.JSON200))
 	for i, d := range *resp.JSON200 {
 		item := datasetItem{
-			Name: d.Name,
-		}
-		if d.Slug != nil {
-			item.Slug = *d.Slug
-		}
-		if d.Description != nil {
-			item.Description = *d.Description
-		}
-		if d.CreatedAt != nil {
-			item.CreatedAt = *d.CreatedAt
+			Name:        d.Name,
+			Slug:        deref.String(d.Slug),
+			Description: deref.String(d.Description),
+			CreatedAt:   deref.String(d.CreatedAt),
 		}
 		if d.RegularColumnsCount.IsSpecified() && !d.RegularColumnsCount.IsNull() {
 			v := d.RegularColumnsCount.MustGet()
@@ -101,4 +96,3 @@ func runDatasetList(ctx context.Context, opts *options.RootOptions) error {
 
 	return opts.OutputWriter().Write(items, datasetListTable)
 }
-
