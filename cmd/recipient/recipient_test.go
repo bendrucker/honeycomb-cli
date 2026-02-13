@@ -236,12 +236,8 @@ func TestDelete_WithYes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var result map[string]string
-	if err := json.Unmarshal(ts.OutBuf.Bytes(), &result); err != nil {
-		t.Fatalf("unmarshal output: %v", err)
-	}
-	if result["id"] != "r1" {
-		t.Errorf("id = %q, want %q", result["id"], "r1")
+	if !strings.Contains(ts.ErrBuf.String(), "Recipient r1 deleted") {
+		t.Errorf("stderr = %q, want deletion confirmation", ts.ErrBuf.String())
 	}
 }
 
