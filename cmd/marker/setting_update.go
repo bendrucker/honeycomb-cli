@@ -1,6 +1,7 @@
 package marker
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
@@ -43,6 +44,19 @@ func runSettingUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, se
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
+	if settingType == "" || color == "" {
+		existing, err := findMarkerSetting(ctx, client, dataset, settingID, key)
+		if err != nil {
+			return err
+		}
+		if settingType == "" {
+			settingType = existing.Type
+		}
+		if color == "" {
+			color = existing.Color
+		}
+	}
+
 	body := api.UpdateMarkerSettingsJSONRequestBody{
 		Type:  settingType,
 		Color: color,
@@ -62,4 +76,23 @@ func runSettingUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, se
 	}
 
 	return writeSettingDetail(opts, toSettingItem(*resp.JSON200))
+}
+
+func findMarkerSetting(ctx context.Context, client *api.ClientWithResponses, dataset, settingID, key string) (*api.MarkerSetting, error) {
+	resp, err := client.ListMarkerSettingsWithResponse(ctx, api.DatasetSlugOrAll(dataset), keyEditor(key))
+	if err != nil {
+		return nil, fmt.Errorf("listing marker settings: %w", err)
+	}
+	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+		return nil, err
+	}
+	if resp.JSON200 == nil {
+		return nil, fmt.Errorf("unexpected response: %s", resp.Status())
+	}
+	for _, s := range *resp.JSON200 {
+		if s.Id != nil && *s.Id == settingID {
+			return &s, nil
+		}
+	}
+	return nil, fmt.Errorf("marker setting %s not found", settingID)
 }

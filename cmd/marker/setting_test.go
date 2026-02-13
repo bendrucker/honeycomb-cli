@@ -123,7 +123,23 @@ func TestSettingCreate(t *testing.T) {
 }
 
 func TestSettingUpdate(t *testing.T) {
+	reqCount := 0
 	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		reqCount++
+		w.Header().Set("Content-Type", "application/json")
+
+		if reqCount == 1 {
+			// First request: list settings to find existing type
+			if r.Method != http.MethodGet {
+				t.Errorf("method = %q, want GET", r.Method)
+			}
+			_ = json.NewEncoder(w).Encode([]map[string]any{
+				{"id": "ms1", "type": "deploys", "color": "#F96E11"},
+			})
+			return
+		}
+
+		// Second request: the actual update
 		if r.Method != http.MethodPut {
 			t.Errorf("method = %q, want PUT", r.Method)
 		}
@@ -138,8 +154,10 @@ func TestSettingUpdate(t *testing.T) {
 		if body["color"] != "#00FF00" {
 			t.Errorf("body color = %q, want %q", body["color"], "#00FF00")
 		}
+		if body["type"] != "deploys" {
+			t.Errorf("body type = %q, want %q (fetched from existing)", body["type"], "deploys")
+		}
 
-		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"id":    "ms1",
 			"type":  "deploys",
@@ -163,8 +181,18 @@ func TestSettingUpdate(t *testing.T) {
 }
 
 func TestSettingUpdate_NoFlags(t *testing.T) {
+	reqCount := 0
 	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		reqCount++
 		w.Header().Set("Content-Type", "application/json")
+
+		if reqCount == 1 {
+			_ = json.NewEncoder(w).Encode([]map[string]any{
+				{"id": "ms1", "type": "deploys", "color": "#F96E11"},
+			})
+			return
+		}
+
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"id": "ms1", "type": "deploys", "color": "#F96E11",
 		})
@@ -196,9 +224,12 @@ func TestSettingDelete_WithYes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	output := ts.ErrBuf.String()
-	if !strings.Contains(output, "Deleted marker setting ms1") {
-		t.Errorf("stderr = %q, want deletion message", output)
+	var result map[string]string
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &result); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+	if result["id"] != "ms1" {
+		t.Errorf("id = %q, want %q", result["id"], "ms1")
 	}
 }
 
