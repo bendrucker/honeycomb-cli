@@ -74,9 +74,11 @@ Three key types, stored in the OS keyring keyed by `{profile}:{type}`:
 
 | Type | Header | Used For |
 |------|--------|----------|
-| `config` | `Authorization: Bearer KEY_ID:KEY_SECRET` | Management API (boards, SLOs, triggers, columns, queries) |
+| `config` | `X-Honeycomb-Team` | Configuration API (boards, SLOs, triggers, columns, queries, etc.) |
 | `ingest` | `X-Honeycomb-Team` | Sending events |
-| `management` | `Authorization: Bearer KEY_ID:KEY_SECRET` | Same as config, kept separate for granular access |
+| `management` | `Authorization: Bearer KEY_ID:KEY_SECRET` | Management API v2 (environments, keys) |
+
+V2 API keys created via `key create` produce an `id` + `secret`. The `secret` alone is used as the `X-Honeycomb-Team` value for config/ingest keys. The `auth login` command combines `--key-id` and `--key-secret` into `id:secret` format, which does not work for v1 API authentication. For v2-created keys, store the secret directly via the OS keyring (`security add-generic-password`).
 
 ## Interactive vs Non-Interactive
 
@@ -118,13 +120,15 @@ Commands follow a consistent pattern:
 
 ```
 go build -o tmp/honeycomb .
-security add-generic-password -s honeycomb-cli -a default:config -w '<KEY_ID:KEY_SECRET>'
+security add-generic-password -s honeycomb-cli -a default:config -w '<KEY_SECRET>'
 tmp/honeycomb auth status
 tmp/honeycomb auth status --offline
 tmp/honeycomb auth status --format json
 ```
 
 Remove the key afterward with `security delete-generic-password -s honeycomb-cli -a default:config`.
+
+V2-created keys (from `key create`) should have their `secret` stored directly as shown above. Do not use `auth login` for v2 keys -- it combines `--key-id` and `--key-secret` into `id:secret` format, which the v1 Configuration API does not accept.
 
 ## TUI Ideas (Future)
 
