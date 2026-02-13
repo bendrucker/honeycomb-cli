@@ -128,6 +128,10 @@ func runCalculatedUpdate(ctx context.Context, opts *options.RootOptions, dataset
 		}
 	}
 
+	body.Id = nil
+	body.CreatedAt = nil
+	body.UpdatedAt = nil
+
 	resp, err := client.UpdateCalculatedFieldWithResponse(ctx, dataset, id, body, keyEditor(key))
 	if err != nil {
 		return fmt.Errorf("updating calculated column: %w", err)
