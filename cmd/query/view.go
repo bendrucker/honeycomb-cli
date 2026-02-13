@@ -2,6 +2,7 @@ package query
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -16,6 +17,18 @@ import (
 type annotationWithQuery struct {
 	annotationDetail
 	Query *api.Query `json:"query,omitempty" yaml:"query,omitempty"`
+}
+
+func (a annotationWithQuery) MarshalYAML() (any, error) {
+	data, err := json.Marshal(a)
+	if err != nil {
+		return nil, err
+	}
+	var m map[string]any
+	if err := json.Unmarshal(data, &m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func NewViewCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
