@@ -10,8 +10,8 @@ import (
 )
 
 type testItem struct {
-	Name  string `json:"name" yaml:"name"`
-	Count int    `json:"count" yaml:"count"`
+	Name  string `json:"name"`
+	Count int    `json:"count"`
 }
 
 var testTable = TableDef{
@@ -36,24 +36,6 @@ func TestWrite_JSON(t *testing.T) {
 	}
 	if len(got) != 2 || got[0].Name != "a" || got[1].Count != 2 {
 		t.Errorf("got %+v", got)
-	}
-}
-
-func TestWrite_YAML(t *testing.T) {
-	var buf bytes.Buffer
-	w := New(&buf, FormatYAML)
-
-	items := []testItem{{Name: "a", Count: 1}}
-	if err := w.Write(items, testTable); err != nil {
-		t.Fatal(err)
-	}
-
-	out := buf.String()
-	if !strings.Contains(out, "name: a") {
-		t.Errorf("yaml missing 'name: a': %s", out)
-	}
-	if !strings.Contains(out, "count: 1") {
-		t.Errorf("yaml missing 'count: 1': %s", out)
 	}
 }
 
@@ -135,21 +117,6 @@ func TestWriteValue_JSON(t *testing.T) {
 	}
 	if got.Name != "a" || got.Count != 1 {
 		t.Errorf("got %+v", got)
-	}
-}
-
-func TestWriteValue_YAML(t *testing.T) {
-	var buf bytes.Buffer
-	w := New(&buf, FormatYAML)
-
-	item := testItem{Name: "b", Count: 2}
-	if err := w.WriteValue(item, nil); err != nil {
-		t.Fatal(err)
-	}
-
-	out := buf.String()
-	if !strings.Contains(out, "name: b") {
-		t.Errorf("yaml missing 'name: b': %s", out)
 	}
 }
 

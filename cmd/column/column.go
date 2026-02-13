@@ -15,23 +15,23 @@ import (
 )
 
 type columnItem struct {
-	ID          string `json:"id"                     yaml:"id"`
-	KeyName     string `json:"key_name"               yaml:"key_name"`
-	Type        string `json:"type,omitempty"          yaml:"type,omitempty"`
-	Description string `json:"description,omitempty"   yaml:"description,omitempty"`
-	Hidden      bool   `json:"hidden"                  yaml:"hidden"`
-	LastWritten string `json:"last_written,omitempty"  yaml:"last_written,omitempty"`
+	ID          string `json:"id"`
+	KeyName     string `json:"key_name"`
+	Type        string `json:"type,omitempty"`
+	Description string `json:"description,omitempty"`
+	Hidden      bool   `json:"hidden"`
+	LastWritten string `json:"last_written,omitempty"`
 }
 
 type columnDetail struct {
-	ID          string `json:"id"                     yaml:"id"`
-	KeyName     string `json:"key_name"               yaml:"key_name"`
-	Type        string `json:"type,omitempty"          yaml:"type,omitempty"`
-	Description string `json:"description,omitempty"   yaml:"description,omitempty"`
-	Hidden      bool   `json:"hidden"                  yaml:"hidden"`
-	LastWritten string `json:"last_written,omitempty"  yaml:"last_written,omitempty"`
-	CreatedAt   string `json:"created_at,omitempty"    yaml:"created_at,omitempty"`
-	UpdatedAt   string `json:"updated_at,omitempty"    yaml:"updated_at,omitempty"`
+	ID          string `json:"id"`
+	KeyName     string `json:"key_name"`
+	Type        string `json:"type,omitempty"`
+	Description string `json:"description,omitempty"`
+	Hidden      bool   `json:"hidden"`
+	LastWritten string `json:"last_written,omitempty"`
+	CreatedAt   string `json:"created_at,omitempty"`
+	UpdatedAt   string `json:"updated_at,omitempty"`
 }
 
 var columnListTable = output.TableDef{

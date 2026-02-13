@@ -11,11 +11,11 @@ import (
 )
 
 type settingItem struct {
-	ID        string `json:"id"                     yaml:"id"`
-	Type      string `json:"type"                   yaml:"type"`
-	Color     string `json:"color"                  yaml:"color"`
-	CreatedAt string `json:"created_at,omitempty"    yaml:"created_at,omitempty"`
-	UpdatedAt string `json:"updated_at,omitempty"    yaml:"updated_at,omitempty"`
+	ID        string `json:"id"`
+	Type      string `json:"type"`
+	Color     string `json:"color"`
+	CreatedAt string `json:"created_at,omitempty"`
+	UpdatedAt string `json:"updated_at,omitempty"`
 }
 
 var settingListTable = output.TableDef{

@@ -12,16 +12,15 @@ import (
 	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 )
 
 type loginResult struct {
-	Type        string `json:"type" yaml:"type"`
-	Team        string `json:"team,omitempty" yaml:"team,omitempty"`
-	Environment string `json:"environment,omitempty" yaml:"environment,omitempty"`
-	KeyID       string `json:"key_id,omitempty" yaml:"key_id,omitempty"`
-	Name        string `json:"name,omitempty" yaml:"name,omitempty"`
-	Verified    bool   `json:"verified" yaml:"verified"`
+	Type        string `json:"type"`
+	Team        string `json:"team,omitempty"`
+	Environment string `json:"environment,omitempty"`
+	KeyID       string `json:"key_id,omitempty"`
+	Name        string `json:"name,omitempty"`
+	Verified    bool   `json:"verified"`
 }
 
 func NewLoginCmd(opts *options.RootOptions) *cobra.Command {
@@ -156,8 +155,6 @@ func writeLoginResult(opts *options.RootOptions, result loginResult) error {
 		enc := json.NewEncoder(out)
 		enc.SetIndent("", "  ")
 		return enc.Encode(result)
-	case output.FormatYAML:
-		return yaml.NewEncoder(out).Encode(result)
 	case output.FormatTable:
 		if result.Verified {
 			if result.Team != "" {

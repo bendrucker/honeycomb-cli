@@ -11,20 +11,20 @@ import (
 )
 
 type annotationItem struct {
-	ID      string `json:"id"              yaml:"id"`
-	Name    string `json:"name"            yaml:"name"`
-	QueryID string `json:"query_id"        yaml:"query_id"`
-	Source  string `json:"source,omitempty" yaml:"source,omitempty"`
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	QueryID string `json:"query_id"`
+	Source  string `json:"source,omitempty"`
 }
 
 type annotationDetail struct {
-	ID          string `json:"id"                    yaml:"id"`
-	Name        string `json:"name"                  yaml:"name"`
-	Description string `json:"description,omitempty" yaml:"description,omitempty"`
-	QueryID     string `json:"query_id"              yaml:"query_id"`
-	Source      string `json:"source,omitempty"       yaml:"source,omitempty"`
-	CreatedAt   string `json:"created_at,omitempty"  yaml:"created_at,omitempty"`
-	UpdatedAt   string `json:"updated_at,omitempty"  yaml:"updated_at,omitempty"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	QueryID     string `json:"query_id"`
+	Source      string `json:"source,omitempty"`
+	CreatedAt   string `json:"created_at,omitempty"`
+	UpdatedAt   string `json:"updated_at,omitempty"`
 }
 
 func annotationToDetail(a api.QueryAnnotation) annotationDetail {

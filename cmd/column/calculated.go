@@ -11,19 +11,19 @@ import (
 )
 
 type calculatedItem struct {
-	ID          string `json:"id"                     yaml:"id"`
-	Alias       string `json:"alias"                  yaml:"alias"`
-	Expression  string `json:"expression"             yaml:"expression"`
-	Description string `json:"description,omitempty"   yaml:"description,omitempty"`
+	ID          string `json:"id"`
+	Alias       string `json:"alias"`
+	Expression  string `json:"expression"`
+	Description string `json:"description,omitempty"`
 }
 
 type calculatedDetail struct {
-	ID          string `json:"id"                     yaml:"id"`
-	Alias       string `json:"alias"                  yaml:"alias"`
-	Expression  string `json:"expression"             yaml:"expression"`
-	Description string `json:"description,omitempty"   yaml:"description,omitempty"`
-	CreatedAt   string `json:"created_at,omitempty"    yaml:"created_at,omitempty"`
-	UpdatedAt   string `json:"updated_at,omitempty"    yaml:"updated_at,omitempty"`
+	ID          string `json:"id"`
+	Alias       string `json:"alias"`
+	Expression  string `json:"expression"`
+	Description string `json:"description,omitempty"`
+	CreatedAt   string `json:"created_at,omitempty"`
+	UpdatedAt   string `json:"updated_at,omitempty"`
 }
 
 var calculatedListTable = output.TableDef{

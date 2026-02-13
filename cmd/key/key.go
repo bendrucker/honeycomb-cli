@@ -43,18 +43,18 @@ func keyEditor(key string) api.RequestEditorFn {
 }
 
 type keyItem struct {
-	ID       string `json:"id"                    yaml:"id"`
-	Name     string `json:"name"                  yaml:"name"`
-	KeyType  string `json:"key_type"              yaml:"key_type"`
-	Disabled bool   `json:"disabled"              yaml:"disabled"`
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	KeyType  string `json:"key_type"`
+	Disabled bool   `json:"disabled"`
 }
 
 type keyDetail struct {
-	ID       string `json:"id"                     yaml:"id"`
-	Name     string `json:"name"                   yaml:"name"`
-	KeyType  string `json:"key_type"               yaml:"key_type"`
-	Disabled bool   `json:"disabled"               yaml:"disabled"`
-	Secret   string `json:"secret,omitempty"        yaml:"secret,omitempty"`
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	KeyType  string `json:"key_type"`
+	Disabled bool   `json:"disabled"`
+	Secret   string `json:"secret,omitempty"`
 }
 
 var keyListTable = output.TableDef{

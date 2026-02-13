@@ -13,12 +13,12 @@ import (
 )
 
 type datasetItem struct {
-	Name        string  `json:"name"                    yaml:"name"`
-	Slug        string  `json:"slug"                    yaml:"slug"`
-	Description string  `json:"description,omitempty"   yaml:"description,omitempty"`
-	Columns     *int    `json:"columns,omitempty"       yaml:"columns,omitempty"`
-	LastWritten *string `json:"last_written,omitempty"  yaml:"last_written,omitempty"`
-	CreatedAt   string  `json:"created_at"              yaml:"created_at"`
+	Name        string  `json:"name"`
+	Slug        string  `json:"slug"`
+	Description string  `json:"description,omitempty"`
+	Columns     *int    `json:"columns,omitempty"`
+	LastWritten *string `json:"last_written,omitempty"`
+	CreatedAt   string  `json:"created_at"`
 }
 
 var datasetListTable = output.TableDef{

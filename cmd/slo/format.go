@@ -29,29 +29,29 @@ func truncate(s string, max int) string {
 }
 
 type sloItem struct {
-	ID               string `json:"id"                        yaml:"id"`
-	Name             string `json:"name"                      yaml:"name"`
-	TargetPerMillion int    `json:"target_per_million"         yaml:"target_per_million"`
-	TimePeriodDays   int    `json:"time_period_days"           yaml:"time_period_days"`
-	SLIAlias         string `json:"sli_alias"                  yaml:"sli_alias"`
-	Description      string `json:"description,omitempty"      yaml:"description,omitempty"`
+	ID               string `json:"id"`
+	Name             string `json:"name"`
+	TargetPerMillion int    `json:"target_per_million"`
+	TimePeriodDays   int    `json:"time_period_days"`
+	SLIAlias         string `json:"sli_alias"`
+	Description      string `json:"description,omitempty"`
 }
 
 type sloDetail struct {
-	ID               string   `json:"id"                         yaml:"id"`
-	Name             string   `json:"name"                       yaml:"name"`
-	Description      string   `json:"description,omitempty"      yaml:"description,omitempty"`
-	TargetPerMillion int      `json:"target_per_million"         yaml:"target_per_million"`
-	TimePeriodDays   int      `json:"time_period_days"           yaml:"time_period_days"`
-	SLIAlias         string   `json:"sli_alias"                  yaml:"sli_alias"`
-	DatasetSlugs     []string `json:"dataset_slugs,omitempty"    yaml:"dataset_slugs,omitempty"`
-	CreatedAt        string   `json:"created_at,omitempty"       yaml:"created_at,omitempty"`
-	UpdatedAt        string   `json:"updated_at,omitempty"       yaml:"updated_at,omitempty"`
-	ResetAt          string   `json:"reset_at,omitempty"         yaml:"reset_at,omitempty"`
+	ID               string   `json:"id"`
+	Name             string   `json:"name"`
+	Description      string   `json:"description,omitempty"`
+	TargetPerMillion int      `json:"target_per_million"`
+	TimePeriodDays   int      `json:"time_period_days"`
+	SLIAlias         string   `json:"sli_alias"`
+	DatasetSlugs     []string `json:"dataset_slugs,omitempty"`
+	CreatedAt        string   `json:"created_at,omitempty"`
+	UpdatedAt        string   `json:"updated_at,omitempty"`
+	ResetAt          string   `json:"reset_at,omitempty"`
 
 	// Detailed fields (only populated with --detailed)
-	Compliance      *float64 `json:"compliance,omitempty"       yaml:"compliance,omitempty"`
-	BudgetRemaining *float64 `json:"budget_remaining,omitempty" yaml:"budget_remaining,omitempty"`
+	Compliance      *float64 `json:"compliance,omitempty"`
+	BudgetRemaining *float64 `json:"budget_remaining,omitempty"`
 }
 
 // sloDetailedResponse extends api.SLO with the detailed fields that

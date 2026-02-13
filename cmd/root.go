@@ -54,7 +54,7 @@ func NewRootCmd(ios *iostreams.IOStreams) *cobra.Command {
 	}
 
 	cmd.PersistentFlags().BoolVar(&opts.NoInteractive, "no-interactive", false, "Disable interactive prompts")
-	cmd.PersistentFlags().StringVar(&opts.Format, "format", "", "Output format: json, table, yaml")
+	cmd.PersistentFlags().StringVar(&opts.Format, "format", "", "Output format: json, table")
 	cmd.PersistentFlags().StringVar(&opts.APIUrl, "api-url", "", "Honeycomb API URL")
 	cmd.PersistentFlags().StringVar(&opts.Profile, "profile", "", "Configuration profile to use")
 

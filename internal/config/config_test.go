@@ -17,7 +17,7 @@ func TestLoadMissing(t *testing.T) {
 }
 
 func TestSaveAndLoad(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "config.yaml")
+	path := filepath.Join(t.TempDir(), configFile)
 
 	cfg := &Config{
 		APIUrl:        "https://api.honeycomb.io",

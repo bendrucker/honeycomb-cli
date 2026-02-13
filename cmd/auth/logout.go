@@ -11,7 +11,7 @@ import (
 )
 
 type logoutResult struct {
-	Type string `json:"type" yaml:"type"`
+	Type string `json:"type"`
 }
 
 func NewLogoutCmd(opts *options.RootOptions) *cobra.Command {

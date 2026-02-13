@@ -13,13 +13,13 @@ import (
 )
 
 type triggerItem struct {
-	ID          string `json:"id"                       yaml:"id"`
-	Name        string `json:"name"                     yaml:"name"`
-	Description string `json:"description,omitempty"    yaml:"description,omitempty"`
-	Disabled    bool   `json:"disabled"                 yaml:"disabled"`
-	Triggered   bool   `json:"triggered"                yaml:"triggered"`
-	AlertType   string `json:"alert_type,omitempty"     yaml:"alert_type,omitempty"`
-	Threshold   string `json:"threshold,omitempty"      yaml:"threshold,omitempty"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	Disabled    bool   `json:"disabled"`
+	Triggered   bool   `json:"triggered"`
+	AlertType   string `json:"alert_type,omitempty"`
+	Threshold   string `json:"threshold,omitempty"`
 }
 
 var triggerListTable = output.TableDef{

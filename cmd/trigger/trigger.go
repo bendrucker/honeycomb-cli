@@ -38,48 +38,48 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 }
 
 type triggerItem struct {
-	ID          string `json:"id"                       yaml:"id"`
-	Name        string `json:"name"                     yaml:"name"`
-	Description string `json:"description,omitempty"    yaml:"description,omitempty"`
-	Disabled    bool   `json:"disabled"                 yaml:"disabled"`
-	Triggered   bool   `json:"triggered"                yaml:"triggered"`
-	AlertType   string `json:"alert_type,omitempty"     yaml:"alert_type,omitempty"`
-	Threshold   string `json:"threshold,omitempty"      yaml:"threshold,omitempty"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	Disabled    bool   `json:"disabled"`
+	Triggered   bool   `json:"triggered"`
+	AlertType   string `json:"alert_type,omitempty"`
+	Threshold   string `json:"threshold,omitempty"`
 }
 
 type triggerDetail struct {
-	ID          string            `json:"id"                       yaml:"id"`
-	Name        string            `json:"name"                     yaml:"name"`
-	Description string            `json:"description,omitempty"    yaml:"description,omitempty"`
-	DatasetSlug string            `json:"dataset_slug,omitempty"   yaml:"dataset_slug,omitempty"`
-	Disabled    bool              `json:"disabled"                 yaml:"disabled"`
-	Triggered   bool              `json:"triggered"                yaml:"triggered"`
-	AlertType   string            `json:"alert_type,omitempty"     yaml:"alert_type,omitempty"`
-	Frequency   int               `json:"frequency,omitempty"      yaml:"frequency,omitempty"`
-	Threshold   *triggerThreshold `json:"threshold,omitempty"     yaml:"threshold,omitempty"`
-	QueryID     string            `json:"query_id,omitempty"       yaml:"query_id,omitempty"`
-	HasQuery    bool              `json:"has_query,omitempty"      yaml:"has_query,omitempty"`
-	Recipients  []recipientItem   `json:"recipients,omitempty"     yaml:"recipients,omitempty"`
-	Tags        []tagItem         `json:"tags,omitempty"           yaml:"tags,omitempty"`
-	CreatedAt   string            `json:"created_at,omitempty"     yaml:"created_at,omitempty"`
-	UpdatedAt   string            `json:"updated_at,omitempty"     yaml:"updated_at,omitempty"`
+	ID          string            `json:"id"`
+	Name        string            `json:"name"`
+	Description string            `json:"description,omitempty"`
+	DatasetSlug string            `json:"dataset_slug,omitempty"`
+	Disabled    bool              `json:"disabled"`
+	Triggered   bool              `json:"triggered"`
+	AlertType   string            `json:"alert_type,omitempty"`
+	Frequency   int               `json:"frequency,omitempty"`
+	Threshold   *triggerThreshold `json:"threshold,omitempty"`
+	QueryID     string            `json:"query_id,omitempty"`
+	HasQuery    bool              `json:"has_query,omitempty"`
+	Recipients  []recipientItem   `json:"recipients,omitempty"`
+	Tags        []tagItem         `json:"tags,omitempty"`
+	CreatedAt   string            `json:"created_at,omitempty"`
+	UpdatedAt   string            `json:"updated_at,omitempty"`
 }
 
 type triggerThreshold struct {
-	Op            string  `json:"op"                        yaml:"op"`
-	Value         float64 `json:"value"                     yaml:"value"`
-	ExceededLimit int     `json:"exceeded_limit,omitempty"  yaml:"exceeded_limit,omitempty"`
+	Op            string  `json:"op"`
+	Value         float64 `json:"value"`
+	ExceededLimit int     `json:"exceeded_limit,omitempty"`
 }
 
 type recipientItem struct {
-	ID     string `json:"id,omitempty"     yaml:"id,omitempty"`
-	Type   string `json:"type,omitempty"   yaml:"type,omitempty"`
-	Target string `json:"target,omitempty" yaml:"target,omitempty"`
+	ID     string `json:"id,omitempty"`
+	Type   string `json:"type,omitempty"`
+	Target string `json:"target,omitempty"`
 }
 
 type tagItem struct {
-	Key   string `json:"key"   yaml:"key"`
-	Value string `json:"value" yaml:"value"`
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
 func formatThreshold(t *api.TriggerResponse) string {

@@ -39,17 +39,17 @@ func keyEditor(key string) api.RequestEditorFn {
 }
 
 type recipientItem struct {
-	ID     string `json:"id"              yaml:"id"`
-	Type   string `json:"type"            yaml:"type"`
-	Target string `json:"target,omitempty" yaml:"target,omitempty"`
+	ID     string `json:"id"`
+	Type   string `json:"type"`
+	Target string `json:"target,omitempty"`
 }
 
 type recipientDetail struct {
-	ID        string         `json:"id"                    yaml:"id"`
-	Type      string         `json:"type"                  yaml:"type"`
-	Details   map[string]any `json:"details,omitempty"     yaml:"details,omitempty"`
-	CreatedAt string         `json:"created_at,omitempty"  yaml:"created_at,omitempty"`
-	UpdatedAt string         `json:"updated_at,omitempty"  yaml:"updated_at,omitempty"`
+	ID        string         `json:"id"`
+	Type      string         `json:"type"`
+	Details   map[string]any `json:"details,omitempty"`
+	CreatedAt string         `json:"created_at,omitempty"`
+	UpdatedAt string         `json:"updated_at,omitempty"`
 }
 
 func unmarshalRecipients(body []byte) ([]recipientDetail, error) {
