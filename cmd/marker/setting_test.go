@@ -224,12 +224,9 @@ func TestSettingDelete_WithYes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var result map[string]string
-	if err := json.Unmarshal(ts.OutBuf.Bytes(), &result); err != nil {
-		t.Fatalf("unmarshal output: %v", err)
-	}
-	if result["id"] != "ms1" {
-		t.Errorf("id = %q, want %q", result["id"], "ms1")
+	output := ts.ErrBuf.String()
+	if !strings.Contains(output, "Deleted marker setting ms1") {
+		t.Errorf("stderr = %q, want deletion message", output)
 	}
 }
 
