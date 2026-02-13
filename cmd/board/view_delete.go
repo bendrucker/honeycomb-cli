@@ -73,6 +73,5 @@ func runViewDelete(ctx context.Context, opts *options.RootOptions, boardID, view
 		return err
 	}
 
-	_, _ = fmt.Fprintf(opts.IOStreams.Err, "View %s deleted\n", viewID)
-	return nil
+	return opts.OutputWriter().WriteDeleted(viewID, fmt.Sprintf("View %s deleted", viewID))
 }

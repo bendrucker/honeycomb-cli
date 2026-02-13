@@ -63,6 +63,5 @@ func runDelete(ctx context.Context, opts *options.RootOptions, recipientID strin
 		return err
 	}
 
-	_, _ = fmt.Fprintf(opts.IOStreams.Err, "Recipient %s deleted\n", recipientID)
-	return nil
+	return opts.OutputWriter().WriteDeleted(recipientID, fmt.Sprintf("Recipient %s deleted", recipientID))
 }

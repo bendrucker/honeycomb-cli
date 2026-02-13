@@ -63,6 +63,5 @@ func runBurnAlertDelete(ctx context.Context, opts *options.RootOptions, dataset,
 		return err
 	}
 
-	_, _ = fmt.Fprintf(opts.IOStreams.Err, "Burn alert %s deleted\n", burnAlertID)
-	return nil
+	return opts.OutputWriter().WriteDeleted(burnAlertID, fmt.Sprintf("Burn alert %s deleted", burnAlertID))
 }

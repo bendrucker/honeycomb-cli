@@ -68,6 +68,5 @@ func runSLODelete(ctx context.Context, opts *options.RootOptions, dataset, sloID
 		return err
 	}
 
-	_, _ = fmt.Fprintf(opts.IOStreams.Err, "SLO %s deleted\n", sloID)
-	return nil
+	return opts.OutputWriter().WriteDeleted(sloID, fmt.Sprintf("SLO %s deleted", sloID))
 }

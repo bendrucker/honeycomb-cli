@@ -1,6 +1,7 @@
 package column
 
 import (
+	"encoding/json"
 	"net/http"
 	"strings"
 	"testing"
@@ -23,9 +24,12 @@ func TestCalculatedDelete_Yes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	stderr := ts.ErrBuf.String()
-	if !strings.Contains(stderr, "deleted") {
-		t.Errorf("stderr = %q, want deleted confirmation", stderr)
+	var result map[string]string
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &result); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+	if result["id"] != "dc-1" {
+		t.Errorf("id = %q, want %q", result["id"], "dc-1")
 	}
 }
 

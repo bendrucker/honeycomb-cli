@@ -165,8 +165,12 @@ func TestBurnAlertDelete(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !strings.Contains(ts.ErrBuf.String(), "ba-1 deleted") {
-		t.Errorf("stderr = %q, want deletion message", ts.ErrBuf.String())
+	var result map[string]string
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &result); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+	if result["id"] != "ba-1" {
+		t.Errorf("id = %q, want %q", result["id"], "ba-1")
 	}
 }
 

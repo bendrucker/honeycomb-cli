@@ -80,6 +80,5 @@ func runDelete(ctx context.Context, opts *options.RootOptions, dataset, triggerI
 		return fmt.Errorf("unexpected response: %s", resp.Status())
 	}
 
-	_, _ = fmt.Fprintf(opts.IOStreams.Err, "Deleted trigger %s\n", triggerID)
-	return nil
+	return opts.OutputWriter().WriteDeleted(triggerID, fmt.Sprintf("Deleted trigger %s", triggerID))
 }

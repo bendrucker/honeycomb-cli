@@ -65,6 +65,5 @@ func runKeyDelete(ctx context.Context, opts *options.RootOptions, team, id strin
 		return err
 	}
 
-	_, _ = fmt.Fprintf(opts.IOStreams.Err, "Deleted API key %s\n", id)
-	return nil
+	return opts.OutputWriter().WriteDeleted(id, fmt.Sprintf("Deleted API key %s", id))
 }

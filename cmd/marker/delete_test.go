@@ -28,8 +28,12 @@ func TestDelete_Yes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !strings.Contains(ts.ErrBuf.String(), "Deleted marker abc123") {
-		t.Errorf("stderr = %q, want deleted confirmation", ts.ErrBuf.String())
+	var result map[string]string
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &result); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+	if result["id"] != "abc123" {
+		t.Errorf("id = %q, want %q", result["id"], "abc123")
 	}
 }
 

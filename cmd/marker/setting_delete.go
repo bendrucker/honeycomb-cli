@@ -65,6 +65,5 @@ func runSettingDelete(ctx context.Context, opts *options.RootOptions, dataset, s
 		return err
 	}
 
-	_, _ = fmt.Fprintf(opts.IOStreams.Err, "Deleted marker setting %s\n", settingID)
-	return nil
+	return opts.OutputWriter().WriteDeleted(settingID, fmt.Sprintf("Deleted marker setting %s", settingID))
 }

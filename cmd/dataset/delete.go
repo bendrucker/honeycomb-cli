@@ -3,6 +3,7 @@ package dataset
 import (
 	"context"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
@@ -65,15 +66,20 @@ func runDatasetDelete(ctx context.Context, opts *options.RootOptions, slug strin
 		}
 	}
 
-	resp, err := client.DeleteDatasetWithResponse(ctx, slug, keyEditor(key))
+	httpResp, err := client.DeleteDataset(ctx, slug, keyEditor(key))
 	if err != nil {
 		return fmt.Errorf("deleting dataset: %w", err)
 	}
+	defer func() { _ = httpResp.Body.Close() }()
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	body, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return fmt.Errorf("reading response: %w", err)
+	}
+
+	if err := api.CheckResponse(httpResp.StatusCode, body); err != nil {
 		return err
 	}
 
-	_, _ = fmt.Fprintf(opts.IOStreams.Err, "Dataset %s deleted\n", slug)
-	return nil
+	return opts.OutputWriter().WriteDeleted(slug, fmt.Sprintf("Dataset %s deleted", slug))
 }

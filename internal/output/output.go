@@ -146,3 +146,10 @@ func (w *Writer) writeDynamicTable(table DynamicTableDef) error {
 
 	return tw.Flush()
 }
+
+func (w *Writer) WriteDeleted(id, msg string) error {
+	return w.WriteValue(map[string]string{"id": id}, func(out io.Writer) error {
+		_, err := fmt.Fprintln(out, msg)
+		return err
+	})
+}
