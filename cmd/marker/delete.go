@@ -89,6 +89,5 @@ func runMarkerDelete(ctx context.Context, opts *options.RootOptions, dataset, ma
 		return err
 	}
 
-	_, _ = fmt.Fprintf(opts.IOStreams.Err, "Deleted marker %s\n", markerID)
-	return nil
+	return opts.OutputWriter().WriteDeleted(markerID, fmt.Sprintf("Deleted marker %s", markerID))
 }

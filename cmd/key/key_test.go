@@ -311,9 +311,12 @@ func TestDelete_WithYes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	output := ts.ErrBuf.String()
-	if !strings.Contains(output, "Deleted API key hcxik_01abc") {
-		t.Errorf("stderr = %q, want deletion message", output)
+	var result map[string]string
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &result); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+	if result["id"] != "hcxik_01abc" {
+		t.Errorf("id = %q, want %q", result["id"], "hcxik_01abc")
 	}
 }
 

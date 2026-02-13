@@ -1,6 +1,7 @@
 package query
 
 import (
+	"encoding/json"
 	"net/http"
 	"strings"
 	"testing"
@@ -23,8 +24,12 @@ func TestDelete_Yes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !strings.Contains(ts.ErrBuf.String(), "Query annotation ann-1 deleted") {
-		t.Errorf("stderr = %q, want deletion confirmation", ts.ErrBuf.String())
+	var result map[string]string
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &result); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+	if result["id"] != "ann-1" {
+		t.Errorf("id = %q, want %q", result["id"], "ann-1")
 	}
 }
 

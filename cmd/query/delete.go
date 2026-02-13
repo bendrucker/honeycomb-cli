@@ -68,6 +68,5 @@ func runAnnotationDelete(ctx context.Context, opts *options.RootOptions, dataset
 		return err
 	}
 
-	_, _ = fmt.Fprintf(opts.IOStreams.Err, "Query annotation %s deleted\n", annotationID)
-	return nil
+	return opts.OutputWriter().WriteDeleted(annotationID, fmt.Sprintf("Query annotation %s deleted", annotationID))
 }

@@ -76,6 +76,5 @@ func runEnvironmentDelete(ctx context.Context, opts *options.RootOptions, team, 
 		return err
 	}
 
-	_, _ = fmt.Fprintf(opts.IOStreams.Err, "Environment %s deleted\n", envID)
-	return nil
+	return opts.OutputWriter().WriteDeleted(envID, fmt.Sprintf("Environment %s deleted", envID))
 }

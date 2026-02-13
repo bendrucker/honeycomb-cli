@@ -75,6 +75,5 @@ func runCalculatedDelete(ctx context.Context, opts *options.RootOptions, dataset
 		return err
 	}
 
-	_, _ = fmt.Fprintf(opts.IOStreams.Err, "Calculated column %s deleted\n", id)
-	return nil
+	return opts.OutputWriter().WriteDeleted(id, fmt.Sprintf("Calculated column %s deleted", id))
 }

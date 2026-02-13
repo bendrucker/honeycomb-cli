@@ -68,6 +68,5 @@ func runBoardDelete(ctx context.Context, opts *options.RootOptions, boardID stri
 		return err
 	}
 
-	_, _ = fmt.Fprintf(opts.IOStreams.Err, "Board %s deleted\n", boardID)
-	return nil
+	return opts.OutputWriter().WriteDeleted(boardID, fmt.Sprintf("Board %s deleted", boardID))
 }

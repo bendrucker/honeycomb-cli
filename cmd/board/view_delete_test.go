@@ -1,6 +1,7 @@
 package board
 
 import (
+	"encoding/json"
 	"net/http"
 	"strings"
 	"testing"
@@ -23,8 +24,12 @@ func TestViewDelete_WithYes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !strings.Contains(ts.ErrBuf.String(), "View v1 deleted") {
-		t.Errorf("stderr = %q, want deletion confirmation", ts.ErrBuf.String())
+	var result map[string]string
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &result); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+	if result["id"] != "v1" {
+		t.Errorf("id = %q, want %q", result["id"], "v1")
 	}
 }
 

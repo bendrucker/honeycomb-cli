@@ -1,6 +1,7 @@
 package board
 
 import (
+	"encoding/json"
 	"net/http"
 	"strings"
 	"testing"
@@ -23,8 +24,12 @@ func TestDelete_WithYes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !strings.Contains(ts.ErrBuf.String(), "Board abc123 deleted") {
-		t.Errorf("stderr = %q, want deletion confirmation", ts.ErrBuf.String())
+	var result map[string]string
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &result); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+	if result["id"] != "abc123" {
+		t.Errorf("id = %q, want %q", result["id"], "abc123")
 	}
 }
 
