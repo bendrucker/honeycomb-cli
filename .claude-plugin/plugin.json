@@ -1,0 +1,8 @@
+{
+  "name": "Honeycomb",
+  "description": "Honeycomb CLI and MCP server for observability",
+  "author": {
+    "name": "Ben Drucker",
+    "url": "https://github.com/bendrucker"
+  }
+}
