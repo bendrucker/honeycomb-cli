@@ -61,7 +61,17 @@ func main() {
 		for i, f := range fields {
 			parts[i] = fmt.Sprintf("%q: true", f)
 		}
-		fmt.Fprintf(&buf, "\t%q: {%s},\n", name, strings.Join(parts, ", "))
+		// Align all opening braces at column 43 (1-indexed)
+		quotedKey := fmt.Sprintf("%q", name)
+		keyWithColon := quotedKey + ":"
+		desiredPos := 42
+		beforePadding := 1 + len(keyWithColon)
+		paddingNeeded := desiredPos - beforePadding
+		if paddingNeeded < 1 {
+			paddingNeeded = 1
+		}
+		padding := strings.Repeat(" ", paddingNeeded)
+		fmt.Fprintf(&buf, "\t%s%s{%s},\n", keyWithColon, padding, strings.Join(parts, ", "))
 	}
 	buf.WriteString("}\n")
 
