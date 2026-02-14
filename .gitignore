@@ -32,7 +32,7 @@ go.work.sum
 # .vscode/
 
 # Build output
-honeycomb
+/honeycomb
 
 # Temporary files
 tmp/
