@@ -5,7 +5,7 @@ CLI for [Honeycomb](https://www.honeycomb.io/), modeled after the [GitHub CLI](h
 ## Installation
 
 ```
-go install github.com/bendrucker/honeycomb-cli@latest
+go install github.com/bendrucker/honeycomb-cli/cmd/honeycomb@latest
 ```
 
 ## Authentication
@@ -73,7 +73,7 @@ When running inside an AI coding agent (Claude Code, Cursor, Codex, GitHub Copil
 ## Development
 
 ```
-go build -o /dev/null .
+go build -o /dev/null ./cmd/honeycomb
 go test ./...
 go vet ./...
 golangci-lint run ./...
