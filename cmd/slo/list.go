@@ -69,5 +69,5 @@ func runSLOList(ctx context.Context, opts *options.RootOptions, dataset string) 
 		}
 	}
 
-	return opts.OutputWriter().Write(items, sloListTable)
+	return opts.OutputWriterList().Write(items, sloListTable)
 }

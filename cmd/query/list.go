@@ -80,7 +80,7 @@ func runAnnotationList(ctx context.Context, opts *options.RootOptions, dataset s
 		items[i] = item
 	}
 
-	return opts.OutputWriter().Write(items, annotationListTable)
+	return opts.OutputWriterList().Write(items, annotationListTable)
 }
 
 func ptr[T any](v T) *T {

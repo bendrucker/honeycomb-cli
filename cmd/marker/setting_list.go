@@ -49,5 +49,5 @@ func runSettingList(ctx context.Context, opts *options.RootOptions, dataset stri
 		items[i] = toSettingItem(s)
 	}
 
-	return opts.OutputWriter().Write(items, settingListTable)
+	return opts.OutputWriterList().Write(items, settingListTable)
 }

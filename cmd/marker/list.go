@@ -49,5 +49,5 @@ func runMarkerList(ctx context.Context, opts *options.RootOptions, dataset strin
 		items[i] = markerToItem(m)
 	}
 
-	return opts.OutputWriter().Write(items, markerListTable)
+	return opts.OutputWriterList().Write(items, markerListTable)
 }

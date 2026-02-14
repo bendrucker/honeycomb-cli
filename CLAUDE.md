@@ -19,19 +19,22 @@ main.go                          Entry point
 cmd/
   root.go                        Root cobra command, global flags
   options/options.go             RootOptions shared across command packages
-  auth/
-    auth.go                      auth parent command
-    login.go                     auth login command
-    status.go                    auth status command with key verification
+  {resource}/                    One package per resource (auth, board, column, dataset, etc.)
 internal/
+  agent/agent.go                 AI coding agent detection
   api/
     generate.go                  go:generate directives for oapi-codegen
     client.gen.go                Generated API client and types (do not edit)
-  iostreams/iostreams.go         IO abstraction with TTY detection
-  agent/agent.go                 AI coding agent detection
   config/
     config.go                    JSON config (~/.config/honeycomb/config.json)
     keyring.go                   OS keyring with timeout wrapper
+  deref/deref.go                 Nil-safe pointer dereferencing
+  fields/fields.go               Struct field extraction for table output
+  iostreams/iostreams.go         IO abstraction with TTY detection
+  jq/jq.go                      jq expression evaluation
+  output/output.go               Formatted output (JSON/table)
+  poll/poll.go                   Polling with backoff for async operations
+  prompt/prompt.go               Interactive prompt helpers
 api.json                         Honeycomb OpenAPI 3.1 source spec
 overlay.yaml                     OpenAPI overlay for 3.1→3.0 compatibility
 oapi-codegen.yaml                Code generation config
@@ -67,6 +70,9 @@ Run `go generate ./internal/api/...` to regenerate. The generated file is commit
 | `oapi-codegen/runtime` | Generated client runtime |
 | `oapi-codegen/nullable` | Three-state nullable for OpenAPI |
 | `charmbracelet/huh` | Terminal forms and prompts |
+| `itchyny/gojq` | jq expression evaluation |
+| `mark3labs/mcp-go` | MCP client for Honeycomb MCP server |
+| `peterhellberg/link` | HTTP Link header parsing for pagination |
 
 ## Authentication
 
@@ -87,13 +93,11 @@ Every command must work in both modes:
 - **Interactive** (TTY): prompt for missing inputs, show rich output, use color
 - **Non-interactive** (piped/CI/agent): require all inputs as flags, output structured data (JSON)
 
-Agent detection (`internal/agent`) auto-enables non-interactive mode and defaults to JSON output. The `--no-interactive` flag provides manual control.
+Agent detection (`internal/agent`) auto-enables non-interactive mode. The `--no-interactive` flag provides manual control.
 
 ## Agent Detection
 
-When an AI coding agent is detected via environment variables (`CLAUDE_CODE`, `CURSOR_SESSION_ID`, `CODEX`, `GITHUB_COPILOT`, `WINDSURF_SESSION_ID`, `CLINE`), the CLI:
-- Forces non-interactive mode
-- Defaults output format to JSON
+When an AI coding agent is detected via environment variables (`CLAUDE_CODE`, `CURSOR_SESSION_ID`, `CODEX`, `GITHUB_COPILOT`, `WINDSURF_SESSION_ID`, `CLINE`), the CLI forces non-interactive mode. Output format is not overridden — agents get the same defaults as piped output (JSON for detail commands, table for list commands).
 
 ## Honeycomb MCP Server
 
@@ -101,7 +105,7 @@ A Honeycomb MCP server is configured and available as a reference implementation
 
 ## Output Formats
 
-The `--format` flag supports `json` and `table`. Default is `table` in TTY, `json` otherwise.
+The `--format` flag supports `json` and `table`. Default is `table` in TTY, `json` otherwise. List commands always default to `table` regardless of TTY detection, using `OutputWriterList()` instead of `OutputWriter()`.
 
 ## Command Design
 
@@ -143,17 +147,28 @@ V2-created keys (from `key create`) should have their `secret` stored directly a
 
 The CLI will include an `mcp` subcommand that acts as an MCP client to the Honeycomb MCP server. This provides access to features like query execution without requiring Enterprise-tier API key permissions (the Query Data API's "Run Queries" permission is Enterprise-only). The `query` command would still use the API directly and require the appropriate key permissions. The `mcp` command offers an alternative path using Honeycomb's own MCP server, which is available on all plans.
 
-## Planned Command Hierarchy
+## Command Hierarchy
 
 ```
-honeycomb auth login/logout/status
-honeycomb query run/list/get
-honeycomb dataset list/get/create
-honeycomb board list/get/create/delete
-honeycomb slo list/get/create/delete
-honeycomb trigger list/get/create/delete
-honeycomb marker create/list
-honeycomb column list/get
-honeycomb mcp query/...                # MCP client, works on all plans
-honeycomb api <method> <path>          # arbitrary API escape hatch
+honeycomb api <method> <path>                   Arbitrary API requests
+honeycomb auth login/logout/status              Authentication
+honeycomb board list/get/create/update/delete   Boards
+honeycomb board view list/get/create/update/delete  Board views (query panels)
+honeycomb column list/get/create/update/delete  Columns
+honeycomb column calculated list/get/create/update/delete  Derived columns
+honeycomb dataset list/get/create/update/delete Datasets
+honeycomb dataset definition get/update         Dataset definitions
+honeycomb environment list/get/create/update/delete  Environments
+honeycomb key list/get/create/update/delete     API keys
+honeycomb marker list/create/update/delete      Markers
+honeycomb marker setting list/create/update/delete  Marker settings (colors/types)
+honeycomb mcp tools/call                        MCP server interaction
+honeycomb query list/view/create/update/delete  Saved queries
+honeycomb query run                             Query execution with polling
+honeycomb recipient list/get/create/update/delete  Notification recipients
+honeycomb recipient triggers                    List triggers for a recipient
+honeycomb slo list/get/create/update/delete     SLOs
+honeycomb slo burn-alert list/get/create/update/delete  Burn alerts
+honeycomb slo history                           SLO budget history
+honeycomb trigger list/get/create/update/delete Triggers
 ```

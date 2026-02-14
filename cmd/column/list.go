@@ -69,5 +69,5 @@ func runColumnList(ctx context.Context, opts *options.RootOptions, dataset strin
 		}
 	}
 
-	return opts.OutputWriter().Write(items, columnListTable)
+	return opts.OutputWriterList().Write(items, columnListTable)
 }

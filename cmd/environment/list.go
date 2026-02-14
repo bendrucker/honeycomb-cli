@@ -60,5 +60,5 @@ func runEnvironmentList(ctx context.Context, opts *options.RootOptions, team str
 		items[i] = envToItem(e)
 	}
 
-	return opts.OutputWriter().Write(items, environmentListTable)
+	return opts.OutputWriterList().Write(items, environmentListTable)
 }
