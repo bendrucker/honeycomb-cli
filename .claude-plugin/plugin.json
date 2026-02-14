@@ -4,5 +4,7 @@
   "author": {
     "name": "Ben Drucker",
     "url": "https://github.com/bendrucker"
-  }
+  },
+  "repository": "https://github.com/bendrucker/honeycomb-cli",
+  "license": "MIT"
 }
