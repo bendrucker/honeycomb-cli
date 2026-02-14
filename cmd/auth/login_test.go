@@ -14,18 +14,18 @@ import (
 
 func TestAuthLogin_Success(t *testing.T) {
 	tests := []struct {
-		name      string
-		keyType   string
-		keyID     string
-		keySecret string
-		verify    bool
-		handler   http.Handler
-		want      loginResult
+		name       string
+		keyType    string
+		keyID      string
+		keySecret  string
+		verify     bool
+		handler    http.Handler
+		want       loginResult
+		wantStored string
 	}{
 		{
 			name:      "config key verified",
 			keyType:   "config",
-			keyID:     "myid",
 			keySecret: "mysecret",
 			verify:    true,
 			handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +33,7 @@ func TestAuthLogin_Success(t *testing.T) {
 					http.NotFound(w, r)
 					return
 				}
-				if r.Header.Get("X-Honeycomb-Team") != "myid:mysecret" {
+				if r.Header.Get("X-Honeycomb-Team") != "mysecret" {
 					w.WriteHeader(http.StatusUnauthorized)
 					return
 				}
@@ -53,6 +53,7 @@ func TestAuthLogin_Success(t *testing.T) {
 				KeyID:       "myid",
 				Verified:    true,
 			},
+			wantStored: "mysecret",
 		},
 		{
 			name:      "management key verified",
@@ -87,16 +88,17 @@ func TestAuthLogin_Success(t *testing.T) {
 				Name:     "My Management Key",
 				Verified: true,
 			},
+			wantStored: "mgmtid:mgmtsecret",
 		},
 		{
 			name:      "no verify",
 			keyType:   "ingest",
-			keyID:     "myid",
 			keySecret: "mysecret",
 			verify:    false,
 			want: loginResult{
 				Type: "ingest",
 			},
+			wantStored: "mysecret",
 		},
 	}
 
@@ -137,9 +139,8 @@ func TestAuthLogin_Success(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			wantStored := tt.keyID + ":" + tt.keySecret
-			if stored != wantStored {
-				t.Errorf("stored key = %q, want %q", stored, wantStored)
+			if stored != tt.wantStored {
+				t.Errorf("stored key = %q, want %q", stored, tt.wantStored)
 			}
 		})
 	}
@@ -161,7 +162,7 @@ func TestAuthLogin_InvalidKey(t *testing.T) {
 		Format:    output.FormatJSON,
 	}
 
-	err := runAuthLogin(t.Context(), opts, "config", "badid", "badsecret", true)
+	err := runAuthLogin(t.Context(), opts, "config", "", "badsecret", true)
 	if err == nil {
 		t.Fatal("expected error for invalid key")
 	}
@@ -184,11 +185,29 @@ func TestAuthLogin_MissingKeyType(t *testing.T) {
 		Format:    output.FormatJSON,
 	}
 
-	err := runAuthLogin(t.Context(), opts, "", "myid", "mysecret", false)
+	err := runAuthLogin(t.Context(), opts, "", "", "mysecret", false)
 	if err == nil {
 		t.Fatal("expected error for missing key type")
 	}
 	want := "--key-type is required in non-interactive mode"
+	if err.Error() != want {
+		t.Errorf("got error %q, want %q", err.Error(), want)
+	}
+}
+
+func TestAuthLogin_MissingKeyID(t *testing.T) {
+	ts := iostreams.Test()
+	opts := &options.RootOptions{
+		IOStreams: ts.IOStreams,
+		Config:    &config.Config{},
+		Format:    output.FormatJSON,
+	}
+
+	err := runAuthLogin(t.Context(), opts, "management", "", "mysecret", false)
+	if err == nil {
+		t.Fatal("expected error for missing key ID")
+	}
+	want := "--key-id is required for management keys"
 	if err.Error() != want {
 		t.Errorf("got error %q, want %q", err.Error(), want)
 	}
@@ -206,7 +225,7 @@ func TestAuthLogin_StdinSecret(t *testing.T) {
 
 	t.Cleanup(func() { _ = config.DeleteKey("default", config.KeyConfig) })
 
-	err := runAuthLogin(t.Context(), opts, "config", "myid", "", false)
+	err := runAuthLogin(t.Context(), opts, "config", "", "", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -215,7 +234,7 @@ func TestAuthLogin_StdinSecret(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if stored != "myid:stdin-secret" {
-		t.Errorf("stored key = %q, want %q", stored, "myid:stdin-secret")
+	if stored != "stdin-secret" {
+		t.Errorf("stored key = %q, want %q", stored, "stdin-secret")
 	}
 }

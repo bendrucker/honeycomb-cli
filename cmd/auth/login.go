@@ -56,18 +56,27 @@ func runAuthLogin(ctx context.Context, opts *options.RootOptions, keyType, keyID
 	ios := opts.IOStreams
 
 	if ios.CanPrompt() {
-		var fields []huh.Field
 		if keyType == "" {
-			fields = append(fields, huh.NewSelect[string]().
-				Title("Key type").
-				Options(
-					huh.NewOption("config", "config"),
-					huh.NewOption("ingest", "ingest"),
-					huh.NewOption("management", "management"),
-				).
-				Value(&keyType))
+			err := huh.NewForm(huh.NewGroup(
+				huh.NewSelect[string]().
+					Title("Key type").
+					Options(
+						huh.NewOption("config", "config"),
+						huh.NewOption("ingest", "ingest"),
+						huh.NewOption("management", "management"),
+					).
+					Value(&keyType),
+			)).Run()
+			if err == huh.ErrUserAborted {
+				return nil
+			}
+			if err != nil {
+				return fmt.Errorf("prompting for key type: %w", err)
+			}
 		}
-		if keyID == "" {
+
+		var fields []huh.Field
+		if keyType == "management" && keyID == "" {
 			fields = append(fields, huh.NewInput().
 				Title("Key ID").
 				Value(&keyID))
@@ -91,8 +100,8 @@ func runAuthLogin(ctx context.Context, opts *options.RootOptions, keyType, keyID
 		if keyType == "" {
 			return fmt.Errorf("--key-type is required in non-interactive mode")
 		}
-		if keyID == "" {
-			return fmt.Errorf("--key-id is required in non-interactive mode")
+		if keyType == "management" && keyID == "" {
+			return fmt.Errorf("--key-id is required for management keys")
 		}
 		if keySecret == "" {
 			line, err := prompt.ReadLine(ios.In)
@@ -108,7 +117,10 @@ func runAuthLogin(ctx context.Context, opts *options.RootOptions, keyType, keyID
 		return err
 	}
 
-	combinedKey := keyID + ":" + keySecret
+	value := keySecret
+	if kt == config.KeyManagement {
+		value = keyID + ":" + keySecret
+	}
 
 	result := loginResult{
 		Type: keyType,
@@ -120,7 +132,7 @@ func runAuthLogin(ctx context.Context, opts *options.RootOptions, keyType, keyID
 			return fmt.Errorf("creating API client: %w", err)
 		}
 
-		ks, err := verifyKey(ctx, client, kt, combinedKey)
+		ks, err := verifyKey(ctx, client, kt, value)
 		if err != nil {
 			return err
 		}
@@ -139,7 +151,7 @@ func runAuthLogin(ctx context.Context, opts *options.RootOptions, keyType, keyID
 	}
 
 	profile := opts.ActiveProfile()
-	if err := config.SetKey(profile, kt, combinedKey); err != nil {
+	if err := config.SetKey(profile, kt, value); err != nil {
 		return fmt.Errorf("storing key: %w", err)
 	}
 
