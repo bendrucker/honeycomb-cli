@@ -83,7 +83,12 @@ func runSLOUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, sloID,
 		current.TimePeriodDays = timePeriod
 	}
 
-	resp, err := client.UpdateSloWithResponse(ctx, dataset, sloID, *current, auth)
+	data, err := api.MarshalStrippingReadOnly(current, "SLO")
+	if err != nil {
+		return fmt.Errorf("encoding SLO: %w", err)
+	}
+
+	resp, err := client.UpdateSloWithBodyWithResponse(ctx, dataset, sloID, "application/json", bytes.NewReader(data), auth)
 	if err != nil {
 		return fmt.Errorf("updating SLO: %w", err)
 	}
@@ -100,9 +105,14 @@ func runSLOUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, sloID,
 }
 
 func updateFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, auth api.RequestEditorFn, dataset, sloID, file string) error {
-	data, err := readFile(opts, file)
+	raw, err := readFile(opts, file)
 	if err != nil {
 		return err
+	}
+
+	data, err := api.StripReadOnly(raw, "SLO")
+	if err != nil {
+		return fmt.Errorf("stripping read-only fields: %w", err)
 	}
 
 	resp, err := client.UpdateSloWithBodyWithResponse(ctx, dataset, sloID, "application/json", bytes.NewReader(data), auth)

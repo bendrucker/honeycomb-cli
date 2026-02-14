@@ -1,6 +1,7 @@
 package column
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -128,11 +129,12 @@ func runCalculatedUpdate(ctx context.Context, opts *options.RootOptions, dataset
 		}
 	}
 
-	body.Id = nil
-	body.CreatedAt = nil
-	body.UpdatedAt = nil
+	data, err := api.MarshalStrippingReadOnly(body, "CalculatedField")
+	if err != nil {
+		return fmt.Errorf("encoding calculated column: %w", err)
+	}
 
-	resp, err := client.UpdateCalculatedFieldWithResponse(ctx, dataset, id, body, auth)
+	resp, err := client.UpdateCalculatedFieldWithBodyWithResponse(ctx, dataset, id, "application/json", bytes.NewReader(data), auth)
 	if err != nil {
 		return fmt.Errorf("updating calculated column: %w", err)
 	}

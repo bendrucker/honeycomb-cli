@@ -1,6 +1,7 @@
 package trigger
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -128,7 +129,12 @@ func runUpdate(ctx context.Context, opts *options.RootOptions, dataset, triggerI
 		}
 	}
 
-	resp, err := client.UpdateTriggerWithResponse(ctx, dataset, triggerID, body, auth)
+	data, err := api.MarshalStrippingReadOnly(body, "TriggerResponse")
+	if err != nil {
+		return fmt.Errorf("encoding trigger: %w", err)
+	}
+
+	resp, err := client.UpdateTriggerWithBodyWithResponse(ctx, dataset, triggerID, "application/json", bytes.NewReader(data), auth)
 	if err != nil {
 		return fmt.Errorf("updating trigger: %w", err)
 	}

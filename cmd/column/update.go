@@ -1,6 +1,7 @@
 package column
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
@@ -65,7 +66,12 @@ func runColumnUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, col
 		col.Hidden = &hidden
 	}
 
-	resp, err := client.UpdateColumnWithResponse(ctx, dataset, columnID, col, auth)
+	data, err := api.MarshalStrippingReadOnly(col, "Column")
+	if err != nil {
+		return fmt.Errorf("encoding column: %w", err)
+	}
+
+	resp, err := client.UpdateColumnWithBodyWithResponse(ctx, dataset, columnID, "application/json", bytes.NewReader(data), auth)
 	if err != nil {
 		return fmt.Errorf("updating column: %w", err)
 	}

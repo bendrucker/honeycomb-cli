@@ -70,7 +70,12 @@ func runAnnotationUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset,
 		current.Description = &desc
 	}
 
-	resp, err := client.UpdateQueryAnnotationWithResponse(ctx, dataset, annotationID, *current, auth)
+	data, err := api.MarshalStrippingReadOnly(current, "QueryAnnotation")
+	if err != nil {
+		return fmt.Errorf("encoding query annotation: %w", err)
+	}
+
+	resp, err := client.UpdateQueryAnnotationWithBodyWithResponse(ctx, dataset, annotationID, "application/json", bytes.NewReader(data), auth)
 	if err != nil {
 		return fmt.Errorf("updating query annotation: %w", err)
 	}
@@ -87,9 +92,14 @@ func runAnnotationUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset,
 }
 
 func updateAnnotationFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, auth api.RequestEditorFn, dataset, annotationID, file string) error {
-	data, err := readFile(opts, file)
+	raw, err := readFile(opts, file)
 	if err != nil {
 		return err
+	}
+
+	data, err := api.StripReadOnly(raw, "QueryAnnotation")
+	if err != nil {
+		return fmt.Errorf("stripping read-only fields: %w", err)
 	}
 
 	resp, err := client.UpdateQueryAnnotationWithBodyWithResponse(ctx, dataset, annotationID, "application/json", bytes.NewReader(data), auth)

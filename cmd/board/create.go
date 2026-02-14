@@ -112,9 +112,14 @@ func createFromFile(ctx context.Context, client *api.ClientWithResponses, opts *
 		r = f
 	}
 
-	data, err := io.ReadAll(r)
+	raw, err := io.ReadAll(r)
 	if err != nil {
 		return fmt.Errorf("reading file: %w", err)
+	}
+
+	data, err := api.StripReadOnly(raw, "Board")
+	if err != nil {
+		return fmt.Errorf("stripping read-only fields: %w", err)
 	}
 
 	resp, err := client.CreateBoardWithBodyWithResponse(ctx, "application/json", bytes.NewReader(data), auth)

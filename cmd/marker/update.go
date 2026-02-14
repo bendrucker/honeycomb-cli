@@ -1,6 +1,7 @@
 package marker
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
@@ -90,7 +91,12 @@ func runMarkerUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, mar
 		existing.Color = &color
 	}
 
-	resp, err := client.UpdateMarkerWithResponse(ctx, dataset, markerID, api.UpdateMarkerJSONRequestBody(existing), auth)
+	data, err := api.MarshalStrippingReadOnly(existing, "Marker")
+	if err != nil {
+		return fmt.Errorf("encoding marker: %w", err)
+	}
+
+	resp, err := client.UpdateMarkerWithBodyWithResponse(ctx, dataset, markerID, "application/json", bytes.NewReader(data), auth)
 	if err != nil {
 		return fmt.Errorf("updating marker: %w", err)
 	}
