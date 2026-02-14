@@ -5,7 +5,7 @@ CLI for [Honeycomb](https://www.honeycomb.io/), modeled after the GitHub CLI (`g
 ## Commands
 
 ```
-go build -o /dev/null .
+go build -o /dev/null ./cmd/honeycomb
 go test ./...
 go vet ./...
 go generate ./internal/api/...
@@ -15,8 +15,8 @@ golangci-lint run ./...
 ## Project Structure
 
 ```
-main.go                          Entry point
 cmd/
+  honeycomb/main.go              Entry point
   root.go                        Root cobra command, global flags
   options/options.go             RootOptions shared across command packages
   {resource}/                    One package per resource (auth, board, column, dataset, etc.)
@@ -123,7 +123,7 @@ Commands follow a consistent pattern:
 **Interactive testing** requires a real OS keyring and a live Honeycomb API key. Build the binary and store a key manually:
 
 ```
-go build -o tmp/honeycomb .
+go build -o tmp/honeycomb ./cmd/honeycomb
 security add-generic-password -s honeycomb-cli -a default:config -w '<KEY_SECRET>'
 tmp/honeycomb auth status
 tmp/honeycomb auth status --offline

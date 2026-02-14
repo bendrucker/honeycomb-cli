@@ -49,4 +49,4 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
-      - run: CGO_ENABLED=0 go build -o /dev/null .
+      - run: CGO_ENABLED=0 go build -o /dev/null ./cmd/honeycomb
