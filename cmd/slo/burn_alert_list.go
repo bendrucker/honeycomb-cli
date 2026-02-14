@@ -61,5 +61,5 @@ func runBurnAlertList(ctx context.Context, opts *options.RootOptions, dataset, s
 		}
 	}
 
-	return opts.OutputWriter().Write(items, burnAlertListTable)
+	return opts.OutputWriterList().Write(items, burnAlertListTable)
 }

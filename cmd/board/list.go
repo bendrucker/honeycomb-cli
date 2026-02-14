@@ -77,5 +77,5 @@ func runBoardList(ctx context.Context, opts *options.RootOptions) error {
 		items[i] = item
 	}
 
-	return opts.OutputWriter().Write(items, boardListTable)
+	return opts.OutputWriterList().Write(items, boardListTable)
 }

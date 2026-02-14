@@ -59,5 +59,5 @@ func runList(ctx context.Context, opts *options.RootOptions) error {
 		items[i] = detailToItem(d)
 	}
 
-	return opts.OutputWriter().Write(items, recipientListTable)
+	return opts.OutputWriterList().Write(items, recipientListTable)
 }

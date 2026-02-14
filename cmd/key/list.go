@@ -61,5 +61,5 @@ func runKeyList(ctx context.Context, opts *options.RootOptions, team, filterType
 		items[i] = objectToItem(obj)
 	}
 
-	return opts.OutputWriter().Write(items, keyListTable)
+	return opts.OutputWriterList().Write(items, keyListTable)
 }

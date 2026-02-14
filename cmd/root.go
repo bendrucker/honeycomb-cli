@@ -18,7 +18,6 @@ import (
 	"github.com/bendrucker/honeycomb-cli/internal/agent"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/bendrucker/honeycomb-cli/internal/iostreams"
-	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -40,9 +39,6 @@ func NewRootCmd(ios *iostreams.IOStreams) *cobra.Command {
 
 			if agent.Detect() != nil {
 				opts.NoInteractive = true
-				if opts.Format == "" {
-					opts.Format = output.FormatJSON
-				}
 			}
 
 			if opts.NoInteractive {

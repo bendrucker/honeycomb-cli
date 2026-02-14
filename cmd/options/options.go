@@ -73,6 +73,14 @@ func (o *RootOptions) OutputWriter() *output.Writer {
 	return output.New(o.IOStreams.Out, o.ResolveFormat())
 }
 
+func (o *RootOptions) OutputWriterList() *output.Writer {
+	format := o.Format
+	if format == "" {
+		format = output.FormatTable
+	}
+	return output.New(o.IOStreams.Out, format)
+}
+
 func (o *RootOptions) ResolveMCPUrl() string {
 	if o.MCPUrl != "" {
 		return o.MCPUrl
