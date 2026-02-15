@@ -134,6 +134,40 @@ Remove the key afterward with `security delete-generic-password -s honeycomb-cli
 
 V2-created keys (from `key create`) should have their `secret` stored directly as shown above. Do not use `auth login` for v2 keys -- it combines `--key-id` and `--key-secret` into `id:secret` format, which the v1 Configuration API does not accept.
 
+## Integration Tests
+
+Integration tests live in `integration/` and run against the live Honeycomb API with the `integration` build tag. Tests execute commands in-process via `cmd.NewRootCmd` — no binary build or subprocess needed.
+
+### Prerequisites
+
+A management key stored in the OS keyring under the `default` profile, or `HONEYCOMB_MANAGEMENT_KEY_ID` and `HONEYCOMB_MANAGEMENT_KEY_SECRET` environment variables. `HONEYCOMB_TEAM` is always required.
+
+### Running
+
+```
+# All tests
+HONEYCOMB_TEAM=<slug> go test -tags integration -count=1 -v ./integration/
+
+# Specific test (e.g., just triggers)
+HONEYCOMB_TEAM=<slug> go test -tags integration -count=1 -v -run TestTrigger ./integration/
+```
+
+### Setup Flow (`TestMain`)
+
+1. Store management key in `integration-test` profile (from env vars or default profile keyring)
+2. Create a test environment (`it-<rand>`)
+3. Create a config key scoped to that environment with full permissions
+4. Create a test dataset
+
+### Cleanup
+
+Deletes dataset, config key, and environment (disabling delete protection first), then logs out the `integration-test` profile.
+
+### Notes
+
+- Always disable sandbox when running integration tests — they make real API calls and need TLS access.
+- When working on a specific subcommand, target just those integration tests with `-run`.
+
 ## TUI Ideas (Future)
 
 - **Query results table** — run a query, display results in a rich table with sorting/filtering
