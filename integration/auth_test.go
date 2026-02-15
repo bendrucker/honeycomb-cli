@@ -3,32 +3,28 @@
 package integration
 
 import (
-	"bytes"
-	"os/exec"
 	"testing"
+
+	"github.com/bendrucker/honeycomb-cli/cmd"
+	"github.com/bendrucker/honeycomb-cli/internal/iostreams"
 )
 
 func TestAuth(t *testing.T) {
 	const profile = "integration-test-auth"
 
 	t.Cleanup(func() {
-		args := authArgs(profile, "auth", "logout")
-		cmd := exec.Command(binary, args...)
-		_ = cmd.Run()
+		execAuthCmd(profile, nil, "auth", "logout")
 	})
 
 	t.Run("login", func(t *testing.T) {
-		args := authArgs(profile, "auth", "login",
+		_, err := execAuthCmd(profile, nil,
+			"auth", "login",
 			"--key-type", "config",
 			"--key-secret", configKeySecret,
 			"--no-verify",
 		)
-		cmd := exec.Command(binary, args...)
-		var stdout, stderr bytes.Buffer
-		cmd.Stdout = &stdout
-		cmd.Stderr = &stderr
-		if err := cmd.Run(); err != nil {
-			t.Fatalf("auth login failed: %v\nstderr: %s", err, stderr.String())
+		if err != nil {
+			t.Fatalf("auth login failed: %v", err)
 		}
 	})
 
@@ -81,35 +77,37 @@ func TestAuth(t *testing.T) {
 	})
 
 	t.Run("status after logout", func(t *testing.T) {
-		args := authArgs(profile, "auth", "status")
-		cmd := exec.Command(binary, args...)
-		var stdout, stderr bytes.Buffer
-		cmd.Stdout = &stdout
-		cmd.Stderr = &stderr
-		err := cmd.Run()
+		_, err := execAuthCmd(profile, nil, "auth", "status")
 		if err == nil {
-			t.Errorf("expected auth status to fail after logout, got success\nstdout: %s", stdout.String())
+			t.Errorf("expected auth status to fail after logout")
 		}
 	})
 }
 
-func authArgs(profile string, args ...string) []string {
+func execAuthCmd(profile string, stdin []byte, args ...string) (result, error) {
 	flags := []string{"--no-interactive", "--profile", profile, "--format", "json"}
 	if apiURL != "" {
 		flags = append(flags, "--api-url", apiURL)
 	}
-	return append(args, flags...)
+	allArgs := append(args, flags...)
+
+	ts := iostreams.Test()
+	if stdin != nil {
+		ts.InBuf.Write(stdin)
+	}
+
+	rootCmd := cmd.NewRootCmd(ts.IOStreams)
+	rootCmd.SetArgs(allArgs)
+
+	err := rootCmd.Execute()
+	return result{stdout: ts.OutBuf.Bytes(), stderr: ts.ErrBuf.Bytes()}, err
 }
 
 func authRun(t *testing.T, profile string, args ...string) result {
 	t.Helper()
-	all := authArgs(profile, args...)
-	cmd := exec.Command(binary, all...)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("command failed: %v\nargs: %v\nstderr: %s", err, args, stderr.String())
+	r, err := execAuthCmd(profile, nil, args...)
+	if err != nil {
+		t.Fatalf("command failed: %v\nargs: %v\nstderr: %s", err, args, r.stderr)
 	}
-	return result{stdout: stdout.Bytes(), stderr: stderr.Bytes()}
+	return r
 }

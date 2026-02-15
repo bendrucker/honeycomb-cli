@@ -9,7 +9,7 @@ import (
 func TestRecipient(t *testing.T) {
 	var id string
 
-	createJSON := []byte(`{"type":"email","target":"integration-test@example.com"}`)
+	createJSON := []byte(`{"type":"email","details":{"email_address":"integration-test@example.com"}}`)
 
 	t.Cleanup(func() {
 		if id != "" {
@@ -55,7 +55,7 @@ func TestRecipient(t *testing.T) {
 	})
 
 	t.Run("update", func(t *testing.T) {
-		updateJSON := []byte(`{"type":"email","target":"integration-test-updated@example.com"}`)
+		updateJSON := []byte(`{"type":"email","details":{"email_address":"integration-test-updated@example.com"}}`)
 		r := run(t, updateJSON, "recipient", "update", id, "-f", "-")
 		rec := parseJSON[map[string]any](t, r.stdout)
 		if rec["id"] != id {
@@ -64,7 +64,7 @@ func TestRecipient(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		throwawayJSON := []byte(`{"type":"email","target":"integration-test-throwaway@example.com"}`)
+		throwawayJSON := []byte(`{"type":"email","details":{"email_address":"integration-test-throwaway@example.com"}}`)
 		r := run(t, throwawayJSON, "recipient", "create", "-f", "-")
 		throwaway := parseJSON[map[string]any](t, r.stdout)
 		throwawayID, ok := throwaway["id"].(string)

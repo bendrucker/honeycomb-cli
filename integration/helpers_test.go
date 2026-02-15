@@ -16,7 +16,7 @@ type result struct {
 
 func run(t *testing.T, stdin []byte, args ...string) result {
 	t.Helper()
-	r, err := execBinary(stdin, args...)
+	r, err := execCmd(stdin, args...)
 	if err != nil {
 		t.Fatalf("command failed: %v\nargs: %v\nstderr: %s", err, args, r.stderr)
 	}
@@ -24,7 +24,7 @@ func run(t *testing.T, stdin []byte, args ...string) result {
 }
 
 func runErr(stdin []byte, args ...string) (result, error) {
-	return execBinary(stdin, args...)
+	return execCmd(stdin, args...)
 }
 
 func parseJSON[T any](t *testing.T, data []byte) T {

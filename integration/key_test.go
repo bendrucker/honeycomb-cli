@@ -3,9 +3,46 @@
 package integration
 
 import (
-	"fmt"
+	"encoding/json"
 	"testing"
 )
+
+func keyCreateBody(t *testing.T, name, keyType, envID string) []byte {
+	t.Helper()
+	body, err := json.Marshal(map[string]any{
+		"data": map[string]any{
+			"type": "api-keys",
+			"attributes": map[string]any{
+				"name":     name,
+				"key_type": keyType,
+			},
+			"relationships": map[string]any{
+				"environment": map[string]any{
+					"data": map[string]any{"id": envID, "type": "environments"},
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("marshaling key create body: %v", err)
+	}
+	return body
+}
+
+func keyUpdateBody(t *testing.T, id, name string) []byte {
+	t.Helper()
+	body, err := json.Marshal(map[string]any{
+		"data": map[string]any{
+			"type":       "api-keys",
+			"id":         id,
+			"attributes": map[string]any{"name": name},
+		},
+	})
+	if err != nil {
+		t.Fatalf("marshaling key update body: %v", err)
+	}
+	return body
+}
 
 func TestKey(t *testing.T) {
 	var id string
@@ -18,8 +55,7 @@ func TestKey(t *testing.T) {
 	})
 
 	t.Run("create", func(t *testing.T) {
-		body := fmt.Sprintf(`{"data":{"type":"keys","attributes":{"name":"%s","key_type":"ingest"}}}`, name)
-		r := run(t, []byte(body), "key", "create", "--team", team, "-f", "-")
+		r := run(t, keyCreateBody(t, name, "ingest", environment), "key", "create", "--team", team, "-f", "-")
 		key := parseJSON[map[string]any](t, r.stdout)
 		v, ok := key["id"].(string)
 		if !ok || v == "" {
@@ -60,8 +96,7 @@ func TestKey(t *testing.T) {
 
 	t.Run("update", func(t *testing.T) {
 		newName := name + "-upd"
-		body := fmt.Sprintf(`{"data":{"type":"keys","attributes":{"name":"%s"}}}`, newName)
-		r := run(t, []byte(body), "key", "update", id, "--team", team, "-f", "-")
+		r := run(t, keyUpdateBody(t, id, newName), "key", "update", id, "--team", team, "-f", "-")
 		key := parseJSON[map[string]any](t, r.stdout)
 		if got := key["name"]; got != newName {
 			t.Errorf("expected name %q, got %q", newName, got)
@@ -71,8 +106,7 @@ func TestKey(t *testing.T) {
 
 	t.Run("delete", func(t *testing.T) {
 		throwawayName := uniqueName(t)
-		body := fmt.Sprintf(`{"data":{"type":"keys","attributes":{"name":"%s","key_type":"ingest"}}}`, throwawayName)
-		r := run(t, []byte(body), "key", "create", "--team", team, "-f", "-")
+		r := run(t, keyCreateBody(t, throwawayName, "ingest", environment), "key", "create", "--team", team, "-f", "-")
 		throwaway := parseJSON[map[string]any](t, r.stdout)
 		throwawayID, ok := throwaway["id"].(string)
 		if !ok || throwawayID == "" {

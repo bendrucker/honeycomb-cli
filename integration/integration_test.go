@@ -10,16 +10,18 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
-	"path/filepath"
 	"testing"
+
+	"github.com/bendrucker/honeycomb-cli/cmd"
+	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/bendrucker/honeycomb-cli/internal/iostreams"
 )
 
 var (
-	binary          string
 	runID           string
 	team            string
 	apiURL          string
+	environment     string
 	dataset         string
 	configKeyID     string
 	configKeySecret string
@@ -28,25 +30,23 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	mgmtKeyID := requireEnv("HONEYCOMB_MANAGEMENT_KEY_ID")
-	mgmtKeySecret := requireEnv("HONEYCOMB_MANAGEMENT_KEY_SECRET")
 	team = requireEnv("HONEYCOMB_TEAM")
 	apiURL = os.Getenv("HONEYCOMB_API_URL")
 
 	runID = generateRunID()
 	log.Printf("run ID: %s", runID)
 
-	bin, err := buildBinary()
+	if err := setupManagementKey(); err != nil {
+		log.Fatalf("setting up management key: %v", err)
+	}
+
+	envID, err := createTestEnvironment()
 	if err != nil {
-		log.Fatalf("building binary: %v", err)
+		log.Fatalf("creating test environment: %v", err)
 	}
-	binary = bin
+	environment = envID
 
-	if err := storeManagementKey(mgmtKeyID, mgmtKeySecret); err != nil {
-		log.Fatalf("storing management key: %v", err)
-	}
-
-	keyID, secret, err := createConfigKey()
+	keyID, secret, err := createConfigKey(environment)
 	if err != nil {
 		log.Fatalf("creating config key: %v", err)
 	}
@@ -87,53 +87,76 @@ func generateRunID() string {
 	return "it-" + hex.EncodeToString(b)
 }
 
-func buildBinary() (string, error) {
-	dir, err := os.MkdirTemp("", "honeycomb-integration-*")
+func setupManagementKey() error {
+	mgmtKeyID := os.Getenv("HONEYCOMB_MANAGEMENT_KEY_ID")
+	mgmtKeySecret := os.Getenv("HONEYCOMB_MANAGEMENT_KEY_SECRET")
+
+	if mgmtKeyID != "" && mgmtKeySecret != "" {
+		log.Print("using management key from environment")
+		_, err := runErr(nil,
+			"auth", "login",
+			"--key-type", "management",
+			"--key-id", mgmtKeyID,
+			"--key-secret", mgmtKeySecret,
+			"--no-verify",
+		)
+		return err
+	}
+
+	log.Print("using management key from default profile keyring")
+	key, err := config.GetKey("default", config.KeyManagement)
 	if err != nil {
-		return "", fmt.Errorf("creating temp dir: %w", err)
+		return fmt.Errorf("reading management key from default profile: %w (set HONEYCOMB_MANAGEMENT_KEY_ID and HONEYCOMB_MANAGEMENT_KEY_SECRET as an alternative)", err)
 	}
-	bin := filepath.Join(dir, "honeycomb")
-	cmd := exec.Command("go", "build", "-o", bin, "./cmd/honeycomb")
-	cmd.Dir = findModuleRoot()
-	cmd.Stdout = os.Stderr
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("go build: %w", err)
-	}
-	return bin, nil
+
+	return config.SetKey("integration-test", config.KeyManagement, key)
 }
 
-func findModuleRoot() string {
-	dir, err := os.Getwd()
+func createTestEnvironment() (string, error) {
+	r, err := runErr(nil, "environment", "create", "--team", team, "--name", runID)
 	if err != nil {
-		log.Fatalf("getting working directory: %v", err)
+		return "", fmt.Errorf("environment create: %w\nstderr: %s", err, r.stderr)
 	}
-	for {
-		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
-			return dir
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			log.Fatal("could not find go.mod")
-		}
-		dir = parent
+
+	var env struct {
+		ID string `json:"id"`
 	}
+	if err := json.Unmarshal(r.stdout, &env); err != nil {
+		return "", fmt.Errorf("parsing environment create: %w\nstdout: %s", err, r.stdout)
+	}
+	return env.ID, nil
 }
 
-func storeManagementKey(keyID, keySecret string) error {
-	_, err := runErr(nil,
-		"auth", "login",
-		"--key-type", "management",
-		"--key-id", keyID,
-		"--key-secret", keySecret,
-		"--no-verify",
-	)
-	return err
-}
-
-func createConfigKey() (string, string, error) {
-	body := fmt.Sprintf(`{"data":{"type":"keys","attributes":{"name":"%s","key_type":"configuration"}}}`, runID)
-	r, err := runErr([]byte(body), "key", "create", "--team", team, "-f", "-")
+func createConfigKey(envID string) (string, string, error) {
+	body, err := json.Marshal(map[string]any{
+		"data": map[string]any{
+			"type": "api-keys",
+			"attributes": map[string]any{
+				"name":     runID,
+				"key_type": "configuration",
+				"permissions": map[string]any{
+					"create_datasets":   true,
+					"manage_columns":    true,
+					"manage_boards":     true,
+					"manage_markers":    true,
+					"manage_slos":       true,
+					"manage_triggers":   true,
+					"manage_recipients": true,
+					"run_queries":       true,
+					"send_events":       true,
+				},
+			},
+			"relationships": map[string]any{
+				"environment": map[string]any{
+					"data": map[string]any{"id": envID, "type": "environments"},
+				},
+			},
+		},
+	})
+	if err != nil {
+		return "", "", fmt.Errorf("marshaling key create body: %w", err)
+	}
+	r, err := runErr(body, "key", "create", "--team", team, "-f", "-")
 	if err != nil {
 		return "", "", fmt.Errorf("key create: %w\nstderr: %s", err, r.stderr)
 	}
@@ -192,6 +215,7 @@ func probePro() bool {
 
 func cleanup() {
 	if dataset != "" {
+		runErr(nil, "dataset", "update", dataset, "--delete-protected=false")
 		r, err := runErr(nil, "dataset", "delete", dataset, "--yes")
 		if err != nil {
 			log.Printf("cleanup: deleting dataset: %v\nstderr: %s", err, r.stderr)
@@ -202,6 +226,14 @@ func cleanup() {
 		r, err := runErr(nil, "key", "delete", configKeyID, "--team", team, "--yes")
 		if err != nil {
 			log.Printf("cleanup: deleting config key: %v\nstderr: %s", err, r.stderr)
+		}
+	}
+
+	if environment != "" {
+		runErr(nil, "environment", "update", environment, "--team", team, "--delete-protected=false")
+		r, err := runErr(nil, "environment", "delete", environment, "--team", team, "--yes")
+		if err != nil {
+			log.Printf("cleanup: deleting environment: %v\nstderr: %s", err, r.stderr)
 		}
 	}
 
@@ -219,15 +251,20 @@ func commonFlags() []string {
 	return flags
 }
 
-func execBinary(stdin []byte, args ...string) (result, error) {
+func execCmd(stdin []byte, args ...string) (result, error) {
 	allArgs := append(args, commonFlags()...)
-	cmd := exec.Command(binary, allArgs...)
+
+	ts := iostreams.Test()
 	if stdin != nil {
-		cmd.Stdin = bytes.NewReader(stdin)
+		ts.InBuf.Write(stdin)
 	}
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err := cmd.Run()
-	return result{stdout: stdout.Bytes(), stderr: stderr.Bytes()}, err
+
+	rootCmd := cmd.NewRootCmd(ts.IOStreams)
+	rootCmd.SetArgs(allArgs)
+
+	var errBuf bytes.Buffer
+	rootCmd.SetErr(&errBuf)
+
+	err := rootCmd.Execute()
+	return result{stdout: ts.OutBuf.Bytes(), stderr: errBuf.Bytes()}, err
 }

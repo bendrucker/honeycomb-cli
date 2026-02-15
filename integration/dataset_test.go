@@ -10,6 +10,7 @@ func TestDataset(t *testing.T) {
 
 	t.Cleanup(func() {
 		if slug != "" {
+			_, _ = runErr(nil, "dataset", "update", slug, "--delete-protected=false")
 			_, _ = runErr(nil, "dataset", "delete", slug, "--yes")
 		}
 	})
@@ -79,6 +80,7 @@ func TestDataset(t *testing.T) {
 		if ds.Slug == "" {
 			t.Fatal("expected non-empty slug for throwaway dataset")
 		}
+		run(t, nil, "dataset", "update", ds.Slug, "--delete-protected=false")
 		run(t, nil, "dataset", "delete", ds.Slug, "--yes")
 	})
 }

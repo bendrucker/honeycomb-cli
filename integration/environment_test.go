@@ -12,6 +12,7 @@ func TestEnvironment(t *testing.T) {
 
 	t.Cleanup(func() {
 		if id != "" {
+			_, _ = runErr(nil, "environment", "update", id, "--team", team, "--delete-protected=false")
 			_, _ = runErr(nil, "environment", "delete", id, "--team", team, "--yes")
 		}
 	})
@@ -83,6 +84,7 @@ func TestEnvironment(t *testing.T) {
 			t.Fatal("expected non-empty id for throwaway environment")
 		}
 
+		run(t, nil, "environment", "update", throwawayID, "--team", team, "--delete-protected=false")
 		run(t, nil, "environment", "delete", throwawayID, "--team", team, "--yes")
 	})
 }
