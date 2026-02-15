@@ -6,12 +6,20 @@ on:
     branches: [main]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - run: CGO_ENABLED=0 go build -o /dev/null ./cmd/honeycomb
+
   generate:
-    name: Generate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -22,7 +30,6 @@ jobs:
       - run: git diff --exit-code || (echo "Generated code is stale. Run 'go generate ./internal/api/...' and commit the result." && exit 1)
 
   lint:
-    name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -32,7 +39,6 @@ jobs:
       - uses: golangci/golangci-lint-action@v9
 
   test:
-    name: Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -40,13 +46,3 @@ jobs:
         with:
           go-version-file: go.mod
       - run: go test -race ./...
-
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
-        with:
-          go-version-file: go.mod
-      - run: CGO_ENABLED=0 go build -o /dev/null ./cmd/honeycomb
