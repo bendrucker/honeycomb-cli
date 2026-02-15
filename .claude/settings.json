@@ -1,4 +1,7 @@
 {
+  "env": {
+    "GOLANGCI_LINT_CACHE": "/tmp/claude/golangci-lint"
+  },
   "enabledPlugins": {
     "gopls-lsp@claude-plugins-official": true
   },
