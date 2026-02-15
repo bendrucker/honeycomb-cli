@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
@@ -47,7 +48,7 @@ func runAuthLogout(opts *options.RootOptions, keyType string) error {
 	var deleted []logoutResult
 	for _, kt := range targets {
 		err := config.DeleteKey(profile, kt)
-		if err == keyring.ErrNotFound {
+		if errors.Is(err, keyring.ErrNotFound) {
 			continue
 		}
 		if err != nil {

@@ -63,7 +63,8 @@ func unwrapJSONAPI(data []byte) ([]byte, error) {
 	var probe struct {
 		Data json.RawMessage `json:"data"`
 	}
-	if err := json.Unmarshal(data, &probe); err != nil || probe.Data == nil {
+	_ = json.Unmarshal(data, &probe)
+	if probe.Data == nil {
 		return data, nil
 	}
 
