@@ -75,7 +75,12 @@ func runBoardUpdate(cmd *cobra.Command, opts *options.RootOptions, boardID, file
 		current.Description = &desc
 	}
 
-	resp, err := client.UpdateBoardWithResponse(ctx, boardID, *current, auth)
+	data, err := api.MarshalStrippingReadOnly(current, "Board")
+	if err != nil {
+		return fmt.Errorf("encoding board: %w", err)
+	}
+
+	resp, err := client.UpdateBoardWithBodyWithResponse(ctx, boardID, "application/json", bytes.NewReader(data), auth)
 	if err != nil {
 		return fmt.Errorf("updating board: %w", err)
 	}
@@ -129,6 +134,11 @@ func updateFromFile(ctx context.Context, client *api.ClientWithResponses, opts *
 		if err != nil {
 			return fmt.Errorf("encoding board: %w", err)
 		}
+	}
+
+	data, stripErr := api.StripReadOnly(data, "Board")
+	if stripErr != nil {
+		return fmt.Errorf("stripping read-only fields: %w", stripErr)
 	}
 
 	resp, err := client.UpdateBoardWithBodyWithResponse(ctx, boardID, "application/json", bytes.NewReader(data), auth)
