@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"maps"
 	"net/http"
 	"net/url"
@@ -63,7 +64,10 @@ func unwrapJSONAPI(data []byte) ([]byte, error) {
 	var probe struct {
 		Data json.RawMessage `json:"data"`
 	}
-	if err := json.Unmarshal(data, &probe); err != nil || probe.Data == nil {
+	if err := json.Unmarshal(data, &probe); err != nil {
+		return nil, fmt.Errorf("unmarshaling JSON:API response: %w", err)
+	}
+	if probe.Data == nil {
 		return data, nil
 	}
 

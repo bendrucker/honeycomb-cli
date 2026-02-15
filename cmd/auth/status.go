@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -62,7 +63,7 @@ func runAuthStatus(ctx context.Context, opts *options.RootOptions, offline bool)
 	var keys []storedKey
 	for _, kt := range keyTypes {
 		val, err := config.GetKey(profile, kt)
-		if err == keyring.ErrNotFound {
+		if errors.Is(err, keyring.ErrNotFound) {
 			continue
 		}
 		if err != nil {

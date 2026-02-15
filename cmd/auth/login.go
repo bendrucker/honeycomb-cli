@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 
@@ -67,7 +68,7 @@ func runAuthLogin(ctx context.Context, opts *options.RootOptions, keyType, keyID
 					).
 					Value(&keyType),
 			)).Run()
-			if err == huh.ErrUserAborted {
+			if errors.Is(err, huh.ErrUserAborted) {
 				return nil
 			}
 			if err != nil {
@@ -89,7 +90,7 @@ func runAuthLogin(ctx context.Context, opts *options.RootOptions, keyType, keyID
 		}
 		if len(fields) > 0 {
 			err := huh.NewForm(huh.NewGroup(fields...)).Run()
-			if err == huh.ErrUserAborted {
+			if errors.Is(err, huh.ErrUserAborted) {
 				return nil
 			}
 			if err != nil {

@@ -2,6 +2,7 @@ package options
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -49,7 +50,7 @@ func (o *RootOptions) ResolveFormat() string {
 func (o *RootOptions) RequireKey(kt config.KeyType) (string, error) {
 	profile := o.ActiveProfile()
 	key, err := config.GetKey(profile, kt)
-	if err == keyring.ErrNotFound {
+	if errors.Is(err, keyring.ErrNotFound) {
 		return "", fmt.Errorf("no %s key configured for profile %q (run honeycomb auth login --key-type %s)", kt, profile, kt)
 	}
 	if err != nil {
