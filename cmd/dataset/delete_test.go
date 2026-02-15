@@ -48,6 +48,27 @@ func TestDelete_NoYesNonInteractive(t *testing.T) {
 	}
 }
 
+func TestDelete_DeleteProtected(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		_, _ = w.Write([]byte(`{"error":"resource is delete protected and cannot be deleted"}`))
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"delete", "my-dataset", "--yes"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for delete-protected dataset")
+	}
+	if !strings.Contains(err.Error(), "delete protected") {
+		t.Errorf("error = %q, want delete protected message", err.Error())
+	}
+	if !strings.Contains(err.Error(), "honeycomb dataset update my-dataset --delete-protected=false") {
+		t.Errorf("error = %q, want workaround suggestion", err.Error())
+	}
+}
+
 func TestDelete_MissingArg(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 
