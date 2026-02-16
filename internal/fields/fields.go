@@ -9,6 +9,10 @@ import (
 )
 
 func Parse(raw, typed []string, stdin io.Reader) (map[string]any, error) {
+	if len(raw) == 0 && len(typed) == 0 {
+		return nil, nil
+	}
+
 	result := make(map[string]any)
 
 	for _, f := range raw {

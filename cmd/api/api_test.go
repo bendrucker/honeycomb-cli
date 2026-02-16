@@ -379,6 +379,31 @@ func TestRun_JQ_NonSuccess(t *testing.T) {
 	}
 }
 
+func TestRun_PUT_OnlyExplicitFields(t *testing.T) {
+	var gotBody map[string]any
+	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			t.Errorf("method = %q, want PUT", r.Method)
+		}
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{"id": "abc"})
+	}), config.KeyConfig, "test-key")
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"/1/query_annotations/my-dataset/abc", "-X", "PUT", "-f", "name=New Name"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	if len(gotBody) != 1 {
+		t.Errorf("body has %d fields, want 1: %v", len(gotBody), gotBody)
+	}
+	if gotBody["name"] != "New Name" {
+		t.Errorf("body name = %v, want New Name", gotBody["name"])
+	}
+}
+
 func TestRun_V2_FieldWrapping(t *testing.T) {
 	tests := []struct {
 		name       string

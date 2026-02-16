@@ -13,8 +13,13 @@ func TestParse(t *testing.T) {
 		raw     []string
 		typed   []string
 		want    string
+		wantNil bool
 		wantErr bool
 	}{
+		{
+			name:    "no fields returns nil",
+			wantNil: true,
+		},
 		{
 			name: "simple string field",
 			raw:  []string{"name=My Board"},
@@ -86,6 +91,12 @@ func TestParse(t *testing.T) {
 				return
 			}
 			if tt.wantErr {
+				return
+			}
+			if tt.wantNil {
+				if got != nil {
+					t.Errorf("Parse() = %v, want nil", got)
+				}
 				return
 			}
 
