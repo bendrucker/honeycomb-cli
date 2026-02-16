@@ -15,12 +15,28 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var knownPermissions = []string{
+	"create_datasets",
+	"manage_boards",
+	"manage_columns",
+	"manage_markers",
+	"manage_private_boards",
+	"manage_recipients",
+	"manage_slos",
+	"manage_triggers",
+	"read_service_maps",
+	"run_queries",
+	"send_events",
+}
+
 func NewCreateCmd(opts *options.RootOptions, team *string) *cobra.Command {
 	var (
-		file        string
-		name        string
-		keyType     string
-		environment string
+		file           string
+		name           string
+		keyType        string
+		environment    string
+		permissions    []string
+		allPermissions bool
 	)
 
 	cmd := &cobra.Command{
@@ -30,7 +46,7 @@ func NewCreateCmd(opts *options.RootOptions, team *string) *cobra.Command {
 			if err := opts.RequireTeam(team); err != nil {
 				return err
 			}
-			return runKeyCreate(cmd, opts, *team, file, name, keyType, environment)
+			return runKeyCreate(cmd, opts, *team, file, name, keyType, environment, permissions, allPermissions)
 		},
 	}
 
@@ -38,19 +54,24 @@ func NewCreateCmd(opts *options.RootOptions, team *string) *cobra.Command {
 	cmd.Flags().StringVar(&name, "name", "", "Key name")
 	cmd.Flags().StringVar(&keyType, "key-type", "", "Key type (ingest or configuration)")
 	cmd.Flags().StringVar(&environment, "environment", "", "Environment ID")
+	cmd.Flags().StringSliceVar(&permissions, "permission", nil, "Permission to grant (repeatable)")
+	cmd.Flags().BoolVar(&allPermissions, "all-permissions", false, "Grant all permissions")
 
 	cmd.MarkFlagsMutuallyExclusive("file", "name")
 	cmd.MarkFlagsMutuallyExclusive("file", "key-type")
 	cmd.MarkFlagsMutuallyExclusive("file", "environment")
+	cmd.MarkFlagsMutuallyExclusive("file", "permission")
+	cmd.MarkFlagsMutuallyExclusive("file", "all-permissions")
+	cmd.MarkFlagsMutuallyExclusive("permission", "all-permissions")
 
 	return cmd
 }
 
-func runKeyCreate(cmd *cobra.Command, opts *options.RootOptions, team, file, name, keyType, environment string) error {
+func runKeyCreate(cmd *cobra.Command, opts *options.RootOptions, team, file, name, keyType, environment string, permissions []string, allPermissions bool) error {
 	if file != "" {
 		return runKeyCreateFromFile(cmd.Context(), opts, team, file)
 	}
-	return runKeyCreateFromFlags(cmd, opts, team, name, keyType, environment)
+	return runKeyCreateFromFlags(cmd, opts, team, name, keyType, environment, permissions, allPermissions)
 }
 
 func runKeyCreateFromFile(ctx context.Context, opts *options.RootOptions, team, file string) error {
@@ -77,7 +98,7 @@ func runKeyCreateFromFile(ctx context.Context, opts *options.RootOptions, team, 
 	return handleCreateResponse(opts, resp)
 }
 
-func runKeyCreateFromFlags(cmd *cobra.Command, opts *options.RootOptions, team, name, keyType, environment string) error {
+func runKeyCreateFromFlags(cmd *cobra.Command, opts *options.RootOptions, team, name, keyType, environment string, permissions []string, allPermissions bool) error {
 	var err error
 
 	if name == "" {
@@ -105,6 +126,14 @@ func runKeyCreateFromFlags(cmd *cobra.Command, opts *options.RootOptions, team, 
 
 	if keyType != "ingest" && keyType != "configuration" {
 		return fmt.Errorf("--key-type must be ingest or configuration")
+	}
+
+	if (len(permissions) > 0 || allPermissions) && keyType != "configuration" {
+		return fmt.Errorf("--permission and --all-permissions are only valid with --key-type configuration")
+	}
+
+	if err := validatePermissions(permissions); err != nil {
+		return err
 	}
 
 	if environment == "" {
@@ -148,9 +177,16 @@ func runKeyCreateFromFlags(cmd *cobra.Command, opts *options.RootOptions, team, 
 			Name: name,
 		})
 	case "configuration":
-		err = body.Data.Attributes.FromConfigurationKeyAttributes(api.ConfigurationKeyAttributes{
+		attrs := api.ConfigurationKeyAttributes{
 			Name: name,
-		})
+		}
+		if allPermissions {
+			permissions = knownPermissions
+		}
+		if len(permissions) > 0 {
+			setPermissions(&attrs, permissions)
+		}
+		err = body.Data.Attributes.FromConfigurationKeyAttributes(attrs)
 	}
 	if err != nil {
 		return fmt.Errorf("building request: %w", err)
@@ -162,6 +198,63 @@ func runKeyCreateFromFlags(cmd *cobra.Command, opts *options.RootOptions, team, 
 	}
 
 	return handleCreateResponse(opts, resp)
+}
+
+func validatePermissions(permissions []string) error {
+	known := make(map[string]bool, len(knownPermissions))
+	for _, p := range knownPermissions {
+		known[p] = true
+	}
+	for _, p := range permissions {
+		if !known[p] {
+			return fmt.Errorf("unknown permission %q; valid permissions: %v", p, knownPermissions)
+		}
+	}
+	return nil
+}
+
+func setPermissions(attrs *api.ConfigurationKeyAttributes, permissions []string) {
+	t := true
+	attrs.Permissions = &struct {
+		CreateDatasets      *bool `json:"create_datasets,omitempty"`
+		ManageBoards        *bool `json:"manage_boards,omitempty"`
+		ManageColumns       *bool `json:"manage_columns,omitempty"`
+		ManageMarkers       *bool `json:"manage_markers,omitempty"`
+		ManagePrivateBoards *bool `json:"manage_privateBoards,omitempty"`
+		ManageRecipients    *bool `json:"manage_recipients,omitempty"`
+		ManageSlos          *bool `json:"manage_slos,omitempty"`
+		ManageTriggers      *bool `json:"manage_triggers,omitempty"`
+		ReadServiceMaps     *bool `json:"read_service_maps,omitempty"`
+		RunQueries          *bool `json:"run_queries,omitempty"`
+		SendEvents          *bool `json:"send_events,omitempty"`
+		VisibleTeamMembers  *bool `json:"visible_team_members,omitempty"`
+	}{}
+	for _, p := range permissions {
+		switch p {
+		case "create_datasets":
+			attrs.Permissions.CreateDatasets = &t
+		case "manage_boards":
+			attrs.Permissions.ManageBoards = &t
+		case "manage_columns":
+			attrs.Permissions.ManageColumns = &t
+		case "manage_markers":
+			attrs.Permissions.ManageMarkers = &t
+		case "manage_private_boards":
+			attrs.Permissions.ManagePrivateBoards = &t
+		case "manage_recipients":
+			attrs.Permissions.ManageRecipients = &t
+		case "manage_slos":
+			attrs.Permissions.ManageSlos = &t
+		case "manage_triggers":
+			attrs.Permissions.ManageTriggers = &t
+		case "read_service_maps":
+			attrs.Permissions.ReadServiceMaps = &t
+		case "run_queries":
+			attrs.Permissions.RunQueries = &t
+		case "send_events":
+			attrs.Permissions.SendEvents = &t
+		}
+	}
 }
 
 func handleCreateResponse(opts *options.RootOptions, resp *api.CreateApiKeyResp) error {

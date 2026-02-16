@@ -356,6 +356,145 @@ func TestCreate_Flags(t *testing.T) {
 	}
 }
 
+func TestCreate_WithPermissions(t *testing.T) {
+	for _, tc := range []struct {
+		name            string
+		args            []string
+		wantPermissions map[string]bool
+	}{
+		{
+			name: "single permission",
+			args: []string{"--permission", "manage_boards"},
+			wantPermissions: map[string]bool{
+				"manage_boards": true,
+			},
+		},
+		{
+			name: "multiple permissions",
+			args: []string{"--permission", "manage_boards", "--permission", "run_queries"},
+			wantPermissions: map[string]bool{
+				"manage_boards": true,
+				"run_queries":   true,
+			},
+		},
+		{
+			name: "all permissions",
+			args: []string{"--all-permissions"},
+			wantPermissions: map[string]bool{
+				"create_datasets":       true,
+				"manage_boards":         true,
+				"manage_columns":        true,
+				"manage_markers":        true,
+				"manage_private_boards": true,
+				"manage_recipients":     true,
+				"manage_slos":           true,
+				"manage_triggers":       true,
+				"read_service_maps":     true,
+				"run_queries":           true,
+				"send_events":           true,
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				var body api.ApiKeyCreateRequest
+				if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+					t.Fatalf("decode request body: %v", err)
+				}
+
+				raw, _ := body.Data.Attributes.MarshalJSON()
+				var attrs struct {
+					Permissions map[string]bool `json:"permissions"`
+				}
+				_ = json.Unmarshal(raw, &attrs)
+
+				for perm, want := range tc.wantPermissions {
+					jsonKey := perm
+					if perm == "manage_private_boards" {
+						jsonKey = "manage_privateBoards"
+					}
+					if got := attrs.Permissions[jsonKey]; got != want {
+						t.Errorf("permission %s = %v, want %v", perm, got, want)
+					}
+				}
+
+				w.Header().Set("Content-Type", "application/vnd.api+json")
+				w.WriteHeader(http.StatusCreated)
+				_, _ = w.Write([]byte(`{
+					"data": {
+						"id": "hcxlk_01new",
+						"type": "api-keys",
+						"attributes": {
+							"name": "My Key",
+							"key_type": "configuration",
+							"disabled": false,
+							"secret": "secret123"
+						}
+					}
+				}`))
+			}))
+
+			args := []string{"--team", "my-team", "create", "--name", "My Key", "--key-type", "configuration", "--environment", "env1"}
+			args = append(args, tc.args...)
+			cmd := NewCmd(opts)
+			cmd.SetArgs(args)
+			if err := cmd.Execute(); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestCreate_PermissionValidation(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		args    []string
+		wantErr string
+	}{
+		{
+			name:    "unknown permission",
+			args:    []string{"--team", "my-team", "create", "--name", "Key", "--key-type", "configuration", "--environment", "env1", "--permission", "invalid"},
+			wantErr: `unknown permission "invalid"`,
+		},
+		{
+			name:    "permission with ingest key",
+			args:    []string{"--team", "my-team", "create", "--name", "Key", "--key-type", "ingest", "--environment", "env1", "--permission", "manage_boards"},
+			wantErr: "--permission and --all-permissions are only valid with --key-type configuration",
+		},
+		{
+			name:    "all permissions with ingest key",
+			args:    []string{"--team", "my-team", "create", "--name", "Key", "--key-type", "ingest", "--environment", "env1", "--all-permissions"},
+			wantErr: "--permission and --all-permissions are only valid with --key-type configuration",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ts := iostreams.Test(t)
+			ts.SetNeverPrompt(true)
+			opts := &options.RootOptions{
+				IOStreams: ts.IOStreams,
+				Config:    &config.Config{},
+				APIUrl:    "http://localhost",
+				Format:    "json",
+			}
+
+			if err := config.SetKey("default", config.KeyManagement, "test-key"); err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { _ = config.DeleteKey("default", config.KeyManagement) })
+
+			cmd := NewCmd(opts)
+			cmd.SetArgs(tc.args)
+			err := cmd.Execute()
+			if err == nil {
+				t.Fatal("expected error")
+			}
+			if !strings.Contains(err.Error(), tc.wantErr) {
+				t.Errorf("error = %q, want to contain %q", err.Error(), tc.wantErr)
+			}
+		})
+	}
+}
+
 func TestCreate_FlagsMutuallyExclusiveWithFile(t *testing.T) {
 	ts := iostreams.Test(t)
 	opts := &options.RootOptions{
