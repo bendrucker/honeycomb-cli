@@ -563,7 +563,7 @@ func TestUpdate_Flags(t *testing.T) {
 				}
 
 				w.Header().Set("Content-Type", "application/vnd.api+json")
-				_, _ = w.Write([]byte(fmt.Sprintf(`{
+				fmt.Fprintf(w, `{
 					"data": {
 						"id": %q,
 						"type": "api-keys",
@@ -573,7 +573,7 @@ func TestUpdate_Flags(t *testing.T) {
 							"disabled": %t
 						}
 					}
-				}`, tc.id, tc.wantName, keyType, tc.wantDisabled)))
+				}`, tc.id, tc.wantName, keyType, tc.wantDisabled)
 			}))
 
 			cmd := NewCmd(opts)
