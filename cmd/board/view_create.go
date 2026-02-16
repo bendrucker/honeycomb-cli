@@ -11,6 +11,7 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/bendrucker/honeycomb-cli/internal/jsonutil"
 	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/spf13/cobra"
 )
@@ -135,6 +136,11 @@ func createViewFromFile(ctx context.Context, client *api.ClientWithResponses, op
 	data, err := io.ReadAll(r)
 	if err != nil {
 		return fmt.Errorf("reading file: %w", err)
+	}
+
+	data, err = jsonutil.Sanitize(data)
+	if err != nil {
+		return fmt.Errorf("invalid JSON: %w", err)
 	}
 
 	resp, err := client.CreateBoardViewWithBodyWithResponse(ctx, boardID, "application/json", bytes.NewReader(data), auth)
