@@ -2,7 +2,6 @@ package query
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 
@@ -14,28 +13,68 @@ import (
 )
 
 func NewCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
-	var file string
+	var (
+		file    string
+		name    string
+		desc    string
+		queryID string
+	)
 
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a query annotation",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runAnnotationCreate(cmd.Context(), opts, *dataset, file)
+			return runAnnotationCreate(cmd, opts, *dataset, file, name, desc, queryID)
 		},
 	}
 
 	cmd.Flags().StringVarP(&file, "file", "f", "", "Path to JSON file (- for stdin)")
+	cmd.Flags().StringVar(&name, "name", "", "Annotation name")
+	cmd.Flags().StringVar(&desc, "description", "", "Annotation description")
+	cmd.Flags().StringVar(&queryID, "query-id", "", "Query ID to annotate")
+
+	cmd.MarkFlagsMutuallyExclusive("file", "name")
+	cmd.MarkFlagsMutuallyExclusive("file", "description")
+	cmd.MarkFlagsMutuallyExclusive("file", "query-id")
 
 	return cmd
 }
 
-func runAnnotationCreate(ctx context.Context, opts *options.RootOptions, dataset, file string) error {
+func runAnnotationCreate(cmd *cobra.Command, opts *options.RootOptions, dataset, file, name, desc, queryID string) error {
 	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
 	}
 
-	if file == "" {
+	ctx := cmd.Context()
+
+	var data []byte
+	if file != "" {
+		data, err = readFile(opts, file)
+		if err != nil {
+			return err
+		}
+	} else if cmd.Flags().Changed("name") || cmd.Flags().Changed("query-id") {
+		if name == "" {
+			return fmt.Errorf("--name is required")
+		}
+		if queryID == "" {
+			return fmt.Errorf("--query-id is required")
+		}
+
+		annotation := api.QueryAnnotation{
+			Name:    name,
+			QueryId: queryID,
+		}
+		if cmd.Flags().Changed("description") {
+			annotation.Description = &desc
+		}
+
+		data, err = api.MarshalStrippingReadOnly(annotation, "QueryAnnotation")
+		if err != nil {
+			return fmt.Errorf("encoding query annotation: %w", err)
+		}
+	} else {
 		if !opts.IOStreams.CanPrompt() {
 			return fmt.Errorf("--file is required in non-interactive mode")
 		}
@@ -46,11 +85,10 @@ func runAnnotationCreate(ctx context.Context, opts *options.RootOptions, dataset
 		if file == "" {
 			return fmt.Errorf("file path is required")
 		}
-	}
-
-	data, err := readFile(opts, file)
-	if err != nil {
-		return err
+		data, err = readFile(opts, file)
+		if err != nil {
+			return err
+		}
 	}
 
 	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
