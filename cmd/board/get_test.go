@@ -20,6 +20,10 @@ func TestGet(t *testing.T) {
 			"type":              "flexible",
 			"layout_generation": "auto",
 			"links":             map[string]any{"board_url": "https://ui.honeycomb.io/boards/abc123"},
+			"preset_filters": []map[string]any{
+				{"column": "service.name", "alias": "Service"},
+				{"column": "env", "alias": "Environment"},
+			},
 			"panels": []map[string]any{
 				{
 					"type":        "query",
@@ -51,6 +55,48 @@ func TestGet(t *testing.T) {
 	}
 	if detail.Panels == nil {
 		t.Fatal("Panels is nil")
+	}
+	if detail.PresetFilters == nil {
+		t.Fatal("PresetFilters is nil")
+	}
+
+	var filters []map[string]string
+	if err := json.Unmarshal(detail.PresetFilters, &filters); err != nil {
+		t.Fatalf("unmarshal preset_filters: %v", err)
+	}
+	if len(filters) != 2 {
+		t.Fatalf("got %d preset_filters, want 2", len(filters))
+	}
+	if filters[0]["column"] != "service.name" {
+		t.Errorf("filters[0].column = %q, want %q", filters[0]["column"], "service.name")
+	}
+	if filters[0]["alias"] != "Service" {
+		t.Errorf("filters[0].alias = %q, want %q", filters[0]["alias"], "Service")
+	}
+}
+
+func TestGet_NoPresetFilters(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id":   "abc123",
+			"name": "My Board",
+			"type": "flexible",
+		})
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"get", "abc123"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	var detail boardDetail
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &detail); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+	if detail.PresetFilters != nil {
+		t.Errorf("PresetFilters = %s, want nil", detail.PresetFilters)
 	}
 }
 
