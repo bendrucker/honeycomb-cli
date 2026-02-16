@@ -138,11 +138,9 @@ V2-created keys (from `key create`) should have their `secret` stored directly a
 
 Integration tests live in `integration/` and run against the live Honeycomb API with the `integration` build tag. Tests execute commands in-process via `cmd.NewRootCmd` — no binary build or subprocess needed.
 
-### Prerequisites
+### Managed Mode (Full)
 
-A management key stored in the OS keyring under the `default` profile, or `HONEYCOMB_MANAGEMENT_KEY_ID` and `HONEYCOMB_MANAGEMENT_KEY_SECRET` environment variables. `HONEYCOMB_TEAM` is always required.
-
-### Running
+Requires a management key (stored in the OS keyring under the `default` profile, or via `HONEYCOMB_MANAGEMENT_KEY_ID` and `HONEYCOMB_MANAGEMENT_KEY_SECRET` env vars). `HONEYCOMB_TEAM` is always required. `TestMain` creates a temporary environment, config key, and dataset, then cleans them up after tests run.
 
 ```
 # All tests
@@ -152,16 +150,33 @@ HONEYCOMB_TEAM=<slug> go test -tags integration -count=1 -v ./integration/
 HONEYCOMB_TEAM=<slug> go test -tags integration -count=1 -v -run TestTrigger ./integration/
 ```
 
+### Direct Mode (Config Key Only)
+
+Set `HONEYCOMB_DATASET` to skip environment/key provisioning and use an existing config key and dataset. The config key must already be stored in the OS keyring. Optionally set `HONEYCOMB_PROFILE` (defaults to `default`).
+
+```
+HONEYCOMB_TEAM=<slug> HONEYCOMB_DATASET=<dataset> go test -tags integration -count=1 -v -run TestSLO ./integration/
+```
+
+Direct mode skips cleanup (no dataset/environment/key deletion) and is useful for running a subset of tests without a management key. Tests that require managed resources (environment create, key create) will fail — use `-run` to target compatible tests.
+
 ### Setup Flow (`TestMain`)
+
+**Managed mode** (no `HONEYCOMB_DATASET`):
 
 1. Store management key in `integration-test` profile (from env vars or default profile keyring)
 2. Create a test environment (`it-<rand>`)
 3. Create a config key scoped to that environment with full permissions
 4. Create a test dataset
 
+**Direct mode** (`HONEYCOMB_DATASET` set):
+
+1. Copy config key from the specified profile (or `default`) to the `integration-test` profile
+2. Use the provided dataset directly
+
 ### Cleanup
 
-Deletes dataset, config key, and environment (disabling delete protection first), then logs out the `integration-test` profile.
+In managed mode, deletes dataset, config key, and environment (disabling delete protection first). In both modes, logs out the `integration-test` profile.
 
 ### Notes
 
