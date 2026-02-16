@@ -10,7 +10,7 @@ func TestColumn(t *testing.T) {
 
 	t.Cleanup(func() {
 		if id != "" {
-			_, _ = runErr(nil, "column", "delete", id, "--dataset", dataset, "--yes")
+			_, _ = runErr(t, nil, "column", "delete", id, "--dataset", dataset, "--yes")
 		}
 	})
 
@@ -90,7 +90,7 @@ func TestCalculatedColumn(t *testing.T) {
 
 	t.Cleanup(func() {
 		if id != "" {
-			_, _ = runErr(nil, "column", "calculated", "delete", id, "--dataset", dataset, "--yes")
+			_, _ = runErr(t, nil, "column", "calculated", "delete", id, "--dataset", dataset, "--yes")
 		}
 	})
 

@@ -15,7 +15,7 @@ func TestTrigger(t *testing.T) {
 
 	t.Cleanup(func() {
 		if id != "" {
-			_, _ = runErr(nil, "trigger", "delete", id, "--dataset", dataset, "--yes")
+			_, _ = runErr(t, nil, "trigger", "delete", id, "--dataset", dataset, "--yes")
 		}
 	})
 

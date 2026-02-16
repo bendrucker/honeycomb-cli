@@ -10,7 +10,7 @@ func TestBoard(t *testing.T) {
 
 	t.Cleanup(func() {
 		if id != "" {
-			_, _ = runErr(nil, "board", "delete", id, "--yes")
+			_, _ = runErr(t, nil, "board", "delete", id, "--yes")
 		}
 	})
 
@@ -96,7 +96,7 @@ func TestBoardView(t *testing.T) {
 	boardID := board.ID
 
 	t.Cleanup(func() {
-		_, _ = runErr(nil, "board", "delete", boardID, "--yes")
+		_, _ = runErr(t, nil, "board", "delete", boardID, "--yes")
 	})
 
 	viewName := uniqueName(t)
@@ -104,12 +104,12 @@ func TestBoardView(t *testing.T) {
 
 	t.Cleanup(func() {
 		if viewID != "" {
-			_, _ = runErr(nil, "board", "view", "delete", viewID, "--board", boardID, "--yes")
+			_, _ = runErr(t, nil, "board", "view", "delete", viewID, "--board", boardID, "--yes")
 		}
 	})
 
 	t.Run("create", func(t *testing.T) {
-		r := run(t, nil, "board", "view", "create", "--board", boardID, "--name", viewName)
+		r := run(t, nil, "board", "view", "create", "--board", boardID, "--name", viewName, "--filter", "status:exists")
 		view := parseJSON[struct {
 			ID   string `json:"id"`
 			Name string `json:"name"`
@@ -167,7 +167,7 @@ func TestBoardView(t *testing.T) {
 
 	t.Run("delete", func(t *testing.T) {
 		throwawayName := uniqueName(t)
-		r := run(t, nil, "board", "view", "create", "--board", boardID, "--name", throwawayName)
+		r := run(t, nil, "board", "view", "create", "--board", boardID, "--name", throwawayName, "--filter", "status:exists")
 		view := parseJSON[struct {
 			ID string `json:"id"`
 		}](t, r.stdout)

@@ -50,7 +50,7 @@ func TestKey(t *testing.T) {
 
 	t.Cleanup(func() {
 		if id != "" {
-			_, _ = runErr(nil, "key", "delete", id, "--team", team, "--yes")
+			_, _ = runErr(t, nil, "key", "delete", id, "--team", team, "--yes")
 		}
 	})
 

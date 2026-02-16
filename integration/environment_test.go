@@ -12,8 +12,8 @@ func TestEnvironment(t *testing.T) {
 
 	t.Cleanup(func() {
 		if id != "" {
-			_, _ = runErr(nil, "environment", "update", id, "--team", team, "--delete-protected=false")
-			_, _ = runErr(nil, "environment", "delete", id, "--team", team, "--yes")
+			_, _ = runErr(t, nil, "environment", "update", id, "--team", team, "--delete-protected=false")
+			_, _ = runErr(t, nil, "environment", "delete", id, "--team", team, "--yes")
 		}
 	})
 

@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"testing"
@@ -93,7 +94,7 @@ func setupManagementKey() error {
 
 	if mgmtKeyID != "" && mgmtKeySecret != "" {
 		log.Print("using management key from environment")
-		_, err := runErr(nil,
+		_, err := execSetup(nil,
 			"auth", "login",
 			"--key-type", "management",
 			"--key-id", mgmtKeyID,
@@ -113,7 +114,7 @@ func setupManagementKey() error {
 }
 
 func createTestEnvironment() (string, error) {
-	r, err := runErr(nil, "environment", "create", "--team", team, "--name", runID)
+	r, err := execSetup(nil, "environment", "create", "--team", team, "--name", runID)
 	if err != nil {
 		return "", fmt.Errorf("environment create: %w\nstderr: %s", err, r.stderr)
 	}
@@ -156,7 +157,7 @@ func createConfigKey(envID string) (string, string, error) {
 	if err != nil {
 		return "", "", fmt.Errorf("marshaling key create body: %w", err)
 	}
-	r, err := runErr(body, "key", "create", "--team", team, "-f", "-")
+	r, err := execSetup(body, "key", "create", "--team", team, "-f", "-")
 	if err != nil {
 		return "", "", fmt.Errorf("key create: %w\nstderr: %s", err, r.stderr)
 	}
@@ -172,7 +173,7 @@ func createConfigKey(envID string) (string, string, error) {
 }
 
 func storeConfigKey(secret string) error {
-	_, err := runErr(nil,
+	_, err := execSetup(nil,
 		"auth", "login",
 		"--key-type", "config",
 		"--key-secret", secret,
@@ -182,7 +183,7 @@ func storeConfigKey(secret string) error {
 }
 
 func createTestDataset() (string, error) {
-	r, err := runErr(nil, "dataset", "create", "--name", runID)
+	r, err := execSetup(nil, "dataset", "create", "--name", runID)
 	if err != nil {
 		return "", fmt.Errorf("dataset create: %w\nstderr: %s", err, r.stderr)
 	}
@@ -204,40 +205,40 @@ func probeFeatures() {
 
 func probeEnterprise() bool {
 	queryJSON := `{"calculations":[{"op":"COUNT"}],"time_range":60}`
-	_, err := runErr([]byte(queryJSON), "query", "run", "--dataset", dataset, "-f", "-")
+	_, err := execSetup([]byte(queryJSON), "query", "run", "--dataset", dataset, "-f", "-")
 	return err == nil
 }
 
 func probePro() bool {
-	_, err := runErr(nil, "slo", "list", "--dataset", dataset)
+	_, err := execSetup(nil, "slo", "list", "--dataset", dataset)
 	return err == nil
 }
 
 func cleanup() {
 	if dataset != "" {
-		runErr(nil, "dataset", "update", dataset, "--delete-protected=false")
-		r, err := runErr(nil, "dataset", "delete", dataset, "--yes")
+		execSetup(nil, "dataset", "update", dataset, "--delete-protected=false")
+		r, err := execSetup(nil, "dataset", "delete", dataset, "--yes")
 		if err != nil {
 			log.Printf("cleanup: deleting dataset: %v\nstderr: %s", err, r.stderr)
 		}
 	}
 
 	if configKeyID != "" {
-		r, err := runErr(nil, "key", "delete", configKeyID, "--team", team, "--yes")
+		r, err := execSetup(nil, "key", "delete", configKeyID, "--team", team, "--yes")
 		if err != nil {
 			log.Printf("cleanup: deleting config key: %v\nstderr: %s", err, r.stderr)
 		}
 	}
 
 	if environment != "" {
-		runErr(nil, "environment", "update", environment, "--team", team, "--delete-protected=false")
-		r, err := runErr(nil, "environment", "delete", environment, "--team", team, "--yes")
+		execSetup(nil, "environment", "update", environment, "--team", team, "--delete-protected=false")
+		r, err := execSetup(nil, "environment", "delete", environment, "--team", team, "--yes")
 		if err != nil {
 			log.Printf("cleanup: deleting environment: %v\nstderr: %s", err, r.stderr)
 		}
 	}
 
-	r, err := runErr(nil, "auth", "logout", "--profile", "integration-test")
+	r, err := execSetup(nil, "auth", "logout", "--profile", "integration-test")
 	if err != nil {
 		log.Printf("cleanup: auth logout: %v\nstderr: %s", err, r.stderr)
 	}
@@ -251,10 +252,10 @@ func commonFlags() []string {
 	return flags
 }
 
-func execCmd(stdin []byte, args ...string) (result, error) {
+func execCmd(tb testing.TB, stdin []byte, args ...string) (result, error) {
 	allArgs := append(args, commonFlags()...)
 
-	ts := iostreams.Test(t)
+	ts := iostreams.Test(tb)
 	if stdin != nil {
 		ts.InBuf.Write(stdin)
 	}
@@ -267,4 +268,26 @@ func execCmd(stdin []byte, args ...string) (result, error) {
 
 	err := rootCmd.Execute()
 	return result{stdout: ts.OutBuf.Bytes(), stderr: errBuf.Bytes()}, err
+}
+
+func execSetup(stdin []byte, args ...string) (result, error) {
+	allArgs := append(args, commonFlags()...)
+
+	var in, out, errBuf bytes.Buffer
+	if stdin != nil {
+		in.Write(stdin)
+	}
+
+	streams := &iostreams.IOStreams{
+		In:  io.NopCloser(&in),
+		Out: &out,
+		Err: &errBuf,
+	}
+
+	rootCmd := cmd.NewRootCmd(streams)
+	rootCmd.SetArgs(allArgs)
+	rootCmd.SetErr(&errBuf)
+
+	err := rootCmd.Execute()
+	return result{stdout: out.Bytes(), stderr: errBuf.Bytes()}, err
 }
