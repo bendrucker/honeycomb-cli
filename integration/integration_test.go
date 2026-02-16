@@ -216,7 +216,7 @@ func probePro() bool {
 
 func cleanup() {
 	if dataset != "" {
-		execSetup(nil, "dataset", "update", dataset, "--delete-protected=false")
+		_, _ = execSetup(nil, "dataset", "update", dataset, "--delete-protected=false")
 		r, err := execSetup(nil, "dataset", "delete", dataset, "--yes")
 		if err != nil {
 			log.Printf("cleanup: deleting dataset: %v\nstderr: %s", err, r.stderr)
@@ -231,7 +231,7 @@ func cleanup() {
 	}
 
 	if environment != "" {
-		execSetup(nil, "environment", "update", environment, "--team", team, "--delete-protected=false")
+		_, _ = execSetup(nil, "environment", "update", environment, "--team", team, "--delete-protected=false")
 		r, err := execSetup(nil, "environment", "delete", environment, "--team", team, "--yes")
 		if err != nil {
 			log.Printf("cleanup: deleting environment: %v\nstderr: %s", err, r.stderr)
