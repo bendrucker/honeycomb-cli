@@ -246,6 +246,33 @@ func TestAuthLogin_MissingKeyID(t *testing.T) {
 	}
 }
 
+func TestAuthLogin_OverwriteSilentNonInteractive(t *testing.T) {
+	if err := config.SetKey("default", config.KeyConfig, "old-secret"); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = config.DeleteKey("default", config.KeyConfig) })
+
+	ts := iostreams.Test(t)
+	opts := &options.RootOptions{
+		IOStreams: ts.IOStreams,
+		Config:    &config.Config{},
+		Format:    output.FormatJSON,
+	}
+
+	err := runAuthLogin(t.Context(), opts, "config", "", "new-secret", "", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	stored, err := config.GetKey("default", config.KeyConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stored != "new-secret" {
+		t.Errorf("stored key = %q, want %q", stored, "new-secret")
+	}
+}
+
 func TestAuthLogin_StdinSecret(t *testing.T) {
 	ts := iostreams.Test(t)
 	ts.InBuf.WriteString("stdin-secret\n")

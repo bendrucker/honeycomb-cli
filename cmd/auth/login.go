@@ -12,6 +12,7 @@ import (
 	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
+	"github.com/zalando/go-keyring"
 )
 
 type loginResult struct {
@@ -76,6 +77,12 @@ func runAuthLogin(ctx context.Context, opts *options.RootOptions, keyType, keyID
 			if err != nil {
 				return fmt.Errorf("prompting for key type: %w", err)
 			}
+		}
+
+		if abort, err := confirmOverwrite(opts, keyType); err != nil {
+			return err
+		} else if abort {
+			return nil
 		}
 
 		var fields []huh.Field
@@ -171,6 +178,37 @@ func runAuthLogin(ctx context.Context, opts *options.RootOptions, keyType, keyID
 	}
 
 	return writeLoginResult(opts, result)
+}
+
+func confirmOverwrite(opts *options.RootOptions, keyType string) (abort bool, err error) {
+	kt, err := config.ParseKeyType(keyType)
+	if err != nil {
+		return false, err
+	}
+
+	profile := opts.ActiveProfile()
+	_, err = config.GetKey(profile, kt)
+	if errors.Is(err, keyring.ErrNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("checking existing key: %w", err)
+	}
+
+	var overwrite bool
+	err = huh.NewForm(huh.NewGroup(
+		huh.NewConfirm().
+			Title(fmt.Sprintf("Profile %q already has a %s key. Overwrite?", profile, kt)).
+			Value(&overwrite),
+	)).Run()
+	if errors.Is(err, huh.ErrUserAborted) {
+		return true, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("confirming overwrite: %w", err)
+	}
+
+	return !overwrite, nil
 }
 
 func writeLoginResult(opts *options.RootOptions, result loginResult) error {
