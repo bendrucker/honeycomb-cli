@@ -239,7 +239,7 @@ func stripPanelDataset(data []byte) ([]byte, error) {
 
 	var panels []map[string]json.RawMessage
 	if err := json.Unmarshal(raw, &panels); err != nil {
-		return data, nil
+		return data, err
 	}
 
 	changed := false
