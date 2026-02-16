@@ -62,6 +62,15 @@ func skipWithoutPro(t *testing.T) {
 	}
 }
 
+func toJSON(t *testing.T, v any) []byte {
+	t.Helper()
+	data, err := json.Marshal(v)
+	if err != nil {
+		t.Fatalf("marshaling JSON: %v", err)
+	}
+	return data
+}
+
 func writeTemp(t *testing.T, data []byte) string {
 	t.Helper()
 	f, err := os.CreateTemp(t.TempDir(), "integration-*.json")

@@ -4,7 +4,10 @@ package integration
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"testing"
+	"time"
 )
 
 func TestSLO(t *testing.T) {
@@ -38,8 +41,13 @@ func TestSLO(t *testing.T) {
 	})
 
 	t.Run("create", func(t *testing.T) {
-		body := fmt.Sprintf(`{"name":"%s","sli":{"alias":"%s"},"time_period_days":30,"target_per_million":999000}`, name, alias)
-		r := run(t, []byte(body), "slo", "create", "--dataset", dataset, "-f", "-")
+		body := toJSON(t, map[string]any{
+			"name":               name,
+			"sli":                map[string]any{"alias": alias},
+			"time_period_days":   30,
+			"target_per_million": 999000,
+		})
+		r := run(t, body, "slo", "create", "--dataset", dataset, "-f", "-")
 		slo := parseJSON[map[string]any](t, r.stdout)
 		id, ok := slo["id"].(string)
 		if !ok || id == "" {
@@ -84,10 +92,50 @@ func TestSLO(t *testing.T) {
 		}
 	})
 
+	t.Run("update-from-file", func(t *testing.T) {
+		updatedName := name + "-file"
+		body := toJSON(t, map[string]any{
+			"name":               updatedName,
+			"sli":                map[string]any{"alias": alias},
+			"time_period_days":   30,
+			"target_per_million": 995000,
+		})
+		path := writeTemp(t, body)
+		r := run(t, nil, "slo", "update", sloID, "--dataset", dataset, "-f", path)
+		slo := parseJSON[map[string]any](t, r.stdout)
+		if got := slo["name"]; got != updatedName {
+			t.Errorf("expected name %q, got %q", updatedName, got)
+		}
+		target, _ := slo["target_per_million"].(float64)
+		if target != 995000 {
+			t.Errorf("expected target_per_million 995000, got %v", target)
+		}
+	})
+
 	t.Run("delete", func(t *testing.T) {
 		throwawayName := uniqueName(t)
-		body := fmt.Sprintf(`{"name":"%s","sli":{"alias":"%s"},"time_period_days":30,"target_per_million":999000}`, throwawayName, alias)
-		r := run(t, []byte(body), "slo", "create", "--dataset", dataset, "-f", "-")
+		throwawayAlias := throwawayName + "-sli"
+
+		r := run(t, nil, "column", "calculated", "create",
+			"--dataset", dataset,
+			"--alias", throwawayAlias,
+			"--expression", "BOOL(1)",
+		)
+		throwawayDC := parseJSON[map[string]any](t, r.stdout)
+		throwawayDCID, _ := throwawayDC["id"].(string)
+		t.Cleanup(func() {
+			if throwawayDCID != "" {
+				_, _ = runErr(t, nil, "column", "calculated", "delete", throwawayDCID, "--dataset", dataset, "--yes")
+			}
+		})
+
+		body := toJSON(t, map[string]any{
+			"name":               throwawayName,
+			"sli":                map[string]any{"alias": throwawayAlias},
+			"time_period_days":   30,
+			"target_per_million": 999000,
+		})
+		r = run(t, body, "slo", "create", "--dataset", dataset, "-f", "-")
 		throwaway := parseJSON[map[string]any](t, r.stdout)
 		throwawayID, ok := throwaway["id"].(string)
 		if !ok || throwawayID == "" {
@@ -105,6 +153,7 @@ func TestBurnAlert(t *testing.T) {
 	alias := name + "-sli"
 	var dcID string
 	var sloID string
+	var recipientID string
 	var burnAlertID string
 
 	// Create derived column for SLI
@@ -121,14 +170,35 @@ func TestBurnAlert(t *testing.T) {
 	dcID = v
 
 	// Create SLO
-	sloBody := fmt.Sprintf(`{"name":"%s","sli":{"alias":"%s"},"time_period_days":30,"target_per_million":999000}`, name, alias)
-	r = run(t, []byte(sloBody), "slo", "create", "--dataset", dataset, "-f", "-")
+	sloBody := toJSON(t, map[string]any{
+		"name":               name,
+		"sli":                map[string]any{"alias": alias},
+		"time_period_days":   30,
+		"target_per_million": 999000,
+	})
+	r = run(t, sloBody, "slo", "create", "--dataset", dataset, "-f", "-")
 	slo := parseJSON[map[string]any](t, r.stdout)
 	sid, ok := slo["id"].(string)
 	if !ok || sid == "" {
 		t.Fatalf("expected non-empty SLO id: %s", r.stdout)
 	}
 	sloID = sid
+
+	// Create a recipient for burn alerts
+	recipientBody := toJSON(t, map[string]any{
+		"type":    "email",
+		"details": map[string]any{"email_address": "burn-alert-test@example.com"},
+	})
+	r = run(t, recipientBody, "recipient", "create", "-f", "-")
+	rec := parseJSON[map[string]any](t, r.stdout)
+	rid, ok := rec["id"].(string)
+	if !ok || rid == "" {
+		t.Fatalf("expected non-empty recipient id: %s", r.stdout)
+	}
+	recipientID = rid
+
+	recipients := []map[string]any{{"id": recipientID}}
+	sloRef := map[string]any{"id": sloID}
 
 	t.Cleanup(func() {
 		if burnAlertID != "" {
@@ -140,11 +210,19 @@ func TestBurnAlert(t *testing.T) {
 		if dcID != "" {
 			_, _ = runErr(t, nil, "column", "calculated", "delete", dcID, "--dataset", dataset, "--yes")
 		}
+		if recipientID != "" {
+			_, _ = runErr(t, nil, "recipient", "delete", recipientID, "--yes")
+		}
 	})
 
 	t.Run("create", func(t *testing.T) {
-		body := fmt.Sprintf(`{"alert_type":"exhaustion_time","exhaustion_minutes":240,"slo_id":"%s"}`, sloID)
-		r := run(t, []byte(body), "slo", "burn-alert", "create", "--dataset", dataset, "-f", "-")
+		body := toJSON(t, map[string]any{
+			"alert_type":         "exhaustion_time",
+			"exhaustion_minutes": 240,
+			"slo":                sloRef,
+			"recipients":         recipients,
+		})
+		r := run(t, body, "slo", "burn-alert", "create", "--dataset", dataset, "-f", "-")
 		ba := parseJSON[map[string]any](t, r.stdout)
 		id, ok := ba["id"].(string)
 		if !ok || id == "" {
@@ -180,9 +258,51 @@ func TestBurnAlert(t *testing.T) {
 		}
 	})
 
+	t.Run("update", func(t *testing.T) {
+		body := toJSON(t, map[string]any{
+			"exhaustion_minutes": 120,
+			"recipients":         recipients,
+		})
+		r := run(t, body, "slo", "burn-alert", "update", burnAlertID, "--dataset", dataset, "-f", "-")
+		ba := parseJSON[map[string]any](t, r.stdout)
+		mins, _ := ba["exhaustion_minutes"].(float64)
+		if mins != 120 {
+			t.Errorf("expected exhaustion_minutes 120, got %v", mins)
+		}
+	})
+
+	t.Run("budget-rate", func(t *testing.T) {
+		body := toJSON(t, map[string]any{
+			"alert_type":                                 "budget_rate",
+			"budget_rate_window_minutes":                 60,
+			"budget_rate_decrease_threshold_per_million": 50000,
+			"slo":        sloRef,
+			"recipients": recipients,
+		})
+		r := run(t, body, "slo", "burn-alert", "create", "--dataset", dataset, "-f", "-")
+		ba := parseJSON[map[string]any](t, r.stdout)
+		id, ok := ba["id"].(string)
+		if !ok || id == "" {
+			t.Fatalf("expected non-empty id in response: %s", r.stdout)
+		}
+
+		if got := ba["alert_type"]; got != "budget_rate" {
+			t.Errorf("expected alert_type %q, got %q", "budget_rate", got)
+		}
+
+		t.Cleanup(func() {
+			_, _ = runErr(t, nil, "slo", "burn-alert", "delete", id, "--dataset", dataset, "--yes")
+		})
+	})
+
 	t.Run("delete", func(t *testing.T) {
-		throwawayBody := fmt.Sprintf(`{"alert_type":"exhaustion_time","exhaustion_minutes":120,"slo_id":"%s"}`, sloID)
-		r := run(t, []byte(throwawayBody), "slo", "burn-alert", "create", "--dataset", dataset, "-f", "-")
+		throwawayBody := toJSON(t, map[string]any{
+			"alert_type":         "exhaustion_time",
+			"exhaustion_minutes": 120,
+			"slo":                sloRef,
+			"recipients":         recipients,
+		})
+		r := run(t, throwawayBody, "slo", "burn-alert", "create", "--dataset", dataset, "-f", "-")
 		throwaway := parseJSON[map[string]any](t, r.stdout)
 		throwawayID, ok := throwaway["id"].(string)
 		if !ok || throwawayID == "" {
@@ -191,4 +311,75 @@ func TestBurnAlert(t *testing.T) {
 
 		run(t, nil, "slo", "burn-alert", "delete", throwawayID, "--dataset", dataset, "--yes")
 	})
+}
+
+func TestSLOHistory(t *testing.T) {
+	skipWithoutPro(t)
+
+	name := uniqueName(t)
+	alias := name + "-sli"
+	var sloID string
+	var dcID string
+
+	// Create derived column for SLI
+	r := run(t, nil, "column", "calculated", "create",
+		"--dataset", dataset,
+		"--alias", alias,
+		"--expression", "BOOL(1)",
+	)
+	dc := parseJSON[map[string]any](t, r.stdout)
+	v, ok := dc["id"].(string)
+	if !ok || v == "" {
+		t.Fatalf("expected non-empty derived column id: %s", r.stdout)
+	}
+	dcID = v
+
+	// Create SLO
+	sloBody := toJSON(t, map[string]any{
+		"name":               name,
+		"sli":                map[string]any{"alias": alias},
+		"time_period_days":   30,
+		"target_per_million": 999000,
+	})
+	r = run(t, sloBody, "slo", "create", "--dataset", dataset, "-f", "-")
+	slo := parseJSON[map[string]any](t, r.stdout)
+	sid, ok := slo["id"].(string)
+	if !ok || sid == "" {
+		t.Fatalf("expected non-empty SLO id: %s", r.stdout)
+	}
+	sloID = sid
+
+	t.Cleanup(func() {
+		if sloID != "" {
+			_, _ = runErr(t, nil, "slo", "delete", sloID, "--dataset", dataset, "--yes")
+		}
+		if dcID != "" {
+			_, _ = runErr(t, nil, "column", "calculated", "delete", dcID, "--dataset", dataset, "--yes")
+		}
+	})
+
+	now := time.Now()
+	start := fmt.Sprintf("%d", now.Add(-24*time.Hour).Unix())
+	end := fmt.Sprintf("%d", now.Unix())
+
+	r = run(t, nil, "slo", "history",
+		"--dataset", dataset,
+		"--slo-id", sloID,
+		"--start-time", start,
+		"--end-time", end,
+	)
+
+	history := parseJSON[map[string][]map[string]any](t, r.stdout)
+	entries, ok := history[sloID]
+	if !ok {
+		t.Fatalf("expected history key for SLO %s, got keys: %v", sloID, slices.Collect(maps.Keys(history)))
+	}
+	for _, entry := range entries {
+		if _, ok := entry["compliance"]; !ok {
+			t.Error("expected compliance field in history entry")
+		}
+		if _, ok := entry["budget_remaining"]; !ok {
+			t.Error("expected budget_remaining field in history entry")
+		}
+	}
 }
