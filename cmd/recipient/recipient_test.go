@@ -538,3 +538,211 @@ func TestTriggers_MissingArg(t *testing.T) {
 		t.Fatal("expected error for missing arg")
 	}
 }
+
+func TestUpdate_Flags(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		args       []string
+		getResp    map[string]any
+		wantKey    string
+		wantVal    string
+		wantType   string
+		preserveID bool
+	}{
+		{
+			name: "email target",
+			args: []string{"update", "r1", "--target", "new@example.com"},
+			getResp: map[string]any{
+				"id":   "r1",
+				"type": "email",
+				"details": map[string]any{
+					"email_address": "old@example.com",
+				},
+			},
+			wantKey:  "email_address",
+			wantVal:  "new@example.com",
+			wantType: "email",
+		},
+		{
+			name: "slack channel",
+			args: []string{"update", "r1", "--channel", "#new-alerts"},
+			getResp: map[string]any{
+				"id":   "r1",
+				"type": "slack",
+				"details": map[string]any{
+					"slack_channel": "#old-alerts",
+				},
+			},
+			wantKey:  "slack_channel",
+			wantVal:  "#new-alerts",
+			wantType: "slack",
+		},
+		{
+			name: "pagerduty integration key",
+			args: []string{"update", "r1", "--integration-key", "new-key"},
+			getResp: map[string]any{
+				"id":   "r1",
+				"type": "pagerduty",
+				"details": map[string]any{
+					"pagerduty_integration_key":  "old-key",
+					"pagerduty_integration_name": "My PD",
+				},
+			},
+			wantKey:  "pagerduty_integration_key",
+			wantVal:  "new-key",
+			wantType: "pagerduty",
+		},
+		{
+			name: "pagerduty name",
+			args: []string{"update", "r1", "--name", "New PD Name"},
+			getResp: map[string]any{
+				"id":   "r1",
+				"type": "pagerduty",
+				"details": map[string]any{
+					"pagerduty_integration_key":  "key-123",
+					"pagerduty_integration_name": "Old PD Name",
+				},
+			},
+			wantKey:  "pagerduty_integration_name",
+			wantVal:  "New PD Name",
+			wantType: "pagerduty",
+		},
+		{
+			name: "webhook url",
+			args: []string{"update", "r1", "--url", "https://new.example.com/hook"},
+			getResp: map[string]any{
+				"id":   "r1",
+				"type": "webhook",
+				"details": map[string]any{
+					"webhook_url":  "https://old.example.com/hook",
+					"webhook_name": "my-hook",
+				},
+			},
+			wantKey:  "webhook_url",
+			wantVal:  "https://new.example.com/hook",
+			wantType: "webhook",
+		},
+		{
+			name: "webhook name",
+			args: []string{"update", "r1", "--name", "new-hook"},
+			getResp: map[string]any{
+				"id":   "r1",
+				"type": "webhook",
+				"details": map[string]any{
+					"webhook_url":  "https://example.com/hook",
+					"webhook_name": "old-hook",
+				},
+			},
+			wantKey:  "webhook_name",
+			wantVal:  "new-hook",
+			wantType: "webhook",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var gotBody map[string]any
+			opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch r.Method {
+				case http.MethodGet:
+					w.Header().Set("Content-Type", "application/json")
+					_ = json.NewEncoder(w).Encode(tc.getResp)
+				case http.MethodPut:
+					if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+						t.Fatalf("decoding request body: %v", err)
+					}
+					w.Header().Set("Content-Type", "application/json")
+					_ = json.NewEncoder(w).Encode(map[string]any{
+						"id":   "r1",
+						"type": tc.wantType,
+					})
+				default:
+					t.Errorf("unexpected method %q", r.Method)
+				}
+			}))
+
+			cmd := NewCmd(opts)
+			cmd.SetArgs(tc.args)
+			if err := cmd.Execute(); err != nil {
+				t.Fatal(err)
+			}
+
+			if gotBody["id"] != nil {
+				t.Error("body should not include read-only id field")
+			}
+			if gotType, _ := gotBody["type"].(string); gotType != tc.wantType {
+				t.Errorf("body type = %q, want %q", gotType, tc.wantType)
+			}
+			details, _ := gotBody["details"].(map[string]any)
+			if details == nil {
+				t.Fatal("body details is nil")
+			}
+			if val, _ := details[tc.wantKey].(string); val != tc.wantVal {
+				t.Errorf("details[%q] = %q, want %q", tc.wantKey, val, tc.wantVal)
+			}
+
+			var detail recipientDetail
+			if err := json.Unmarshal(ts.OutBuf.Bytes(), &detail); err != nil {
+				t.Fatalf("unmarshal output: %v", err)
+			}
+			if detail.ID != "r1" {
+				t.Errorf("output ID = %q, want %q", detail.ID, "r1")
+			}
+		})
+	}
+}
+
+func TestUpdate_File(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			t.Errorf("method = %q, want PUT", r.Method)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id":   "r1",
+			"type": "email",
+		})
+	}))
+
+	ts.InBuf.WriteString(`{"type":"email","details":{"email_address":"file@example.com"}}`)
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"update", "r1", "-f", "-"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	var detail recipientDetail
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &detail); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+	if detail.ID != "r1" {
+		t.Errorf("output ID = %q, want %q", detail.ID, "r1")
+	}
+}
+
+func TestUpdate_NoFlags(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"update", "r1"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for no flags")
+	}
+	if !strings.Contains(err.Error(), "--file") {
+		t.Errorf("error = %q, want message about required flags", err.Error())
+	}
+}
+
+func TestUpdate_FileMutuallyExclusive(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"update", "r1", "-f", "-", "--target", "test@example.com"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for mutually exclusive flags")
+	}
+	if !strings.Contains(err.Error(), "none of the others can be") {
+		t.Errorf("error = %q, want mutually exclusive message", err.Error())
+	}
+}
