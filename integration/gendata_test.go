@@ -77,11 +77,13 @@ func TestGenData(t *testing.T) {
 	if err != nil {
 		t.Fatalf("sending events: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != 200 {
 		var result json.RawMessage
-		json.NewDecoder(resp.Body).Decode(&result)
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			t.Fatalf("HTTP %d (failed to read body: %v)", resp.StatusCode, err)
+		}
 		t.Fatalf("HTTP %d: %s", resp.StatusCode, result)
 	}
 
