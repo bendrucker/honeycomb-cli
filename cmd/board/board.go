@@ -38,13 +38,14 @@ type boardListItem struct {
 }
 
 type boardDetail struct {
-	ID           string          `json:"id"`
-	Name         string          `json:"name"`
-	Description  string          `json:"description,omitempty"`
-	Type         string          `json:"type"`
-	ColumnLayout string          `json:"column_layout,omitempty"`
-	URL          string          `json:"url,omitempty"`
-	Panels       json.RawMessage `json:"panels,omitempty"`
+	ID            string          `json:"id"`
+	Name          string          `json:"name"`
+	Description   string          `json:"description,omitempty"`
+	Type          string          `json:"type"`
+	ColumnLayout  string          `json:"column_layout,omitempty"`
+	URL           string          `json:"url,omitempty"`
+	PresetFilters json.RawMessage `json:"preset_filters,omitempty"`
+	Panels        json.RawMessage `json:"panels,omitempty"`
 }
 
 func writeBoardDetail(opts *options.RootOptions, detail boardDetail) error {
@@ -55,6 +56,7 @@ func writeBoardDetail(opts *options.RootOptions, detail boardDetail) error {
 		{Label: "Type", Value: detail.Type},
 		{Label: "Column Layout", Value: detail.ColumnLayout},
 		{Label: "URL", Value: detail.URL},
+		{Label: "Preset Filters", Value: string(detail.PresetFilters)},
 	})
 }
 
@@ -81,6 +83,10 @@ func boardToDetail(b api.Board) boardDetail {
 	}
 	if b.Links != nil {
 		d.URL = deref.String(b.Links.BoardUrl)
+	}
+	if b.PresetFilters != nil {
+		raw, _ := json.Marshal(b.PresetFilters)
+		d.PresetFilters = raw
 	}
 	if b.Panels != nil {
 		raw, _ := json.Marshal(b.Panels)
