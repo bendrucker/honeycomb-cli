@@ -271,6 +271,211 @@ func TestDelete_MissingArg(t *testing.T) {
 	}
 }
 
+func TestCreate(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		args     []string
+		wantType string
+		wantKey  string
+		wantVal  string
+	}{
+		{
+			name:     "email",
+			args:     []string{"create", "--type", "email", "--target", "test@example.com"},
+			wantType: "email",
+			wantKey:  "email_address",
+			wantVal:  "test@example.com",
+		},
+		{
+			name:     "slack",
+			args:     []string{"create", "--type", "slack", "--channel", "#alerts"},
+			wantType: "slack",
+			wantKey:  "slack_channel",
+			wantVal:  "#alerts",
+		},
+		{
+			name:     "pagerduty",
+			args:     []string{"create", "--type", "pagerduty", "--integration-key", "abc123"},
+			wantType: "pagerduty",
+			wantKey:  "pagerduty_integration_key",
+			wantVal:  "abc123",
+		},
+		{
+			name:     "webhook",
+			args:     []string{"create", "--type", "webhook", "--url", "https://example.com/hook", "--name", "my-hook"},
+			wantType: "webhook",
+			wantKey:  "webhook_url",
+			wantVal:  "https://example.com/hook",
+		},
+		{
+			name:     "msteams workflow",
+			args:     []string{"create", "--type", "msteams_workflow", "--url", "https://teams.example.com/hook", "--name", "teams-hook"},
+			wantType: "msteams_workflow",
+			wantKey:  "webhook_url",
+			wantVal:  "https://teams.example.com/hook",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var gotBody map[string]any
+			opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/1/recipients" {
+					t.Errorf("path = %q, want /1/recipients", r.URL.Path)
+				}
+				if r.Method != http.MethodPost {
+					t.Errorf("method = %q, want POST", r.Method)
+				}
+				if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+					t.Fatalf("decoding request body: %v", err)
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusCreated)
+				_ = json.NewEncoder(w).Encode(map[string]any{
+					"id":   "r-new",
+					"type": tc.wantType,
+				})
+			}))
+
+			cmd := NewCmd(opts)
+			cmd.SetArgs(tc.args)
+			if err := cmd.Execute(); err != nil {
+				t.Fatal(err)
+			}
+
+			if gotType, _ := gotBody["type"].(string); gotType != tc.wantType {
+				t.Errorf("body type = %q, want %q", gotType, tc.wantType)
+			}
+			details, _ := gotBody["details"].(map[string]any)
+			if details == nil {
+				t.Fatal("body details is nil")
+			}
+			if val, _ := details[tc.wantKey].(string); val != tc.wantVal {
+				t.Errorf("details[%q] = %q, want %q", tc.wantKey, val, tc.wantVal)
+			}
+
+			var detail recipientDetail
+			if err := json.Unmarshal(ts.OutBuf.Bytes(), &detail); err != nil {
+				t.Fatalf("unmarshal output: %v", err)
+			}
+			if detail.ID != "r-new" {
+				t.Errorf("output ID = %q, want %q", detail.ID, "r-new")
+			}
+		})
+	}
+}
+
+func TestCreate_FromFile(t *testing.T) {
+	var gotBody map[string]any
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Fatalf("decoding request body: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id":   "r-file",
+			"type": "email",
+		})
+	}))
+
+	ts.InBuf.WriteString(`{"type":"email","details":{"email_address":"file@example.com"}}`)
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"create", "-f", "-"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	if gotType, _ := gotBody["type"].(string); gotType != "email" {
+		t.Errorf("body type = %q, want %q", gotType, "email")
+	}
+
+	var detail recipientDetail
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &detail); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+	if detail.ID != "r-file" {
+		t.Errorf("output ID = %q, want %q", detail.ID, "r-file")
+	}
+}
+
+func TestCreate_MissingTypeNonInteractive(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	opts.IOStreams.SetNeverPrompt(true)
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"create"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for missing type")
+	}
+	if !strings.Contains(err.Error(), "--type or --file is required") {
+		t.Errorf("error = %q, want missing type message", err.Error())
+	}
+}
+
+func TestCreate_MissingDetailNonInteractive(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		args    []string
+		wantErr string
+	}{
+		{
+			name:    "email missing target",
+			args:    []string{"create", "--type", "email"},
+			wantErr: "--target is required for email",
+		},
+		{
+			name:    "slack missing channel",
+			args:    []string{"create", "--type", "slack"},
+			wantErr: "--channel is required for slack",
+		},
+		{
+			name:    "pagerduty missing key",
+			args:    []string{"create", "--type", "pagerduty"},
+			wantErr: "--integration-key is required for pagerduty",
+		},
+		{
+			name:    "webhook missing url",
+			args:    []string{"create", "--type", "webhook"},
+			wantErr: "--url is required for webhook",
+		},
+		{
+			name:    "webhook missing name",
+			args:    []string{"create", "--type", "webhook", "--url", "https://example.com"},
+			wantErr: "--name is required for webhook",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+			opts.IOStreams.SetNeverPrompt(true)
+
+			cmd := NewCmd(opts)
+			cmd.SetArgs(tc.args)
+			err := cmd.Execute()
+			if err == nil {
+				t.Fatal("expected error")
+			}
+			if !strings.Contains(err.Error(), tc.wantErr) {
+				t.Errorf("error = %q, want %q", err.Error(), tc.wantErr)
+			}
+		})
+	}
+}
+
+func TestCreate_FileMutuallyExclusive(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"create", "-f", "-", "--type", "email"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for mutually exclusive flags")
+	}
+	if !strings.Contains(err.Error(), "none of the others can be") {
+		t.Errorf("error = %q, want mutually exclusive message", err.Error())
+	}
+}
+
 func TestTriggers(t *testing.T) {
 	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/1/recipients/r1/triggers" {
