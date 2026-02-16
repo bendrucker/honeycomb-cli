@@ -2,6 +2,7 @@ package dataset
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -78,6 +79,10 @@ func runDatasetDelete(ctx context.Context, opts *options.RootOptions, slug strin
 	}
 
 	if err := api.CheckResponse(httpResp.StatusCode, body); err != nil {
+		var apiErr *api.APIError
+		if errors.As(err, &apiErr) && apiErr.StatusCode == 409 && strings.Contains(apiErr.Message, "delete protected") {
+			return fmt.Errorf("dataset %s is delete protected; disable protection first with: honeycomb dataset update %s --delete-protected=false", slug, slug)
+		}
 		return err
 	}
 
