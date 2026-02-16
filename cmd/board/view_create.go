@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
@@ -16,27 +17,30 @@ import (
 
 func NewViewCreateCmd(opts *options.RootOptions, board *string) *cobra.Command {
 	var (
-		file string
-		name string
+		file       string
+		name       string
+		filterArgs []string
 	)
 
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a board view",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runViewCreate(cmd, opts, *board, file, name)
+			return runViewCreate(cmd, opts, *board, file, name, filterArgs)
 		},
 	}
 
 	cmd.Flags().StringVarP(&file, "file", "f", "", "Path to JSON file (- for stdin)")
 	cmd.Flags().StringVar(&name, "name", "", "View name")
+	cmd.Flags().StringArrayVar(&filterArgs, "filter", nil, "Filter: column:operation:value (repeatable, required)")
 
 	cmd.MarkFlagsMutuallyExclusive("file", "name")
+	cmd.MarkFlagsMutuallyExclusive("file", "filter")
 
 	return cmd
 }
 
-func runViewCreate(cmd *cobra.Command, opts *options.RootOptions, boardID, file, name string) error {
+func runViewCreate(cmd *cobra.Command, opts *options.RootOptions, boardID, file, name string, filterArgs []string) error {
 	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
@@ -66,9 +70,18 @@ func runViewCreate(cmd *cobra.Command, opts *options.RootOptions, boardID, file,
 		}
 	}
 
+	filters, err := parseViewFilters(filterArgs)
+	if err != nil {
+		return err
+	}
+
+	if len(filters) == 0 {
+		return fmt.Errorf("at least one --filter is required")
+	}
+
 	body := api.CreateBoardViewJSONRequestBody{
 		Name:    name,
-		Filters: []api.BoardViewFilter{},
+		Filters: filters,
 	}
 
 	resp, err := client.CreateBoardViewWithResponse(ctx, boardID, body, auth)
@@ -85,6 +98,25 @@ func runViewCreate(cmd *cobra.Command, opts *options.RootOptions, boardID, file,
 	}
 
 	return writeViewDetail(opts, viewResponseToDetail(*resp.JSON201))
+}
+
+func parseViewFilters(args []string) ([]api.BoardViewFilter, error) {
+	filters := make([]api.BoardViewFilter, 0, len(args))
+	for _, arg := range args {
+		parts := strings.SplitN(arg, ":", 3)
+		if len(parts) < 2 {
+			return nil, fmt.Errorf("invalid filter %q: expected column:operation or column:operation:value", arg)
+		}
+		f := api.BoardViewFilter{
+			Column:    parts[0],
+			Operation: api.BoardViewFilterOperation(parts[1]),
+		}
+		if len(parts) == 3 {
+			f.Value = parts[2]
+		}
+		filters = append(filters, f)
+	}
+	return filters, nil
 }
 
 func createViewFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, auth api.RequestEditorFn, boardID, file string) error {
