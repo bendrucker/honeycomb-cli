@@ -22,6 +22,7 @@ type RootOptions struct {
 	APIUrl        string
 	MCPUrl        string
 	Profile       string
+	ConfigPath    string
 }
 
 const defaultAPIUrl = "https://api.honeycomb.io"
@@ -35,6 +36,27 @@ func (o *RootOptions) ActiveProfile() string {
 		return o.Config.ActiveProfile
 	}
 	return "default"
+}
+
+func (o *RootOptions) ResolveConfigPath() string {
+	if o.ConfigPath != "" {
+		return o.ConfigPath
+	}
+	return config.DefaultPath()
+}
+
+func (o *RootOptions) RequireTeam(flag *string) error {
+	if *flag != "" {
+		return nil
+	}
+	if o.Config != nil {
+		profile := o.ActiveProfile()
+		if p, ok := o.Config.Profiles[profile]; ok && p.Team != "" {
+			*flag = p.Team
+			return nil
+		}
+	}
+	return fmt.Errorf("--team is required (or set via honeycomb auth login --team)")
 }
 
 func (o *RootOptions) ResolveFormat() string {

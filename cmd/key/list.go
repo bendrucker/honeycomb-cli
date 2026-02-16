@@ -17,6 +17,9 @@ func NewListCmd(opts *options.RootOptions, team *string) *cobra.Command {
 		Use:   "list",
 		Short: "List API keys",
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if err := opts.RequireTeam(team); err != nil {
+				return err
+			}
 			return runKeyList(cmd.Context(), opts, *team, filterType)
 		},
 	}

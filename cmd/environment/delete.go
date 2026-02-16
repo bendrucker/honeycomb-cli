@@ -20,6 +20,9 @@ func NewDeleteCmd(opts *options.RootOptions, team *string) *cobra.Command {
 		Short: "Delete an environment",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := opts.RequireTeam(team); err != nil {
+				return err
+			}
 			return runEnvironmentDelete(cmd.Context(), opts, *team, args[0], yes)
 		},
 	}

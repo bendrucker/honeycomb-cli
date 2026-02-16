@@ -352,3 +352,44 @@ func TestList_Unauthorized(t *testing.T) {
 		t.Errorf("error = %q, want HTTP 401", err.Error())
 	}
 }
+
+func TestList_TeamFromConfig(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/2/teams/config-team/api-keys" {
+			t.Errorf("path = %q, want /2/teams/config-team/api-keys", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		_, _ = w.Write([]byte(`{"data": []}`))
+	}))
+
+	opts.Config = &config.Config{
+		Profiles: map[string]*config.Profile{
+			"default": {Team: "config-team"},
+		},
+	}
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"list"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	output := ts.OutBuf.String()
+	if output == "" {
+		t.Fatal("expected output")
+	}
+}
+
+func TestList_MissingTeam(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"list"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for missing --team")
+	}
+	if !strings.Contains(err.Error(), "required") {
+		t.Errorf("error = %q, want required error", err.Error())
+	}
+}

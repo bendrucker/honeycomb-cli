@@ -21,6 +21,9 @@ func NewUpdateCmd(opts *options.RootOptions, team *string) *cobra.Command {
 		Short: "Update an environment",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := opts.RequireTeam(team); err != nil {
+				return err
+			}
 			return runEnvironmentUpdate(cmd, opts, *team, args[0], desc, color, deleteProtected)
 		},
 	}
