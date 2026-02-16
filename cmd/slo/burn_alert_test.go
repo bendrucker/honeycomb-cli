@@ -192,11 +192,11 @@ func TestBurnAlertDelete_RequiresYesNonInteractive(t *testing.T) {
 
 func TestBurnAlertUpdate_Flags(t *testing.T) {
 	for _, tc := range []struct {
-		name     string
-		args     []string
-		getResp  map[string]any
-		wantKey  string
-		wantVal  any
+		name    string
+		args    []string
+		getResp map[string]any
+		wantKey string
+		wantVal any
 	}{
 		{
 			name: "exhaustion minutes",
