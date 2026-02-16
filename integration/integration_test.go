@@ -28,6 +28,7 @@ var (
 	configKeySecret string
 	hasEnterprise   bool
 	hasPro          bool
+	directMode      bool
 )
 
 func TestMain(m *testing.M) {
@@ -37,6 +38,41 @@ func TestMain(m *testing.M) {
 	runID = generateRunID()
 	log.Printf("run ID: %s", runID)
 
+	if ds := os.Getenv("HONEYCOMB_DATASET"); ds != "" {
+		setupDirect(ds)
+	} else {
+		setupManaged()
+	}
+
+	probeFeatures()
+
+	code := m.Run()
+
+	cleanup()
+	os.Exit(code)
+}
+
+func setupDirect(ds string) {
+	directMode = true
+	dataset = ds
+
+	profile := os.Getenv("HONEYCOMB_PROFILE")
+	if profile == "" {
+		profile = "default"
+	}
+
+	log.Printf("direct mode: profile=%s dataset=%s", profile, ds)
+
+	key, err := config.GetKey(profile, config.KeyConfig)
+	if err != nil {
+		log.Fatalf("reading config key from %s profile: %v", profile, err)
+	}
+	if err := config.SetKey("integration-test", config.KeyConfig, key); err != nil {
+		log.Fatalf("storing config key for integration-test profile: %v", err)
+	}
+}
+
+func setupManaged() {
 	if err := setupManagementKey(); err != nil {
 		log.Fatalf("setting up management key: %v", err)
 	}
@@ -63,13 +99,6 @@ func TestMain(m *testing.M) {
 		log.Fatalf("creating test dataset: %v", err)
 	}
 	dataset = ds
-
-	probeFeatures()
-
-	code := m.Run()
-
-	cleanup()
-	os.Exit(code)
 }
 
 func requireEnv(key string) string {
@@ -215,26 +244,28 @@ func probePro() bool {
 }
 
 func cleanup() {
-	if dataset != "" {
-		_, _ = execSetup(nil, "dataset", "update", dataset, "--delete-protected=false")
-		r, err := execSetup(nil, "dataset", "delete", dataset, "--yes")
-		if err != nil {
-			log.Printf("cleanup: deleting dataset: %v\nstderr: %s", err, r.stderr)
+	if !directMode {
+		if dataset != "" {
+			_, _ = execSetup(nil, "dataset", "update", dataset, "--delete-protected=false")
+			r, err := execSetup(nil, "dataset", "delete", dataset, "--yes")
+			if err != nil {
+				log.Printf("cleanup: deleting dataset: %v\nstderr: %s", err, r.stderr)
+			}
 		}
-	}
 
-	if configKeyID != "" {
-		r, err := execSetup(nil, "key", "delete", configKeyID, "--team", team, "--yes")
-		if err != nil {
-			log.Printf("cleanup: deleting config key: %v\nstderr: %s", err, r.stderr)
+		if configKeyID != "" {
+			r, err := execSetup(nil, "key", "delete", configKeyID, "--team", team, "--yes")
+			if err != nil {
+				log.Printf("cleanup: deleting config key: %v\nstderr: %s", err, r.stderr)
+			}
 		}
-	}
 
-	if environment != "" {
-		_, _ = execSetup(nil, "environment", "update", environment, "--team", team, "--delete-protected=false")
-		r, err := execSetup(nil, "environment", "delete", environment, "--team", team, "--yes")
-		if err != nil {
-			log.Printf("cleanup: deleting environment: %v\nstderr: %s", err, r.stderr)
+		if environment != "" {
+			_, _ = execSetup(nil, "environment", "update", environment, "--team", team, "--delete-protected=false")
+			r, err := execSetup(nil, "environment", "delete", environment, "--team", team, "--yes")
+			if err != nil {
+				log.Printf("cleanup: deleting environment: %v\nstderr: %s", err, r.stderr)
+			}
 		}
 	}
 
