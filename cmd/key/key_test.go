@@ -563,7 +563,7 @@ func TestUpdate_Flags(t *testing.T) {
 				}
 
 				w.Header().Set("Content-Type", "application/vnd.api+json")
-				fmt.Fprintf(w, `{
+				_, _ = fmt.Fprintf(w, `{
 					"data": {
 						"id": %q,
 						"type": "api-keys",
