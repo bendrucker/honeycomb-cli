@@ -1,6 +1,6 @@
 # Query Examples
 
-Common query patterns for board panels. Each example shows the query JSON spec and recommended visualization settings.
+Common query patterns for dashboards and investigations. Each example shows the query JSON spec and recommended visualization settings.
 
 ## Latency: P50 and P99
 
@@ -20,11 +20,11 @@ Always use percentiles for latency, never AVG. P50 shows the typical experience,
 
 Visualization: `line` with `overlaid_charts: true`. Title: "Latency: P50 and P99 (ms)"
 
-Filter out health checks — they skew latency downward and aren't user-facing.
+Filter out health checks -- they skew latency downward and aren't user-facing.
 
 ## Error rate (aggregate)
 
-Use `AVG` on a boolean error column. Honeycomb computes the proportion of `true` values, giving you the error rate as a 0.0–1.0 decimal.
+Use `AVG` on a boolean error column. Honeycomb computes the proportion of `true` values, giving you the error rate as a 0.0-1.0 decimal.
 
 ```json
 {
@@ -51,7 +51,7 @@ Break down by service to answer "where are errors coming from?" Use 5-min granul
 
 Visualization: `line`. Title: "Error Rate by Service"
 
-Do NOT break down by `http.status_code` — individual codes produce noisy, unactionable charts.
+Do NOT break down by `http.status_code` -- individual codes produce noisy, unactionable charts.
 
 ## Throughput by service
 
@@ -65,7 +65,7 @@ Do NOT break down by `http.status_code` — individual codes produce noisy, unac
 }
 ```
 
-Visualization: `stacked` bar — shows both total volume and per-service composition. Title: "Request Volume by Service"
+Visualization: `stacked` bar -- shows both total volume and per-service composition. Title: "Request Volume by Service"
 
 ## Slow requests (HAVING filter)
 
@@ -160,31 +160,3 @@ Visualization: `cpie`. Title: "Traffic Share by Endpoint"
 Visualization: `tsbar` with `omit_missing_values: true`. Title: "Webhook Events Received"
 
 Wide granularity (600s = 10min buckets) ensures sparse events produce visible bars rather than isolated dots on a line chart.
-
-## Full board panel JSON example
-
-Complete panel ready to insert into a board's panels array:
-
-```json
-{
-  "type": "query",
-  "query_panel": {
-    "query_id": "abc123",
-    "query_annotation_id": "def456",
-    "query_style": "graph",
-    "visualization_settings": {
-      "charts": [
-        {"chart_index": 0, "chart_type": "tsbar", "omit_missing_values": false}
-      ],
-      "hide_markers": false,
-      "overlaid_charts": false
-    }
-  },
-  "position": {
-    "x_coordinate": 0,
-    "y_coordinate": 0,
-    "width": 6,
-    "height": 4
-  }
-}
-```
