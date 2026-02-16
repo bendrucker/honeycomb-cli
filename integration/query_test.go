@@ -11,8 +11,11 @@ import (
 func TestQueryRun(t *testing.T) {
 	skipWithoutEnterprise(t)
 
-	queryJSON := `{"calculations":[{"op":"COUNT"}],"time_range":60}`
-	r := run(t, []byte(queryJSON), "query", "run", "--dataset", dataset, "-f", "-")
+	queryBody := toJSON(t, map[string]any{
+		"calculations": []map[string]any{{"op": "COUNT"}},
+		"time_range":   60,
+	})
+	r := run(t, queryBody, "query", "run", "--dataset", dataset, "-f", "-")
 
 	var result map[string]any
 	if err := json.Unmarshal(r.stdout, &result); err != nil {
@@ -30,8 +33,11 @@ func TestSavedQuery(t *testing.T) {
 	var annotationID string
 
 	// Create a query spec via the api command to get a query ID
-	queryJSON := `{"calculations":[{"op":"COUNT"}],"time_range":60}`
-	qr := run(t, []byte(queryJSON), "api", "-X", "POST",
+	queryBody := toJSON(t, map[string]any{
+		"calculations": []map[string]any{{"op": "COUNT"}},
+		"time_range":   60,
+	})
+	qr := run(t, queryBody, "api", "-X", "POST",
 		fmt.Sprintf("/1/queries/%s", dataset),
 		"--input", "-",
 	)
@@ -48,8 +54,11 @@ func TestSavedQuery(t *testing.T) {
 	})
 
 	t.Run("create", func(t *testing.T) {
-		body := fmt.Sprintf(`{"name":"%s","query_id":"%s"}`, name, qid)
-		r := run(t, []byte(body), "query", "create", "--dataset", dataset, "-f", "-")
+		body := toJSON(t, map[string]any{
+			"name":     name,
+			"query_id": qid,
+		})
+		r := run(t, body, "query", "create", "--dataset", dataset, "-f", "-")
 		annotation := parseJSON[map[string]any](t, r.stdout)
 		v, ok := annotation["id"].(string)
 		if !ok || v == "" {
@@ -96,8 +105,11 @@ func TestSavedQuery(t *testing.T) {
 
 	t.Run("delete", func(t *testing.T) {
 		// Create a throwaway annotation for delete testing
-		body := fmt.Sprintf(`{"name":"%s-del","query_id":"%s"}`, name, qid)
-		r := run(t, []byte(body), "query", "create", "--dataset", dataset, "-f", "-")
+		body := toJSON(t, map[string]any{
+			"name":     name + "-del",
+			"query_id": qid,
+		})
+		r := run(t, body, "query", "create", "--dataset", dataset, "-f", "-")
 		throwaway := parseJSON[map[string]any](t, r.stdout)
 		throwawayID, ok := throwaway["id"].(string)
 		if !ok || throwawayID == "" {
