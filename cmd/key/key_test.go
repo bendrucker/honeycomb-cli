@@ -2,6 +2,7 @@ package key
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -444,7 +445,7 @@ func TestCreate_InvalidKeyType(t *testing.T) {
 	}
 }
 
-func TestUpdate(t *testing.T) {
+func TestUpdate_File(t *testing.T) {
 	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPatch {
 			t.Errorf("method = %q, want PATCH", r.Method)
@@ -479,6 +480,178 @@ func TestUpdate(t *testing.T) {
 	}
 	if detail.Name != "Updated Key" {
 		t.Errorf("Name = %q, want %q", detail.Name, "Updated Key")
+	}
+}
+
+func TestUpdate_Flags(t *testing.T) {
+	for _, tc := range []struct {
+		name         string
+		id           string
+		args         []string
+		wantName     string
+		wantDisabled bool
+	}{
+		{
+			name:         "rename ingest key",
+			id:           "hcxik_01abc",
+			args:         []string{"--name", "Renamed Key"},
+			wantName:     "Renamed Key",
+			wantDisabled: false,
+		},
+		{
+			name:         "disable ingest key",
+			id:           "hcxik_01abc",
+			args:         []string{"--disabled"},
+			wantName:     "My Key",
+			wantDisabled: true,
+		},
+		{
+			name:         "enable ingest key",
+			id:           "hcxik_01abc",
+			args:         []string{"--enabled"},
+			wantName:     "My Key",
+			wantDisabled: false,
+		},
+		{
+			name:         "rename configuration key",
+			id:           "hcxlk_02def",
+			args:         []string{"--name", "Renamed Config Key"},
+			wantName:     "Renamed Config Key",
+			wantDisabled: false,
+		},
+		{
+			name:         "disable configuration key",
+			id:           "hcxlk_02def",
+			args:         []string{"--disabled"},
+			wantName:     "My Config Key",
+			wantDisabled: true,
+		},
+		{
+			name:         "rename and disable",
+			id:           "hcxik_01abc",
+			args:         []string{"--name", "New Name", "--disabled"},
+			wantName:     "New Name",
+			wantDisabled: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			keyType := "ingest"
+			currentName := "My Key"
+			if strings.HasPrefix(tc.id, "hcxlk_") {
+				keyType = "configuration"
+				currentName = "My Config Key"
+			}
+
+			opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/vnd.api+json")
+
+				switch r.Method {
+				case http.MethodGet:
+					_, _ = fmt.Fprintf(w, `{
+						"data": {
+							"id": %q,
+							"type": "api-keys",
+							"attributes": {
+								"name": %q,
+								"key_type": %q,
+								"disabled": false
+							}
+						}
+					}`, tc.id, currentName, keyType)
+				case http.MethodPatch:
+					var body map[string]any
+					if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+						t.Fatalf("decode request body: %v", err)
+					}
+
+					data := body["data"].(map[string]any)
+					if data["id"] != tc.id {
+						t.Errorf("data.id = %v, want %q", data["id"], tc.id)
+					}
+
+					attrs := data["attributes"].(map[string]any)
+					if attrs["name"] != tc.wantName {
+						t.Errorf("request name = %v, want %q", attrs["name"], tc.wantName)
+					}
+
+					_, _ = fmt.Fprintf(w, `{
+						"data": {
+							"id": %q,
+							"type": "api-keys",
+							"attributes": {
+								"name": %q,
+								"key_type": %q,
+								"disabled": %t
+							}
+						}
+					}`, tc.id, tc.wantName, keyType, tc.wantDisabled)
+				default:
+					t.Errorf("unexpected method %q", r.Method)
+				}
+			}))
+
+			cmd := NewCmd(opts)
+			cmd.SetArgs(append([]string{"--team", "my-team", "update", tc.id}, tc.args...))
+			if err := cmd.Execute(); err != nil {
+				t.Fatal(err)
+			}
+
+			var detail keyDetail
+			if err := json.Unmarshal(ts.OutBuf.Bytes(), &detail); err != nil {
+				t.Fatalf("unmarshal output: %v", err)
+			}
+			if detail.Name != tc.wantName {
+				t.Errorf("Name = %q, want %q", detail.Name, tc.wantName)
+			}
+			if detail.Disabled != tc.wantDisabled {
+				t.Errorf("Disabled = %v, want %v", detail.Disabled, tc.wantDisabled)
+			}
+		})
+	}
+}
+
+func TestUpdate_NoFlags(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"--team", "my-team", "update", "hcxik_01abc"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for no flags")
+	}
+	if !strings.Contains(err.Error(), "--file, --name, --disabled, or --enabled is required") {
+		t.Errorf("error = %q, want required flags message", err.Error())
+	}
+}
+
+func TestUpdate_MutuallyExclusive(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"--team", "my-team", "update", "hcxik_01abc", "--disabled", "--enabled"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for mutually exclusive flags")
+	}
+	if !strings.Contains(err.Error(), "if any flags in the group [disabled enabled] are set none of the others can be") {
+		t.Errorf("error = %q, want mutual exclusion message", err.Error())
+	}
+}
+
+func TestUpdate_UnrecognizedKeyPrefix(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		_, _ = fmt.Fprintf(w, `{"data":{"id":"unknown_01abc","type":"api-keys","attributes":{"name":"Test","key_type":"ingest","disabled":false}}}`)
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"--team", "my-team", "update", "unknown_01abc", "--name", "New Name"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for unrecognized key prefix")
+	}
+	if !strings.Contains(err.Error(), "unrecognized key ID prefix") {
+		t.Errorf("error = %q, want unrecognized prefix message", err.Error())
 	}
 }
 
