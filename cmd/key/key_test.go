@@ -373,17 +373,17 @@ func TestCreate_WithPermissions(t *testing.T) {
 			name: "all permissions",
 			args: []string{"--all-permissions"},
 			wantPermissions: map[string]bool{
-				"create_datasets":      true,
-				"manage_boards":        true,
-				"manage_columns":       true,
-				"manage_markers":       true,
+				"create_datasets":       true,
+				"manage_boards":         true,
+				"manage_columns":        true,
+				"manage_markers":        true,
 				"manage_private_boards": true,
-				"manage_recipients":    true,
-				"manage_slos":          true,
-				"manage_triggers":      true,
-				"read_service_maps":    true,
-				"run_queries":          true,
-				"send_events":          true,
+				"manage_recipients":     true,
+				"manage_slos":           true,
+				"manage_triggers":       true,
+				"read_service_maps":     true,
+				"run_queries":           true,
+				"send_events":           true,
 			},
 		},
 	} {
@@ -464,9 +464,9 @@ func TestCreate_PermissionValidation(t *testing.T) {
 			ts.SetNeverPrompt(true)
 			opts := &options.RootOptions{
 				IOStreams: ts.IOStreams,
-				Config:   &config.Config{},
-				APIUrl:   "http://localhost",
-				Format:   "json",
+				Config:    &config.Config{},
+				APIUrl:    "http://localhost",
+				Format:    "json",
 			}
 
 			if err := config.SetKey("default", config.KeyManagement, "test-key"); err != nil {
