@@ -80,7 +80,7 @@ Extract the query `id` from the response.
 ### Step 2: Create a query annotation
 
 ```
-jq -n '{name: "Panel Title", query_id: "<query-id>"}' | honeycomb query create --dataset <dataset> --file -
+jq -n '{name: "Panel Title", query_id: "<query-id>"}' | honeycomb query annotation create --dataset <dataset> --file -
 ```
 
 Extract the annotation `id` from the response.

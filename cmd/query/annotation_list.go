@@ -7,18 +7,8 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
-	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
-
-var annotationListTable = output.TableDef{
-	Columns: []output.Column{
-		{Header: "ID", Value: func(v any) string { return v.(annotationItem).ID }},
-		{Header: "Name", Value: func(v any) string { return v.(annotationItem).Name }},
-		{Header: "Query ID", Value: func(v any) string { return v.(annotationItem).QueryID }},
-		{Header: "Source", Value: func(v any) string { return v.(annotationItem).Source }},
-	},
-}
 
 func NewListCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	var includeBoardAnnotations bool

@@ -212,7 +212,7 @@ honeycomb key list/get/create/update/delete     API keys
 honeycomb marker list/create/update/delete      Markers
 honeycomb marker setting list/create/update/delete  Marker settings (colors/types)
 honeycomb mcp tools/call                        MCP server interaction
-honeycomb query list/view/create/update/delete  Saved queries
+honeycomb query annotation list/view/create/update/delete  Query annotations (saved queries)
 honeycomb query run                             Query execution with polling
 honeycomb recipient list/get/create/update/delete  Notification recipients
 honeycomb recipient triggers                    List triggers for a recipient

@@ -45,7 +45,7 @@ func TestUpdate_Flags(t *testing.T) {
 	}))
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"update", "--dataset", "test-dataset", "ann-1", "--name", "Updated Query"})
+	cmd.SetArgs([]string{"annotation", "update", "--dataset", "test-dataset", "ann-1", "--name", "Updated Query"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
@@ -75,7 +75,7 @@ func TestUpdate_File(t *testing.T) {
 	ts.InBuf.WriteString(`{"name":"From File","query_id":"q-abc"}`)
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"update", "--dataset", "test-dataset", "ann-1", "--file", "-"})
+	cmd.SetArgs([]string{"annotation", "update", "--dataset", "test-dataset", "ann-1", "--file", "-"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
@@ -93,7 +93,7 @@ func TestUpdate_NoFlags(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"update", "--dataset", "test-dataset", "ann-1"})
+	cmd.SetArgs([]string{"annotation", "update", "--dataset", "test-dataset", "ann-1"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for no flags")

@@ -19,7 +19,7 @@ func TestDelete_Yes(t *testing.T) {
 	}))
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"delete", "--dataset", "test-dataset", "--yes", "ann-1"})
+	cmd.SetArgs([]string{"annotation", "delete", "--dataset", "test-dataset", "--yes", "ann-1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
@@ -37,7 +37,7 @@ func TestDelete_NoYes_NonInteractive(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"delete", "--dataset", "test-dataset", "ann-1"})
+	cmd.SetArgs([]string{"annotation", "delete", "--dataset", "test-dataset", "ann-1"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for missing --yes")
@@ -55,7 +55,7 @@ func TestDelete_NotFound(t *testing.T) {
 	}))
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"delete", "--dataset", "test-dataset", "--yes", "nonexistent"})
+	cmd.SetArgs([]string{"annotation", "delete", "--dataset", "test-dataset", "--yes", "nonexistent"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for 404")
