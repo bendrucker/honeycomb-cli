@@ -535,45 +535,59 @@ func TestUpdate_Flags(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			keyType := "ingest"
+			currentName := "My Key"
+			if strings.HasPrefix(tc.id, "hcxlk_") {
+				keyType = "configuration"
+				currentName = "My Config Key"
+			}
+
 			opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if r.Method != http.MethodPatch {
-					t.Errorf("method = %q, want PATCH", r.Method)
-				}
-
-				if ct := r.Header.Get("Content-Type"); ct != "application/vnd.api+json" {
-					t.Errorf("Content-Type = %q, want application/vnd.api+json", ct)
-				}
-
-				var body map[string]any
-				if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-					t.Fatalf("decode request body: %v", err)
-				}
-
-				data := body["data"].(map[string]any)
-				if data["id"] != tc.id {
-					t.Errorf("data.id = %v, want %q", data["id"], tc.id)
-				}
-				if data["type"] != "api-keys" {
-					t.Errorf("data.type = %v, want %q", data["type"], "api-keys")
-				}
-
-				keyType := "ingest"
-				if strings.HasPrefix(tc.id, "hcxlk_") {
-					keyType = "configuration"
-				}
-
 				w.Header().Set("Content-Type", "application/vnd.api+json")
-				_, _ = fmt.Fprintf(w, `{
-					"data": {
-						"id": %q,
-						"type": "api-keys",
-						"attributes": {
-							"name": %q,
-							"key_type": %q,
-							"disabled": %t
+
+				switch r.Method {
+				case http.MethodGet:
+					_, _ = fmt.Fprintf(w, `{
+						"data": {
+							"id": %q,
+							"type": "api-keys",
+							"attributes": {
+								"name": %q,
+								"key_type": %q,
+								"disabled": false
+							}
 						}
+					}`, tc.id, currentName, keyType)
+				case http.MethodPatch:
+					var body map[string]any
+					if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+						t.Fatalf("decode request body: %v", err)
 					}
-				}`, tc.id, tc.wantName, keyType, tc.wantDisabled)
+
+					data := body["data"].(map[string]any)
+					if data["id"] != tc.id {
+						t.Errorf("data.id = %v, want %q", data["id"], tc.id)
+					}
+
+					attrs := data["attributes"].(map[string]any)
+					if attrs["name"] != tc.wantName {
+						t.Errorf("request name = %v, want %q", attrs["name"], tc.wantName)
+					}
+
+					_, _ = fmt.Fprintf(w, `{
+						"data": {
+							"id": %q,
+							"type": "api-keys",
+							"attributes": {
+								"name": %q,
+								"key_type": %q,
+								"disabled": %t
+							}
+						}
+					}`, tc.id, tc.wantName, keyType, tc.wantDisabled)
+				default:
+					t.Errorf("unexpected method %q", r.Method)
+				}
 			}))
 
 			cmd := NewCmd(opts)
@@ -625,7 +639,10 @@ func TestUpdate_MutuallyExclusive(t *testing.T) {
 }
 
 func TestUpdate_UnrecognizedKeyPrefix(t *testing.T) {
-	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		_, _ = fmt.Fprintf(w, `{"data":{"id":"unknown_01abc","type":"api-keys","attributes":{"name":"Test","key_type":"ingest","disabled":false}}}`)
+	}))
 
 	cmd := NewCmd(opts)
 	cmd.SetArgs([]string{"--team", "my-team", "update", "unknown_01abc", "--name", "New Name"})

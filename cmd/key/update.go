@@ -31,7 +31,7 @@ func NewUpdateCmd(opts *options.RootOptions, team *string) *cobra.Command {
 			if file != "" {
 				return runKeyUpdateFromFile(cmd.Context(), opts, *team, args[0], file)
 			}
-			return runKeyUpdateFromFlags(cmd, opts, *team, args[0], name, disabled, enabled)
+			return runKeyUpdateFromFlags(cmd, opts, *team, args[0], name)
 		},
 	}
 
@@ -80,7 +80,7 @@ func runKeyUpdateFromFile(ctx context.Context, opts *options.RootOptions, team, 
 	return writeKeyDetail(opts, objectToDetail(resp.ApplicationvndApiJSON200.Data))
 }
 
-func runKeyUpdateFromFlags(cmd *cobra.Command, opts *options.RootOptions, team, id, name string, disabled, enabled bool) error {
+func runKeyUpdateFromFlags(cmd *cobra.Command, opts *options.RootOptions, team, id, name string) error {
 	if !cmd.Flags().Changed("name") && !cmd.Flags().Changed("disabled") && !cmd.Flags().Changed("enabled") {
 		return fmt.Errorf("--file, --name, --disabled, or --enabled is required")
 	}
@@ -95,12 +95,37 @@ func runKeyUpdateFromFlags(cmd *cobra.Command, opts *options.RootOptions, team, 
 		return fmt.Errorf("creating API client: %w", err)
 	}
 
-	body, err := buildKeyUpdateRequest(cmd, id, name, disabled, enabled)
+	ctx := cmd.Context()
+
+	getResp, err := client.GetApiKeyWithResponse(ctx, api.TeamSlug(team), api.ID(id), auth)
+	if err != nil {
+		return fmt.Errorf("getting API key: %w", err)
+	}
+	if err := api.CheckResponse(getResp.StatusCode(), getResp.Body); err != nil {
+		return err
+	}
+	if getResp.ApplicationvndApiJSON200 == nil {
+		return fmt.Errorf("unexpected response: %s", getResp.Status())
+	}
+
+	current := objectToDetail(getResp.ApplicationvndApiJSON200.Data)
+
+	if cmd.Flags().Changed("name") {
+		current.Name = name
+	}
+	if cmd.Flags().Changed("disabled") {
+		current.Disabled = true
+	}
+	if cmd.Flags().Changed("enabled") {
+		current.Disabled = false
+	}
+
+	body, err := buildKeyUpdateRequest(id, current.Name, current.Disabled)
 	if err != nil {
 		return err
 	}
 
-	resp, err := client.UpdateApiKeyWithApplicationVndAPIPlusJSONBodyWithResponse(cmd.Context(), api.TeamSlug(team), api.ID(id), body, auth)
+	resp, err := client.UpdateApiKeyWithApplicationVndAPIPlusJSONBodyWithResponse(ctx, api.TeamSlug(team), api.ID(id), body, auth)
 	if err != nil {
 		return fmt.Errorf("updating API key: %w", err)
 	}
@@ -116,22 +141,16 @@ func runKeyUpdateFromFlags(cmd *cobra.Command, opts *options.RootOptions, team, 
 	return writeKeyDetail(opts, objectToDetail(resp.ApplicationvndApiJSON200.Data))
 }
 
-func buildKeyUpdateRequest(cmd *cobra.Command, id, name string, disabled, enabled bool) (api.ApiKeyUpdateRequest, error) {
+func buildKeyUpdateRequest(id, name string, disabled bool) (api.ApiKeyUpdateRequest, error) {
 	var body api.ApiKeyUpdateRequest
-
-	isDisabled := disabled || (cmd.Flags().Changed("enabled") && !enabled)
 
 	if strings.HasPrefix(id, "hcxik_") {
 		req := api.IngestKeyRequest{
 			Id:   id,
 			Type: api.IngestKeyRequestTypeApiKeys,
 		}
-		if cmd.Flags().Changed("name") {
-			req.Attributes.Name = &name
-		}
-		if cmd.Flags().Changed("disabled") || cmd.Flags().Changed("enabled") {
-			req.Attributes.Disabled = &isDisabled
-		}
+		req.Attributes.Name = &name
+		req.Attributes.Disabled = &disabled
 		if err := body.Data.FromIngestKeyRequest(req); err != nil {
 			return body, fmt.Errorf("building request: %w", err)
 		}
@@ -140,12 +159,8 @@ func buildKeyUpdateRequest(cmd *cobra.Command, id, name string, disabled, enable
 			Id:   id,
 			Type: api.ConfigurationKeyRequestTypeApiKeys,
 		}
-		if cmd.Flags().Changed("name") {
-			req.Attributes.Name = &name
-		}
-		if cmd.Flags().Changed("disabled") || cmd.Flags().Changed("enabled") {
-			req.Attributes.Disabled = &isDisabled
-		}
+		req.Attributes.Name = &name
+		req.Attributes.Disabled = &disabled
 		if err := body.Data.FromConfigurationKeyRequest(req); err != nil {
 			return body, fmt.Errorf("building request: %w", err)
 		}
