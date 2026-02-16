@@ -70,6 +70,20 @@ func TestCheckResponse(t *testing.T) {
 			wantMsg:    "bad request",
 		},
 		{
+			name:       "422 with error and type detail",
+			statusCode: 422,
+			body:       `{"error":"The provided input is invalid.","type_detail":[{"field":"name","description":"is required"},{"field":"slug","description":"is invalid"}]}`,
+			wantCode:   422,
+			wantMsg:    "The provided input is invalid.: name is required, slug is invalid",
+		},
+		{
+			name:       "422 with error and empty type detail",
+			statusCode: 422,
+			body:       `{"error":"The provided input is invalid.","type_detail":[]}`,
+			wantCode:   422,
+			wantMsg:    "The provided input is invalid.",
+		},
+		{
 			name:       "500 with empty body",
 			statusCode: 500,
 			body:       "",
