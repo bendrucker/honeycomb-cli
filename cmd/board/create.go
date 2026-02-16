@@ -24,6 +24,13 @@ func NewCreateCmd(opts *options.RootOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a board",
+		Long: `Create a board.
+
+Use --file to provide a full board definition as JSON. The preset_filters array
+requires both "column" (the column name) and "alias" (a display label, max 50
+characters) for each entry:
+
+  {"preset_filters": [{"column": "service.name", "alias": "Service"}]}`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runBoardCreate(cmd, opts, file, name, desc)
 		},

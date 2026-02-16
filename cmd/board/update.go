@@ -25,7 +25,14 @@ func NewUpdateCmd(opts *options.RootOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "update <board-id>",
 		Short: "Update a board",
-		Args:  cobra.ExactArgs(1),
+		Long: `Update a board.
+
+Use --file to provide a full or partial board definition as JSON. The
+preset_filters array requires both "column" (the column name) and "alias"
+(a display label, max 50 characters) for each entry:
+
+  {"preset_filters": [{"column": "service.name", "alias": "Service"}]}`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runBoardUpdate(cmd, opts, args[0], file, replace, name, desc)
 		},
