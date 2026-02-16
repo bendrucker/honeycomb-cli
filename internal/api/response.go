@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 )
 
 type APIError struct {
@@ -35,6 +36,26 @@ func CheckResponse(statusCode int, body []byte) error {
 			apiErr.Message = *parsed.Error
 		case parsed.Detail != nil:
 			apiErr.Message = *parsed.Detail
+		}
+	}
+
+	if apiErr.Message == "" {
+		var jsonapi struct {
+			Errors []struct {
+				Title  string `json:"title"`
+				Detail string `json:"detail"`
+			} `json:"errors"`
+		}
+		if json.Unmarshal(body, &jsonapi) == nil && len(jsonapi.Errors) > 0 {
+			messages := make([]string, 0, len(jsonapi.Errors))
+			for _, e := range jsonapi.Errors {
+				if e.Detail != "" {
+					messages = append(messages, e.Detail)
+				} else if e.Title != "" {
+					messages = append(messages, e.Title)
+				}
+			}
+			apiErr.Message = strings.Join(messages, ", ")
 		}
 	}
 

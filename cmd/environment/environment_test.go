@@ -293,6 +293,27 @@ func TestDelete_NoYesNonInteractive(t *testing.T) {
 	}
 }
 
+func TestDelete_Conflict(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		w.WriteHeader(http.StatusConflict)
+		_, _ = w.Write([]byte(`{"errors":[{"title":"Conflict","detail":"environment is delete protected"}]}`))
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"delete", "env-1", "--team", "my-team", "--yes"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for 409")
+	}
+	if !strings.Contains(err.Error(), "HTTP 409") {
+		t.Errorf("error = %q, want HTTP 409", err.Error())
+	}
+	if !strings.Contains(err.Error(), "environment is delete protected") {
+		t.Errorf("error = %q, want delete protected detail", err.Error())
+	}
+}
+
 func TestDelete_MissingArg(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 
