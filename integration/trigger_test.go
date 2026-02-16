@@ -3,7 +3,6 @@
 package integration
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -11,7 +10,15 @@ func TestTrigger(t *testing.T) {
 	var id string
 	name := uniqueName(t)
 
-	triggerJSON := fmt.Sprintf(`{"name":%q,"query":{"calculations":[{"op":"COUNT"}],"time_range":300},"threshold":{"op":">","value":100},"frequency":300}`, name)
+	triggerBody := toJSON(t, map[string]any{
+		"name": name,
+		"query": map[string]any{
+			"calculations": []map[string]any{{"op": "COUNT"}},
+			"time_range":   300,
+		},
+		"threshold": map[string]any{"op": ">", "value": 100},
+		"frequency": 300,
+	})
 
 	t.Cleanup(func() {
 		if id != "" {
@@ -20,7 +27,7 @@ func TestTrigger(t *testing.T) {
 	})
 
 	t.Run("create", func(t *testing.T) {
-		path := writeTemp(t, []byte(triggerJSON))
+		path := writeTemp(t, triggerBody)
 		r := run(t, nil, "trigger", "create", "--dataset", dataset, "--file", path)
 		tr := parseJSON[map[string]any](t, r.stdout)
 		v, ok := tr["id"].(string)
@@ -62,8 +69,16 @@ func TestTrigger(t *testing.T) {
 
 	t.Run("update", func(t *testing.T) {
 		updatedName := name + "-upd"
-		updatedJSON := fmt.Sprintf(`{"name":%q,"query":{"calculations":[{"op":"COUNT"}],"time_range":300},"threshold":{"op":">","value":200},"frequency":300}`, updatedName)
-		path := writeTemp(t, []byte(updatedJSON))
+		updatedBody := toJSON(t, map[string]any{
+			"name": updatedName,
+			"query": map[string]any{
+				"calculations": []map[string]any{{"op": "COUNT"}},
+				"time_range":   300,
+			},
+			"threshold": map[string]any{"op": ">", "value": 200},
+			"frequency": 300,
+		})
+		path := writeTemp(t, updatedBody)
 		r := run(t, nil, "trigger", "update", id, "--dataset", dataset, "--file", path)
 		tr := parseJSON[map[string]any](t, r.stdout)
 		if tr["name"] != updatedName {
@@ -73,8 +88,16 @@ func TestTrigger(t *testing.T) {
 
 	t.Run("delete", func(t *testing.T) {
 		throwawayName := name + "-del"
-		throwawayJSON := fmt.Sprintf(`{"name":%q,"query":{"calculations":[{"op":"COUNT"}],"time_range":300},"threshold":{"op":">","value":100},"frequency":300}`, throwawayName)
-		path := writeTemp(t, []byte(throwawayJSON))
+		throwawayBody := toJSON(t, map[string]any{
+			"name": throwawayName,
+			"query": map[string]any{
+				"calculations": []map[string]any{{"op": "COUNT"}},
+				"time_range":   300,
+			},
+			"threshold": map[string]any{"op": ">", "value": 100},
+			"frequency": 300,
+		})
+		path := writeTemp(t, throwawayBody)
 		r := run(t, nil, "trigger", "create", "--dataset", dataset, "--file", path)
 		throwaway := parseJSON[map[string]any](t, r.stdout)
 		throwawayID, ok := throwaway["id"].(string)
