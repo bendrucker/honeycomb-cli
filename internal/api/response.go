@@ -27,8 +27,12 @@ func CheckResponse(statusCode int, body []byte) error {
 	apiErr := &APIError{StatusCode: statusCode}
 
 	var parsed struct {
-		Error  *string `json:"error"`
-		Detail *string `json:"detail"`
+		Error      *string `json:"error"`
+		Detail     *string `json:"detail"`
+		TypeDetail []struct {
+			Field       string `json:"field"`
+			Description string `json:"description"`
+		} `json:"type_detail"`
 	}
 	if json.Unmarshal(body, &parsed) == nil {
 		switch {
@@ -36,6 +40,14 @@ func CheckResponse(statusCode int, body []byte) error {
 			apiErr.Message = *parsed.Error
 		case parsed.Detail != nil:
 			apiErr.Message = *parsed.Detail
+		}
+
+		if len(parsed.TypeDetail) > 0 {
+			details := make([]string, len(parsed.TypeDetail))
+			for i, d := range parsed.TypeDetail {
+				details[i] = d.Field + " " + d.Description
+			}
+			apiErr.Message += ": " + strings.Join(details, ", ")
 		}
 	}
 
