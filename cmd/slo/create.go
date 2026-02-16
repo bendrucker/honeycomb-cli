@@ -66,8 +66,10 @@ func runSLOCreate(cmd *cobra.Command, opts *options.RootOptions, dataset, file, 
 		}
 
 		body := api.SLO{
-			Name:             name,
-			Sli:              struct{ Alias string `json:"alias"` }{Alias: sliAlias},
+			Name: name,
+			Sli: struct {
+				Alias string `json:"alias"`
+			}{Alias: sliAlias},
 			TargetPerMillion: target,
 			TimePeriodDays:   timePeriod,
 		}
