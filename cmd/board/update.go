@@ -11,6 +11,7 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/bendrucker/honeycomb-cli/internal/jsonutil"
 	"github.com/spf13/cobra"
 )
 
@@ -134,6 +135,11 @@ func updateFromFile(ctx context.Context, client *api.ClientWithResponses, opts *
 		if fillErr != nil {
 			return fillErr
 		}
+		sanitized, sanitizeErr := jsonutil.Sanitize(data)
+		if sanitizeErr != nil {
+			return fmt.Errorf("invalid JSON: %w", sanitizeErr)
+		}
+		data = sanitized
 	} else {
 		incoming, err := readBoardJSON(r)
 		if err != nil {

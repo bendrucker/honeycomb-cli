@@ -1,12 +1,12 @@
 package query
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
+	"github.com/bendrucker/honeycomb-cli/internal/jsonutil"
 	"github.com/spf13/cobra"
 )
 
@@ -50,8 +50,8 @@ func readFile(opts *options.RootOptions, file string) ([]byte, error) {
 		return nil, fmt.Errorf("reading file: %w", err)
 	}
 
-	var js json.RawMessage
-	if err := json.Unmarshal(data, &js); err != nil {
+	data, err = jsonutil.Sanitize(data)
+	if err != nil {
 		return nil, fmt.Errorf("invalid JSON: %w", err)
 	}
 

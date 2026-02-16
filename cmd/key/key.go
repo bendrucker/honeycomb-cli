@@ -8,6 +8,7 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/deref"
+	"github.com/bendrucker/honeycomb-cli/internal/jsonutil"
 	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -123,6 +124,10 @@ func readBodyFile(ios *options.RootOptions, file string) ([]byte, error) {
 	data, err := io.ReadAll(r)
 	if err != nil {
 		return nil, fmt.Errorf("reading file: %w", err)
+	}
+	data, err = jsonutil.Sanitize(data)
+	if err != nil {
+		return nil, fmt.Errorf("invalid JSON: %w", err)
 	}
 	return data, nil
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/bendrucker/honeycomb-cli/internal/jsonutil"
 	"github.com/spf13/cobra"
 )
 
@@ -101,6 +102,10 @@ func runCalculatedUpdate(ctx context.Context, opts *options.RootOptions, dataset
 		data, err := io.ReadAll(r)
 		if err != nil {
 			return fmt.Errorf("reading file: %w", err)
+		}
+		data, err = jsonutil.Sanitize(data)
+		if err != nil {
+			return fmt.Errorf("invalid JSON: %w", err)
 		}
 		if err := json.Unmarshal(data, &body); err != nil {
 			return fmt.Errorf("parsing calculated column JSON: %w", err)
