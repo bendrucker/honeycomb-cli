@@ -168,6 +168,142 @@ func TestUpdate_FileStdinReplace(t *testing.T) {
 	}
 }
 
+func TestStripPanelDataset(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "no panels",
+			input:    `{"name":"Board"}`,
+			expected: `{"name":"Board"}`,
+		},
+		{
+			name:     "query panel with dataset",
+			input:    `{"name":"Board","panels":[{"type":"query","query_panel":{"query_id":"q1","dataset":"my-dataset"}}]}`,
+			expected: `{"name":"Board","panels":[{"type":"query","query_panel":{"query_id":"q1"}}]}`,
+		},
+		{
+			name:     "query panel without dataset",
+			input:    `{"name":"Board","panels":[{"type":"query","query_panel":{"query_id":"q1"}}]}`,
+			expected: `{"name":"Board","panels":[{"type":"query","query_panel":{"query_id":"q1"}}]}`,
+		},
+		{
+			name:     "slo panel unchanged",
+			input:    `{"name":"Board","panels":[{"type":"slo","slo_panel":{"slo_id":"s1"}}]}`,
+			expected: `{"name":"Board","panels":[{"type":"slo","slo_panel":{"slo_id":"s1"}}]}`,
+		},
+		{
+			name:     "mixed panels",
+			input:    `{"name":"Board","panels":[{"type":"query","query_panel":{"query_id":"q1","dataset":"ds"}},{"type":"slo","slo_panel":{"slo_id":"s1"}}]}`,
+			expected: `{"name":"Board","panels":[{"type":"query","query_panel":{"query_id":"q1"}},{"type":"slo","slo_panel":{"slo_id":"s1"}}]}`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := stripPanelDataset([]byte(tc.input))
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			var gotParsed, expectedParsed any
+			if err := json.Unmarshal(got, &gotParsed); err != nil {
+				t.Fatalf("unmarshal got: %v", err)
+			}
+			if err := json.Unmarshal([]byte(tc.expected), &expectedParsed); err != nil {
+				t.Fatalf("unmarshal expected: %v", err)
+			}
+
+			gotJSON, _ := json.Marshal(gotParsed)
+			expectedJSON, _ := json.Marshal(expectedParsed)
+			if string(gotJSON) != string(expectedJSON) {
+				t.Errorf("got %s, want %s", gotJSON, expectedJSON)
+			}
+		})
+	}
+}
+
+func TestUpdate_StripsPanelDataset(t *testing.T) {
+	calls := 0
+	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		calls++
+		if calls == 1 {
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"id":   "abc123",
+				"name": "Board",
+				"type": "flexible",
+				"panels": []map[string]any{
+					{
+						"type": "query",
+						"query_panel": map[string]any{
+							"query_id":            "q1",
+							"query_annotation_id": "a1",
+							"dataset":             "my-dataset",
+						},
+					},
+				},
+			})
+			return
+		}
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		panels, ok := body["panels"].([]any)
+		if !ok || len(panels) != 1 {
+			t.Fatalf("expected 1 panel, got %v", body["panels"])
+		}
+		panel := panels[0].(map[string]any)
+		qp := panel["query_panel"].(map[string]any)
+		if _, has := qp["dataset"]; has {
+			t.Error("dataset should be stripped from query_panel")
+		}
+
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id":   "abc123",
+			"name": "New Name",
+			"type": "flexible",
+		})
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"update", "abc123", "--name", "New Name"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestUpdate_FileStripsPanelDataset(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		panels, ok := body["panels"].([]any)
+		if !ok || len(panels) != 1 {
+			t.Fatalf("expected 1 panel, got %v", body["panels"])
+		}
+		panel := panels[0].(map[string]any)
+		qp := panel["query_panel"].(map[string]any)
+		if _, has := qp["dataset"]; has {
+			t.Error("dataset should be stripped from query_panel")
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id":   "abc123",
+			"name": "Board",
+			"type": "flexible",
+		})
+	}))
+
+	ts.InBuf.WriteString(`{"name":"Board","type":"flexible","panels":[{"type":"query","query_panel":{"query_id":"q1","query_annotation_id":"a1","dataset":"my-dataset"}}]}`)
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"update", "abc123", "--file", "-", "--replace"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestUpdate_NotFound(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

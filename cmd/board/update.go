@@ -87,6 +87,11 @@ func runBoardUpdate(cmd *cobra.Command, opts *options.RootOptions, boardID, file
 		return fmt.Errorf("encoding board: %w", err)
 	}
 
+	data, err = stripPanelDataset(data)
+	if err != nil {
+		return fmt.Errorf("stripping panel dataset: %w", err)
+	}
+
 	resp, err := client.UpdateBoardWithBodyWithResponse(ctx, boardID, "application/json", bytes.NewReader(data), auth)
 	if err != nil {
 		return fmt.Errorf("updating board: %w", err)
@@ -146,6 +151,11 @@ func updateFromFile(ctx context.Context, client *api.ClientWithResponses, opts *
 	data, stripErr := api.StripReadOnly(data, "Board")
 	if stripErr != nil {
 		return fmt.Errorf("stripping read-only fields: %w", stripErr)
+	}
+
+	data, panelErr := stripPanelDataset(data)
+	if panelErr != nil {
+		return fmt.Errorf("stripping panel dataset: %w", panelErr)
 	}
 
 	resp, err := client.UpdateBoardWithBodyWithResponse(ctx, boardID, "application/json", bytes.NewReader(data), auth)
@@ -211,4 +221,57 @@ func encodeJSON(v any) ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+// stripPanelDataset removes the "dataset" field from "query_panel" objects
+// within the "panels" array. The API returns dataset in query panels on read
+// but rejects it on write.
+func stripPanelDataset(data []byte) ([]byte, error) {
+	var board map[string]json.RawMessage
+	if err := json.Unmarshal(data, &board); err != nil {
+		return nil, err
+	}
+
+	raw, ok := board["panels"]
+	if !ok {
+		return data, nil
+	}
+
+	var panels []map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &panels); err != nil {
+		return data, nil
+	}
+
+	changed := false
+	for i, panel := range panels {
+		qp, ok := panel["query_panel"]
+		if !ok {
+			continue
+		}
+		var qpMap map[string]json.RawMessage
+		if err := json.Unmarshal(qp, &qpMap); err != nil {
+			continue
+		}
+		if _, has := qpMap["dataset"]; !has {
+			continue
+		}
+		delete(qpMap, "dataset")
+		changed = true
+		reencoded, err := json.Marshal(qpMap)
+		if err != nil {
+			return nil, err
+		}
+		panels[i]["query_panel"] = reencoded
+	}
+
+	if !changed {
+		return data, nil
+	}
+
+	reencoded, err := json.Marshal(panels)
+	if err != nil {
+		return nil, err
+	}
+	board["panels"] = reencoded
+	return json.Marshal(board)
 }
