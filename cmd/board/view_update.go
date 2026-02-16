@@ -10,13 +10,15 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/bendrucker/honeycomb-cli/internal/deref"
 	"github.com/spf13/cobra"
 )
 
 func NewViewUpdateCmd(opts *options.RootOptions, board *string) *cobra.Command {
 	var (
-		file string
-		name string
+		file       string
+		name       string
+		filterArgs []string
 	)
 
 	cmd := &cobra.Command{
@@ -24,19 +26,21 @@ func NewViewUpdateCmd(opts *options.RootOptions, board *string) *cobra.Command {
 		Short: "Update a board view",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runViewUpdate(cmd, opts, *board, args[0], file, name)
+			return runViewUpdate(cmd, opts, *board, args[0], file, name, filterArgs)
 		},
 	}
 
 	cmd.Flags().StringVarP(&file, "file", "f", "", "Path to JSON file (- for stdin)")
 	cmd.Flags().StringVar(&name, "name", "", "View name")
+	cmd.Flags().StringArrayVar(&filterArgs, "filter", nil, "Filter: column:operation:value (repeatable)")
 
 	cmd.MarkFlagsMutuallyExclusive("file", "name")
+	cmd.MarkFlagsMutuallyExclusive("file", "filter")
 
 	return cmd
 }
 
-func runViewUpdate(cmd *cobra.Command, opts *options.RootOptions, boardID, viewID, file, name string) error {
+func runViewUpdate(cmd *cobra.Command, opts *options.RootOptions, boardID, viewID, file, name string, filterArgs []string) error {
 	auth, err := opts.KeyEditor(config.KeyConfig)
 	if err != nil {
 		return err
@@ -53,8 +57,8 @@ func runViewUpdate(cmd *cobra.Command, opts *options.RootOptions, boardID, viewI
 		return updateViewFromFile(ctx, client, opts, auth, boardID, viewID, file)
 	}
 
-	if !cmd.Flags().Changed("name") {
-		return fmt.Errorf("--file or --name is required")
+	if !cmd.Flags().Changed("name") && !cmd.Flags().Changed("filter") {
+		return fmt.Errorf("--file, --name, or --filter is required")
 	}
 
 	current, err := getView(ctx, client, auth, boardID, viewID)
@@ -66,7 +70,17 @@ func runViewUpdate(cmd *cobra.Command, opts *options.RootOptions, boardID, viewI
 		Name:    name,
 		Filters: []api.BoardViewFilter{},
 	}
-	if current.Filters != nil {
+
+	if !cmd.Flags().Changed("name") {
+		body.Name = deref.String(current.Name)
+	}
+
+	if cmd.Flags().Changed("filter") {
+		body.Filters, err = parseViewFilters(filterArgs)
+		if err != nil {
+			return err
+		}
+	} else if current.Filters != nil {
 		body.Filters = *current.Filters
 	}
 
