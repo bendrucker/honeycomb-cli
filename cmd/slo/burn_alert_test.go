@@ -148,6 +148,210 @@ func TestBurnAlertGet(t *testing.T) {
 	}
 }
 
+func TestBurnAlertCreate_ExhaustionTime(t *testing.T) {
+	opts, ts := setupBurnAlertTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("method = %q, want POST", r.Method)
+		}
+		if r.URL.Path != "/1/burn_alerts/my-dataset" {
+			t.Errorf("path = %q, want /1/burn_alerts/my-dataset", r.URL.Path)
+		}
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		if body["alert_type"] != "exhaustion_time" {
+			t.Errorf("alert_type = %v, want %q", body["alert_type"], "exhaustion_time")
+		}
+		slo, _ := body["slo"].(map[string]any)
+		if slo["id"] != "slo-1" {
+			t.Errorf("slo.id = %v, want %q", slo["id"], "slo-1")
+		}
+		if body["exhaustion_minutes"] != float64(240) {
+			t.Errorf("exhaustion_minutes = %v, want 240", body["exhaustion_minutes"])
+		}
+		rcpts, _ := body["recipients"].([]any)
+		if len(rcpts) != 1 {
+			t.Fatalf("recipients len = %d, want 1", len(rcpts))
+		}
+		rcpt, _ := rcpts[0].(map[string]any)
+		if rcpt["id"] != "r-1" {
+			t.Errorf("recipients[0].id = %v, want %q", rcpt["id"], "r-1")
+		}
+		if body["description"] != "test alert" {
+			t.Errorf("description = %v, want %q", body["description"], "test alert")
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id":                 "ba-new",
+			"alert_type":         "exhaustion_time",
+			"exhaustion_minutes": 240,
+			"slo_id":             "slo-1",
+			"description":        "test alert",
+		})
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{
+		"burn-alert", "create", "--dataset", "my-dataset",
+		"--slo-id", "slo-1",
+		"--alert-type", "exhaustion_time",
+		"--exhaustion-minutes", "240",
+		"--recipient", "r-1",
+		"--description", "test alert",
+	})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	var detail burnAlertDetail
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &detail); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+	if detail.ID != "ba-new" {
+		t.Errorf("ID = %q, want %q", detail.ID, "ba-new")
+	}
+}
+
+func TestBurnAlertCreate_BudgetRate(t *testing.T) {
+	opts, ts := setupBurnAlertTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		if body["alert_type"] != "budget_rate" {
+			t.Errorf("alert_type = %v, want %q", body["alert_type"], "budget_rate")
+		}
+		if body["budget_rate_window_minutes"] != float64(60) {
+			t.Errorf("budget_rate_window_minutes = %v, want 60", body["budget_rate_window_minutes"])
+		}
+		if body["budget_rate_decrease_threshold_per_million"] != float64(50000) {
+			t.Errorf("budget_rate_decrease_threshold_per_million = %v, want 50000", body["budget_rate_decrease_threshold_per_million"])
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id":                         "ba-new",
+			"alert_type":                 "budget_rate",
+			"budget_rate_window_minutes": 60,
+			"budget_rate_decrease_threshold_per_million": 50000,
+			"slo_id": "slo-1",
+		})
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{
+		"burn-alert", "create", "--dataset", "my-dataset",
+		"--slo-id", "slo-1",
+		"--alert-type", "budget_rate",
+		"--budget-rate-window-minutes", "60",
+		"--budget-rate-threshold", "50000",
+		"--recipient", "r-1",
+		"--recipient", "r-2",
+	})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	var detail burnAlertDetail
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &detail); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+	if detail.ID != "ba-new" {
+		t.Errorf("ID = %q, want %q", detail.ID, "ba-new")
+	}
+}
+
+func TestBurnAlertCreate_Validation(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		args    []string
+		wantErr string
+	}{
+		{
+			name:    "missing slo-id",
+			args:    []string{"--alert-type", "exhaustion_time", "--exhaustion-minutes", "60", "--recipient", "r-1"},
+			wantErr: "--slo-id is required",
+		},
+		{
+			name:    "missing alert-type",
+			args:    []string{"--slo-id", "slo-1", "--exhaustion-minutes", "60", "--recipient", "r-1"},
+			wantErr: "--alert-type is required",
+		},
+		{
+			name:    "missing recipient",
+			args:    []string{"--slo-id", "slo-1", "--alert-type", "exhaustion_time", "--exhaustion-minutes", "60"},
+			wantErr: "at least one --recipient is required",
+		},
+		{
+			name:    "exhaustion time missing minutes",
+			args:    []string{"--slo-id", "slo-1", "--alert-type", "exhaustion_time", "--recipient", "r-1"},
+			wantErr: "--exhaustion-minutes is required",
+		},
+		{
+			name:    "budget rate missing window",
+			args:    []string{"--slo-id", "slo-1", "--alert-type", "budget_rate", "--budget-rate-threshold", "50000", "--recipient", "r-1"},
+			wantErr: "--budget-rate-window-minutes is required",
+		},
+		{
+			name:    "budget rate missing threshold",
+			args:    []string{"--slo-id", "slo-1", "--alert-type", "budget_rate", "--budget-rate-window-minutes", "60", "--recipient", "r-1"},
+			wantErr: "--budget-rate-threshold is required",
+		},
+		{
+			name:    "invalid alert type",
+			args:    []string{"--slo-id", "slo-1", "--alert-type", "invalid", "--recipient", "r-1"},
+			wantErr: "--alert-type must be exhaustion_time or budget_rate",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			opts, _ := setupBurnAlertTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+				t.Error("unexpected API call")
+			}))
+
+			cmd := NewCmd(opts)
+			args := append([]string{"burn-alert", "create", "--dataset", "my-dataset"}, tc.args...)
+			cmd.SetArgs(args)
+			err := cmd.Execute()
+			if err == nil {
+				t.Fatal("expected error")
+			}
+			if !strings.Contains(err.Error(), tc.wantErr) {
+				t.Errorf("error = %q, want containing %q", err.Error(), tc.wantErr)
+			}
+		})
+	}
+}
+
+func TestBurnAlertCreate_WithFile(t *testing.T) {
+	opts, ts := setupBurnAlertTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("method = %q, want POST", r.Method)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id":         "ba-file",
+			"alert_type": "exhaustion_time",
+		})
+	}))
+
+	ts.InBuf.WriteString(`{"alert_type":"exhaustion_time","slo":{"id":"slo-1"},"exhaustion_minutes":120,"recipients":[{"id":"r-1"}]}`)
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"burn-alert", "create", "--dataset", "my-dataset", "--file", "-"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	var detail burnAlertDetail
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &detail); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+	if detail.ID != "ba-file" {
+		t.Errorf("ID = %q, want %q", detail.ID, "ba-file")
+	}
+}
+
 func TestBurnAlertDelete(t *testing.T) {
 	opts, ts := setupBurnAlertTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
