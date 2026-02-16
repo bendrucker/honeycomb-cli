@@ -31,7 +31,8 @@ func NewRootCmd(ios *iostreams.IOStreams) *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
-			cfg, err := config.Load(config.DefaultPath())
+			opts.ConfigPath = config.DefaultPath()
+			cfg, err := config.Load(opts.ConfigPath)
 			if err != nil {
 				return err
 			}

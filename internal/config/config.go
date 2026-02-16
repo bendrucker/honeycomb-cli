@@ -18,6 +18,7 @@ type Config struct {
 type Profile struct {
 	APIUrl string `json:"api_url,omitempty"`
 	MCPUrl string `json:"mcp_url,omitempty"`
+	Team   string `json:"team,omitempty"`
 }
 
 func DefaultDir() string {
@@ -46,6 +47,16 @@ func Load(path string) (*Config, error) {
 		return nil, err
 	}
 	return &cfg, nil
+}
+
+func (c *Config) EnsureProfile(name string) *Profile {
+	if c.Profiles == nil {
+		c.Profiles = make(map[string]*Profile)
+	}
+	if c.Profiles[name] == nil {
+		c.Profiles[name] = &Profile{}
+	}
+	return c.Profiles[name]
 }
 
 func (c *Config) Save(path string) error {

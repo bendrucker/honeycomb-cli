@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"testing"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
@@ -18,10 +19,12 @@ func TestAuthLogin_Success(t *testing.T) {
 		keyType    string
 		keyID      string
 		keySecret  string
+		team       string
 		verify     bool
 		handler    http.Handler
 		want       loginResult
 		wantStored string
+		wantTeam   string
 	}{
 		{
 			name:      "config key verified",
@@ -91,6 +94,19 @@ func TestAuthLogin_Success(t *testing.T) {
 			wantStored: "mgmtid:mgmtsecret",
 		},
 		{
+			name:      "management key with team",
+			keyType:   "management",
+			keyID:     "mgmtid",
+			keySecret: "mgmtsecret",
+			team:      "my-team",
+			verify:    false,
+			want: loginResult{
+				Type: "management",
+			},
+			wantStored: "mgmtid:mgmtsecret",
+			wantTeam:   "my-team",
+		},
+		{
 			name:      "no verify",
 			keyType:   "ingest",
 			keySecret: "mysecret",
@@ -112,17 +128,19 @@ func TestAuthLogin_Success(t *testing.T) {
 			}
 
 			ts := iostreams.Test(t)
+			configPath := filepath.Join(t.TempDir(), "config.json")
 			opts := &options.RootOptions{
-				IOStreams: ts.IOStreams,
-				Config:    &config.Config{},
-				APIUrl:    apiURL,
-				Format:    output.FormatJSON,
+				IOStreams:  ts.IOStreams,
+				Config:     &config.Config{},
+				APIUrl:     apiURL,
+				Format:     output.FormatJSON,
+				ConfigPath: configPath,
 			}
 
 			kt := config.KeyType(tt.keyType)
 			t.Cleanup(func() { _ = config.DeleteKey("default", kt) })
 
-			err := runAuthLogin(t.Context(), opts, tt.keyType, tt.keyID, tt.keySecret, tt.verify)
+			err := runAuthLogin(t.Context(), opts, tt.keyType, tt.keyID, tt.keySecret, tt.team, tt.verify)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -141,6 +159,21 @@ func TestAuthLogin_Success(t *testing.T) {
 			}
 			if stored != tt.wantStored {
 				t.Errorf("stored key = %q, want %q", stored, tt.wantStored)
+			}
+
+			if tt.wantTeam != "" {
+				cfg, err := config.Load(configPath)
+				if err != nil {
+					t.Fatal(err)
+				}
+				profile := cfg.Profiles["default"]
+				if profile == nil || profile.Team != tt.wantTeam {
+					got := ""
+					if profile != nil {
+						got = profile.Team
+					}
+					t.Errorf("config team = %q, want %q", got, tt.wantTeam)
+				}
 			}
 		})
 	}
@@ -162,7 +195,7 @@ func TestAuthLogin_InvalidKey(t *testing.T) {
 		Format:    output.FormatJSON,
 	}
 
-	err := runAuthLogin(t.Context(), opts, "config", "", "badsecret", true)
+	err := runAuthLogin(t.Context(), opts, "config", "", "badsecret", "", true)
 	if err == nil {
 		t.Fatal("expected error for invalid key")
 	}
@@ -185,7 +218,7 @@ func TestAuthLogin_MissingKeyType(t *testing.T) {
 		Format:    output.FormatJSON,
 	}
 
-	err := runAuthLogin(t.Context(), opts, "", "", "mysecret", false)
+	err := runAuthLogin(t.Context(), opts, "", "", "mysecret", "", false)
 	if err == nil {
 		t.Fatal("expected error for missing key type")
 	}
@@ -203,7 +236,7 @@ func TestAuthLogin_MissingKeyID(t *testing.T) {
 		Format:    output.FormatJSON,
 	}
 
-	err := runAuthLogin(t.Context(), opts, "management", "", "mysecret", false)
+	err := runAuthLogin(t.Context(), opts, "management", "", "mysecret", "", false)
 	if err == nil {
 		t.Fatal("expected error for missing key ID")
 	}
@@ -225,7 +258,7 @@ func TestAuthLogin_StdinSecret(t *testing.T) {
 
 	t.Cleanup(func() { _ = config.DeleteKey("default", config.KeyConfig) })
 
-	err := runAuthLogin(t.Context(), opts, "config", "", "", false)
+	err := runAuthLogin(t.Context(), opts, "config", "", "", "", false)
 	if err != nil {
 		t.Fatal(err)
 	}

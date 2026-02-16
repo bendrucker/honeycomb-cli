@@ -16,6 +16,9 @@ func NewGetCmd(opts *options.RootOptions, team *string) *cobra.Command {
 		Short: "Get an environment",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := opts.RequireTeam(team); err != nil {
+				return err
+			}
 			return runEnvironmentGet(cmd.Context(), opts, *team, args[0])
 		},
 	}

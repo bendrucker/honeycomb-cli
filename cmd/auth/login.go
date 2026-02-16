@@ -28,6 +28,7 @@ func NewLoginCmd(opts *options.RootOptions) *cobra.Command {
 		keyType   string
 		keyID     string
 		keySecret string
+		team      string
 		verify    bool
 		noVerify  bool
 	)
@@ -39,13 +40,14 @@ func NewLoginCmd(opts *options.RootOptions) *cobra.Command {
 			if cmd.Flags().Changed("no-verify") {
 				verify = false
 			}
-			return runAuthLogin(cmd.Context(), opts, keyType, keyID, keySecret, verify)
+			return runAuthLogin(cmd.Context(), opts, keyType, keyID, keySecret, team, verify)
 		},
 	}
 
 	cmd.Flags().StringVar(&keyType, "key-type", "", "Key type: config, ingest, management")
 	cmd.Flags().StringVar(&keyID, "key-id", "", "Key ID")
 	cmd.Flags().StringVar(&keySecret, "key-secret", "", "Key secret (alternative to stdin)")
+	cmd.Flags().StringVar(&team, "team", "", "Team slug (stored in config for management keys)")
 	cmd.Flags().BoolVar(&verify, "verify", true, "Verify key against the API before storing")
 	cmd.Flags().BoolVar(&noVerify, "no-verify", false, "Skip API verification")
 	cmd.Flags().Lookup("no-verify").Hidden = true
@@ -53,7 +55,7 @@ func NewLoginCmd(opts *options.RootOptions) *cobra.Command {
 	return cmd
 }
 
-func runAuthLogin(ctx context.Context, opts *options.RootOptions, keyType, keyID, keySecret string, verify bool) error {
+func runAuthLogin(ctx context.Context, opts *options.RootOptions, keyType, keyID, keySecret, team string, verify bool) error {
 	ios := opts.IOStreams
 
 	if ios.CanPrompt() {
@@ -87,6 +89,11 @@ func runAuthLogin(ctx context.Context, opts *options.RootOptions, keyType, keyID
 				Title("Key secret").
 				EchoMode(huh.EchoModePassword).
 				Value(&keySecret))
+		}
+		if keyType == "management" && team == "" {
+			fields = append(fields, huh.NewInput().
+				Title("Team slug").
+				Value(&team))
 		}
 		if len(fields) > 0 {
 			err := huh.NewForm(huh.NewGroup(fields...)).Run()
@@ -154,6 +161,13 @@ func runAuthLogin(ctx context.Context, opts *options.RootOptions, keyType, keyID
 	profile := opts.ActiveProfile()
 	if err := config.SetKey(profile, kt, value); err != nil {
 		return fmt.Errorf("storing key: %w", err)
+	}
+
+	if team != "" {
+		opts.Config.EnsureProfile(profile).Team = team
+		if err := opts.Config.Save(opts.ResolveConfigPath()); err != nil {
+			return fmt.Errorf("saving config: %w", err)
+		}
 	}
 
 	return writeLoginResult(opts, result)

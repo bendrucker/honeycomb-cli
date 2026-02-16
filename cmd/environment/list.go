@@ -26,6 +26,9 @@ func NewListCmd(opts *options.RootOptions, team *string) *cobra.Command {
 		Use:   "list",
 		Short: "List environments",
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if err := opts.RequireTeam(team); err != nil {
+				return err
+			}
 			return runEnvironmentList(cmd.Context(), opts, *team)
 		},
 	}
