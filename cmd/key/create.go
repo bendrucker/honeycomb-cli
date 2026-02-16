@@ -176,7 +176,7 @@ func handleCreateResponse(opts *options.RootOptions, resp *api.CreateApiKeyResp)
 	detail := createResponseToDetail(resp.ApplicationvndApiJSON201)
 
 	if detail.Secret != "" {
-		_, _ = fmt.Fprintf(opts.IOStreams.Err, "Save this secret now — it cannot be retrieved again\n")
+		_, _ = fmt.Fprintf(opts.IOStreams.Err, "Save this key now — it cannot be retrieved again.\n")
 	}
 
 	return writeKeyDetail(opts, detail)
@@ -192,25 +192,26 @@ func createResponseToDetail(resp *api.ApiKeyCreateResponse) keyDetail {
 		detail.Name = ingest.Name
 		detail.KeyType = string(ingest.KeyType)
 		detail.Disabled = deref.Bool(ingest.Disabled)
-		return detail
-	}
-	if cfg, err := resp.Data.Attributes.AsConfigurationKeyAttributes(); err == nil {
+	} else if cfg, err := resp.Data.Attributes.AsConfigurationKeyAttributes(); err == nil {
 		detail.Name = cfg.Name
 		detail.KeyType = string(cfg.KeyType)
 		detail.Disabled = deref.Bool(cfg.Disabled)
-		return detail
+	} else {
+		var raw struct {
+			Name     string `json:"name"`
+			KeyType  string `json:"key_type"`
+			Disabled bool   `json:"disabled"`
+		}
+		rawBytes, _ := json.Marshal(resp.Data.Attributes)
+		_ = json.Unmarshal(rawBytes, &raw)
+		detail.Name = raw.Name
+		detail.KeyType = raw.KeyType
+		detail.Disabled = raw.Disabled
 	}
 
-	var raw struct {
-		Name     string `json:"name"`
-		KeyType  string `json:"key_type"`
-		Disabled bool   `json:"disabled"`
+	if detail.Secret != "" {
+		detail.Key = detail.Secret
 	}
-	rawBytes, _ := json.Marshal(resp.Data.Attributes)
-	_ = json.Unmarshal(rawBytes, &raw)
-	detail.Name = raw.Name
-	detail.KeyType = raw.KeyType
-	detail.Disabled = raw.Disabled
 
 	return detail
 }

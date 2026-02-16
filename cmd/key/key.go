@@ -45,6 +45,7 @@ type keyDetail struct {
 	KeyType  string `json:"key_type"`
 	Disabled bool   `json:"disabled"`
 	Secret   string `json:"secret,omitempty"`
+	Key      string `json:"key,omitempty"`
 }
 
 var keyListTable = output.TableDef{
@@ -65,6 +66,9 @@ func writeKeyDetail(opts *options.RootOptions, detail keyDetail) error {
 	}
 	if detail.Secret != "" {
 		fields = append(fields, output.Field{Label: "Secret", Value: detail.Secret})
+	}
+	if detail.Key != "" {
+		fields = append(fields, output.Field{Label: "Key", Value: detail.Key})
 	}
 	return opts.OutputWriter().WriteFields(detail, fields)
 }

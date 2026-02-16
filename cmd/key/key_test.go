@@ -248,30 +248,34 @@ func TestCreate_File(t *testing.T) {
 	if detail.Secret != "hcxik_01new_secret_value" {
 		t.Errorf("Secret = %q, want %q", detail.Secret, "hcxik_01new_secret_value")
 	}
+	if detail.Key != "hcxik_01new_secret_value" {
+		t.Errorf("Key = %q, want %q", detail.Key, "hcxik_01new_secret_value")
+	}
 	if detail.Name != "New Key" {
 		t.Errorf("Name = %q, want %q", detail.Name, "New Key")
 	}
 
 	errOutput := ts.ErrBuf.String()
-	if !strings.Contains(errOutput, "Save this secret now") {
-		t.Errorf("stderr = %q, want secret warning", errOutput)
+	if !strings.Contains(errOutput, "Save this key now") {
+		t.Errorf("stderr = %q, want key warning", errOutput)
 	}
 }
 
 func TestCreate_Flags(t *testing.T) {
 	for _, tc := range []struct {
-		name            string
-		keyType         string
-		wantKeyType     string
-		wantContentType string
+		name    string
+		keyType string
+		wantKey string
 	}{
 		{
 			name:    "ingest key",
 			keyType: "ingest",
+			wantKey: "secret123",
 		},
 		{
 			name:    "configuration key",
 			keyType: "configuration",
+			wantKey: "secret123",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -344,6 +348,9 @@ func TestCreate_Flags(t *testing.T) {
 			}
 			if detail.Secret != "secret123" {
 				t.Errorf("Secret = %q, want %q", detail.Secret, "secret123")
+			}
+			if detail.Key != tc.wantKey {
+				t.Errorf("Key = %q, want %q", detail.Key, tc.wantKey)
 			}
 		})
 	}
