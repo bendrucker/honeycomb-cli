@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
+	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/bendrucker/honeycomb-cli/internal/iostreams"
 	"github.com/zalando/go-keyring"
@@ -198,7 +199,7 @@ func TestGet(t *testing.T) {
 	}
 }
 
-func TestCreate(t *testing.T) {
+func TestCreate_File(t *testing.T) {
 	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %q, want POST", r.Method)
@@ -253,6 +254,193 @@ func TestCreate(t *testing.T) {
 	errOutput := ts.ErrBuf.String()
 	if !strings.Contains(errOutput, "Save this secret now") {
 		t.Errorf("stderr = %q, want secret warning", errOutput)
+	}
+}
+
+func TestCreate_Flags(t *testing.T) {
+	for _, tc := range []struct {
+		name            string
+		keyType         string
+		wantKeyType     string
+		wantContentType string
+	}{
+		{
+			name:    "ingest key",
+			keyType: "ingest",
+		},
+		{
+			name:    "configuration key",
+			keyType: "configuration",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != http.MethodPost {
+					t.Errorf("method = %q, want POST", r.Method)
+				}
+				if r.URL.Path != "/2/teams/my-team/api-keys" {
+					t.Errorf("path = %q, want /2/teams/my-team/api-keys", r.URL.Path)
+				}
+				if ct := r.Header.Get("Content-Type"); ct != "application/vnd.api+json" {
+					t.Errorf("Content-Type = %q, want application/vnd.api+json", ct)
+				}
+
+				var body api.ApiKeyCreateRequest
+				if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+					t.Fatalf("decode request body: %v", err)
+				}
+				if body.Data.Type != api.ApiKeyCreateRequestDataTypeApiKeys {
+					t.Errorf("data.type = %q, want %q", body.Data.Type, api.ApiKeyCreateRequestDataTypeApiKeys)
+				}
+				if body.Data.Relationships.Environment.Data.Id != "env1" {
+					t.Errorf("environment ID = %q, want %q", body.Data.Relationships.Environment.Data.Id, "env1")
+				}
+
+				var attrs struct {
+					Name    string `json:"name"`
+					KeyType string `json:"key_type"`
+				}
+				raw, _ := body.Data.Attributes.MarshalJSON()
+				_ = json.Unmarshal(raw, &attrs)
+				if attrs.Name != "My Key" {
+					t.Errorf("name = %q, want %q", attrs.Name, "My Key")
+				}
+				if attrs.KeyType != tc.keyType {
+					t.Errorf("key_type = %q, want %q", attrs.KeyType, tc.keyType)
+				}
+
+				w.Header().Set("Content-Type", "application/vnd.api+json")
+				w.WriteHeader(http.StatusCreated)
+				_, _ = w.Write([]byte(`{
+					"data": {
+						"id": "hcxik_01new",
+						"type": "api-keys",
+						"attributes": {
+							"name": "My Key",
+							"key_type": "` + tc.keyType + `",
+							"disabled": false,
+							"secret": "secret123"
+						}
+					}
+				}`))
+			}))
+
+			cmd := NewCmd(opts)
+			cmd.SetArgs([]string{"--team", "my-team", "create", "--name", "My Key", "--key-type", tc.keyType, "--environment", "env1"})
+			if err := cmd.Execute(); err != nil {
+				t.Fatal(err)
+			}
+
+			var detail keyDetail
+			if err := json.Unmarshal(ts.OutBuf.Bytes(), &detail); err != nil {
+				t.Fatalf("unmarshal output: %v", err)
+			}
+			if detail.Name != "My Key" {
+				t.Errorf("Name = %q, want %q", detail.Name, "My Key")
+			}
+			if detail.KeyType != tc.keyType {
+				t.Errorf("KeyType = %q, want %q", detail.KeyType, tc.keyType)
+			}
+			if detail.Secret != "secret123" {
+				t.Errorf("Secret = %q, want %q", detail.Secret, "secret123")
+			}
+		})
+	}
+}
+
+func TestCreate_FlagsMutuallyExclusiveWithFile(t *testing.T) {
+	ts := iostreams.Test(t)
+	opts := &options.RootOptions{
+		IOStreams: ts.IOStreams,
+		Config:    &config.Config{},
+		APIUrl:    "http://localhost",
+		Format:    "json",
+	}
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"--team", "my-team", "create", "--file", "-", "--name", "My Key"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for mutually exclusive flags")
+	}
+	if !strings.Contains(err.Error(), "if any flags in the group [file name] are set none of the others can be") {
+		t.Errorf("error = %q, want mutual exclusion message", err.Error())
+	}
+}
+
+func TestCreate_NonInteractiveRequiresFlags(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		args    []string
+		wantErr string
+	}{
+		{
+			name:    "missing name",
+			args:    []string{"--team", "my-team", "create", "--key-type", "ingest", "--environment", "env1"},
+			wantErr: "--name is required",
+		},
+		{
+			name:    "missing key type",
+			args:    []string{"--team", "my-team", "create", "--name", "My Key", "--environment", "env1"},
+			wantErr: "--key-type is required",
+		},
+		{
+			name:    "missing environment",
+			args:    []string{"--team", "my-team", "create", "--name", "My Key", "--key-type", "ingest"},
+			wantErr: "--environment is required",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ts := iostreams.Test(t)
+			ts.SetNeverPrompt(true)
+			opts := &options.RootOptions{
+				IOStreams: ts.IOStreams,
+				Config:    &config.Config{},
+				APIUrl:    "http://localhost",
+				Format:    "json",
+			}
+
+			if err := config.SetKey("default", config.KeyManagement, "test-key"); err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { _ = config.DeleteKey("default", config.KeyManagement) })
+
+			cmd := NewCmd(opts)
+			cmd.SetArgs(tc.args)
+			err := cmd.Execute()
+			if err == nil {
+				t.Fatal("expected error for missing flag")
+			}
+			if !strings.Contains(err.Error(), tc.wantErr) {
+				t.Errorf("error = %q, want %q", err.Error(), tc.wantErr)
+			}
+		})
+	}
+}
+
+func TestCreate_InvalidKeyType(t *testing.T) {
+	ts := iostreams.Test(t)
+	ts.SetNeverPrompt(true)
+	opts := &options.RootOptions{
+		IOStreams: ts.IOStreams,
+		Config:    &config.Config{},
+		APIUrl:    "http://localhost",
+		Format:    "json",
+	}
+
+	if err := config.SetKey("default", config.KeyManagement, "test-key"); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = config.DeleteKey("default", config.KeyManagement) })
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"--team", "my-team", "create", "--name", "My Key", "--key-type", "invalid", "--environment", "env1"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for invalid key type")
+	}
+	if !strings.Contains(err.Error(), "--key-type must be ingest or configuration") {
+		t.Errorf("error = %q, want key type validation message", err.Error())
 	}
 }
 
