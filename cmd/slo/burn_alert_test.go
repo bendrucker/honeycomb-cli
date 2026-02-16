@@ -190,6 +190,229 @@ func TestBurnAlertDelete_RequiresYesNonInteractive(t *testing.T) {
 	}
 }
 
+func TestBurnAlertUpdate_Flags(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		args     []string
+		getResp  map[string]any
+		wantKey  string
+		wantVal  any
+	}{
+		{
+			name: "exhaustion minutes",
+			args: []string{"burn-alert", "update", "ba-1", "--dataset", "my-dataset", "--exhaustion-minutes", "120"},
+			getResp: map[string]any{
+				"id":                 "ba-1",
+				"alert_type":         "exhaustion_time",
+				"exhaustion_minutes": 240,
+				"recipients":         []any{map[string]any{"id": "r-1"}},
+			},
+			wantKey: "exhaustion_minutes",
+			wantVal: float64(120),
+		},
+		{
+			name: "budget rate threshold",
+			args: []string{"burn-alert", "update", "ba-1", "--dataset", "my-dataset", "--budget-rate-threshold", "50000"},
+			getResp: map[string]any{
+				"id":         "ba-1",
+				"alert_type": "budget_rate",
+				"budget_rate_decrease_threshold_per_million": 10000,
+				"budget_rate_window_minutes":                 60,
+				"recipients":                                 []any{map[string]any{"id": "r-1"}},
+			},
+			wantKey: "budget_rate_decrease_threshold_per_million",
+			wantVal: float64(50000),
+		},
+		{
+			name: "budget rate window",
+			args: []string{"burn-alert", "update", "ba-1", "--dataset", "my-dataset", "--budget-rate-window-minutes", "120"},
+			getResp: map[string]any{
+				"id":         "ba-1",
+				"alert_type": "budget_rate",
+				"budget_rate_decrease_threshold_per_million": 10000,
+				"budget_rate_window_minutes":                 60,
+				"recipients":                                 []any{map[string]any{"id": "r-1"}},
+			},
+			wantKey: "budget_rate_window_minutes",
+			wantVal: float64(120),
+		},
+		{
+			name: "description",
+			args: []string{"burn-alert", "update", "ba-1", "--dataset", "my-dataset", "--description", "New description"},
+			getResp: map[string]any{
+				"id":          "ba-1",
+				"alert_type":  "exhaustion_time",
+				"description": "Old description",
+				"recipients":  []any{map[string]any{"id": "r-1"}},
+			},
+			wantKey: "description",
+			wantVal: "New description",
+		},
+		{
+			name: "recipients",
+			args: []string{"burn-alert", "update", "ba-1", "--dataset", "my-dataset", "--recipient", "r-2", "--recipient", "r-3"},
+			getResp: map[string]any{
+				"id":         "ba-1",
+				"alert_type": "exhaustion_time",
+				"recipients": []any{map[string]any{"id": "r-1"}},
+			},
+			wantKey: "recipients",
+			wantVal: []any{map[string]any{"id": "r-2"}, map[string]any{"id": "r-3"}},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var gotBody map[string]any
+			opts, ts := setupBurnAlertTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch r.Method {
+				case http.MethodGet:
+					w.Header().Set("Content-Type", "application/json")
+					_ = json.NewEncoder(w).Encode(tc.getResp)
+				case http.MethodPut:
+					if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+						t.Fatalf("decoding request body: %v", err)
+					}
+					w.Header().Set("Content-Type", "application/json")
+					_ = json.NewEncoder(w).Encode(map[string]any{
+						"id":         "ba-1",
+						"alert_type": tc.getResp["alert_type"],
+					})
+				default:
+					t.Errorf("unexpected method %q", r.Method)
+				}
+			}))
+
+			cmd := NewCmd(opts)
+			cmd.SetArgs(tc.args)
+			if err := cmd.Execute(); err != nil {
+				t.Fatal(err)
+			}
+
+			if gotBody["id"] != nil {
+				t.Error("body should not include read-only id field")
+			}
+			if gotBody["slo_id"] != nil {
+				t.Error("body should not include read-only slo_id field")
+			}
+
+			gotVal, err := json.Marshal(gotBody[tc.wantKey])
+			if err != nil {
+				t.Fatalf("marshal got value: %v", err)
+			}
+			wantVal, err := json.Marshal(tc.wantVal)
+			if err != nil {
+				t.Fatalf("marshal want value: %v", err)
+			}
+			if string(gotVal) != string(wantVal) {
+				t.Errorf("body[%q] = %s, want %s", tc.wantKey, gotVal, wantVal)
+			}
+
+			var detail burnAlertDetail
+			if err := json.Unmarshal(ts.OutBuf.Bytes(), &detail); err != nil {
+				t.Fatalf("unmarshal output: %v", err)
+			}
+			if detail.ID != "ba-1" {
+				t.Errorf("output ID = %q, want %q", detail.ID, "ba-1")
+			}
+		})
+	}
+}
+
+func TestBurnAlertUpdate_PreservesRecipients(t *testing.T) {
+	var gotBody map[string]any
+	opts, _ := setupBurnAlertTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"id":                 "ba-1",
+				"alert_type":         "exhaustion_time",
+				"exhaustion_minutes": 240,
+				"recipients":         []any{map[string]any{"id": "r-1"}, map[string]any{"id": "r-2"}},
+			})
+		case http.MethodPut:
+			if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+				t.Fatalf("decoding request body: %v", err)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"id":         "ba-1",
+				"alert_type": "exhaustion_time",
+			})
+		}
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"burn-alert", "update", "ba-1", "--dataset", "my-dataset", "--description", "Updated"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	recipients, ok := gotBody["recipients"].([]any)
+	if !ok {
+		t.Fatal("recipients not preserved in request body")
+	}
+	if len(recipients) != 2 {
+		t.Errorf("got %d recipients, want 2 (should preserve existing)", len(recipients))
+	}
+}
+
+func TestBurnAlertUpdate_File(t *testing.T) {
+	opts, ts := setupBurnAlertTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			t.Errorf("method = %q, want PUT", r.Method)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id":         "ba-1",
+			"alert_type": "exhaustion_time",
+		})
+	}))
+
+	ts.InBuf.WriteString(`{"alert_type":"exhaustion_time","exhaustion_minutes":120,"recipients":[{"id":"r-1"}]}`)
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"burn-alert", "update", "ba-1", "--dataset", "my-dataset", "-f", "-"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	var detail burnAlertDetail
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &detail); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+	if detail.ID != "ba-1" {
+		t.Errorf("output ID = %q, want %q", detail.ID, "ba-1")
+	}
+}
+
+func TestBurnAlertUpdate_NoFlags(t *testing.T) {
+	opts, _ := setupBurnAlertTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"burn-alert", "update", "ba-1", "--dataset", "my-dataset"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for no flags")
+	}
+	if !strings.Contains(err.Error(), "--file") {
+		t.Errorf("error = %q, want message about required flags", err.Error())
+	}
+}
+
+func TestBurnAlertUpdate_FileMutuallyExclusive(t *testing.T) {
+	opts, _ := setupBurnAlertTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"burn-alert", "update", "ba-1", "--dataset", "my-dataset", "-f", "-", "--description", "test"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for mutually exclusive flags")
+	}
+	if !strings.Contains(err.Error(), "none of the others can be") {
+		t.Errorf("error = %q, want mutually exclusive message", err.Error())
+	}
+}
+
 func TestBurnAlertList_NoKey(t *testing.T) {
 	ts := iostreams.Test(t)
 	opts := &options.RootOptions{
