@@ -68,8 +68,10 @@ honeycomb mcp call run_query -f dataset=<dataset> -f query_json='<json>'
 To save a query via the API (requires appropriate key permissions):
 
 ```
-jq -n '<query-spec>' | honeycomb api POST /1/queries/<dataset> --file -
+honeycomb api -X POST /1/queries/<dataset> --input <query-file>.json
 ```
+
+Note: piping JSON via stdin can fail if string values contain special characters (e.g., `!=` in filter operators). Use `--input` with a file instead.
 
 Extract the query `id` from the response.
 
@@ -92,6 +94,8 @@ honeycomb board get <board-id> --format json | \
 ```
 
 When adding panels to an existing board, fetch the board JSON first, modify the panels array, and send the full board back with `--replace`. The merge behavior without `--replace` replaces the panels array wholesale if the `panels` key is present.
+
+**Important**: The `dataset` field appears in `board get` output on query panels but is rejected by the update API. Strip it before sending: `jq 'walk(if type == "object" and has("dataset") and has("query_id") then del(.dataset) else . end)'`
 
 ## Panel Types
 
@@ -184,25 +188,32 @@ When a query has multiple calculations, `chart_index` maps to the 0-based index 
 
 Choose chart types based on the data pattern, not the Honeycomb default (line graph).
 
+Boards are **launchpads, not wallboards** — each panel should answer a question or launch a deeper inquiry. A panel that shows *what* but not a path to *why* is a dead end. Every query panel is clickable in Honeycomb, so design panels as starting points for investigation, not final answers.
+
 ### Latency
 
-- **Calculations**: `P50`, `P95`, `P99` on `duration_ms` (or equivalent)
-- **Chart type**: `tsbar` for single percentile, `line` with `overlaid_charts: true` for multiple
-- **Units**: Always milliseconds. If the column is in seconds or nanoseconds, note the conversion in the panel title.
-- **Granularity**: Match to expected request volume. For low-traffic services, use larger buckets (300s+) to avoid noisy graphs.
+- **Calculations**: Use percentiles, never AVG. AVG is skewed by outliers and doesn't represent typical user experience. Use `P50` as the baseline (median) and `P99` for worst-case.
+- **Chart type**: `line` with `overlaid_charts: true` for P50/P99 overlay. The gap between P50 and P99 is the signal — a widening gap indicates tail latency problems.
+- **Units**: Always milliseconds. Note conversion in the panel title if the column uses other units.
+- **Title pattern**: "Latency: P50 and P99 (ms)"
+- **Granularity**: Match to request volume. Low-traffic services need larger buckets (300s+) to avoid noisy graphs.
+- **Heatmap complement**: Add a full-width `HEATMAP` panel below the percentile chart for distribution visibility. Heatmaps reveal bimodal distributions and outlier clusters that percentile lines hide.
 
-### Error rates
+### Error rate
 
-- **Calculations**: `COUNT` with filter on error status, or `AVG` on a boolean error column
-- **Chart type**: `stacked` when broken down by error type, `tsbar` for total count
-- **Breakdowns**: `error.type`, `http.status_code`, `exception.type`
+- **Calculation**: `AVG` on a boolean error column. In Honeycomb, `AVG(bool)` computes the proportion of `true` values — this IS the error rate (0.0–1.0).
+- **Chart type**: `line` — shows trend clearly without visual clutter
+- **Breakdowns**: Break down by `service.name` or `http.route` to answer "where are errors coming from?" Do NOT break down by `http.status_code` — individual status codes are too granular and produce noisy, unactionable charts.
+- **Granularity**: Use 300s (5min) for per-service breakdowns to smooth out noise from sparse buckets. At 2-min granularity, a single error in a low-volume bucket reads as 100% error rate.
+- **Title pattern**: "Error Rate" (aggregate) or "Error Rate by Service"
 
 ### Throughput / request volume
 
 - **Calculations**: `COUNT`
-- **Chart type**: `tsbar` for event counts, `line` for continuous rate metrics
+- **Chart type**: `stacked` bar when broken down by service or route — clearly shows both total volume and composition. Use `tsbar` only for total count without breakdown.
 - **Breakdowns**: `service.name`, `http.route`, `rpc.method`
-- **Granularity**: Use time buckets that produce meaningful bars. For a 2-hour window, 60s granularity gives 120 bars. For 24 hours, 300-600s is reasonable.
+- **Granularity**: Produce meaningful bars. For a 2-hour window, 60–120s. For 24 hours, 300–600s.
+- **Title pattern**: "Request Volume by Service"
 
 ### Cardinality / unique values
 
@@ -214,7 +225,7 @@ Choose chart types based on the data pattern, not the Honeycomb default (line gr
 
 - **Calculations**: `HEATMAP` on a numeric column
 - **Chart type**: Leave as default (heatmap renders natively)
-- **Use case**: Latency distribution, request size distribution
+- **Use case**: Latency distribution, request size distribution. Especially valuable for spotting bimodal patterns (e.g., cache hit vs miss) that aggregates hide.
 
 ### Rate of change
 
@@ -229,6 +240,14 @@ When data arrives infrequently (webhooks, batch jobs, rare errors):
 - **Always use `tsbar`** instead of line charts. Line graphs interpolate between points, creating misleading visual continuity.
 - Set `omit_missing_values: true` to avoid flat zero lines between events.
 - Use wider granularity to aggregate sparse events into visible bars.
+
+### Anti-patterns
+
+- **AVG for latency**: Hides outliers. Always use percentiles (P50/P99).
+- **Stacked bar for latency**: Stacking percentiles is meaningless — percentiles are not additive.
+- **Status code breakdowns**: Too many series, not actionable. Break down by service or route instead.
+- **Line charts on sparse data**: Interpolation creates false continuity. Use `tsbar`.
+- **Too many breakdowns**: More than 5–7 series on one chart becomes unreadable. Use `limit` in the query or aggregate differently.
 
 ## Query Specification
 
@@ -275,11 +294,21 @@ Seconds per time bucket. Valid range: `time_range / 1000` to `time_range`.
 
 ## Board Styling
 
+### Recommended board structure
+
+Organize panels top-to-bottom by importance:
+
+1. **Header text panel** — board title and purpose (full width, height 1)
+2. **Key SLIs** — error rate and latency side by side (half width each). These are the first thing someone checks during an incident.
+3. **Distribution** — latency heatmap (full width). Shows what percentile lines hide.
+4. **Breakdowns** — error rate by service + throughput by service side by side. Answers "where is the problem?"
+5. **Deep dives** — top routes, slow queries, etc. (full width). Investigation starting points.
+
 ### Panel titles (query annotation names)
 
 - Be descriptive: include what is measured and the key dimension
-- Include units when the value isn't obvious: "Request Latency (p99, ms)"
-- Include the percentile or aggregation when relevant: "Error Count by Status Code"
+- Include units when the value isn't obvious: "Latency: P50 and P99 (ms)"
+- Include the percentile when relevant: "Latency: P50 and P99 (ms)" not "Request Latency"
 - Match the team's existing naming conventions when updating existing boards
 - Avoid abbreviations unless universally understood in context
 
@@ -452,6 +481,20 @@ honeycomb board get <board-id> --format json | \
   jq '.panels |= [.[2], .[0], .[1]] + .[3:]' | \
   honeycomb board update <board-id> --file - --replace
 ```
+
+## SLI-Oriented Board Design
+
+Structure boards around Service Level Indicators. An SLI is a ratio: good events / total events. Keep to five or fewer per service.
+
+| SLI | Honeycomb calculation | Visualization |
+|-----|----------------------|---------------|
+| Availability | `AVG(error)` inverted (1 - error rate) | `line` |
+| Latency | `P50`/`P99` on `duration_ms` | `line` overlaid |
+| Error rate | `AVG(error)` on boolean column | `line` |
+| Throughput | `COUNT` | `stacked` by service |
+| Freshness | `MAX(age_seconds)` or custom | `line` |
+
+For SLO-aware boards, use `compare_time_offset_seconds` (e.g., `86400`) to overlay current error rate against the previous day. This shows burn trajectory without requiring SLO-specific API access.
 
 ## Reference
 

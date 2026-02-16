@@ -2,50 +2,56 @@
 
 Common query patterns for board panels. Each example shows the query JSON spec and recommended visualization settings.
 
-## Request latency (p99)
+## Latency: P50 and P99
 
-```json
-{
-  "calculations": [{"op": "P99", "column": "duration_ms"}],
-  "filters": [{"column": "service.name", "op": "=", "value": "api-gateway"}],
-  "breakdowns": ["http.route"],
-  "time_range": 7200,
-  "granularity": 60,
-  "limit": 10
-}
-```
-
-Visualization: `tsbar` for single percentile. Title: "Request Latency by Route (p99, ms)"
-
-## Multiple percentiles overlaid
+Always use percentiles for latency, never AVG. P50 shows the typical experience, P99 shows the worst case. The gap between them is the signal.
 
 ```json
 {
   "calculations": [
     {"op": "P50", "column": "duration_ms"},
-    {"op": "P95", "column": "duration_ms"},
     {"op": "P99", "column": "duration_ms"}
   ],
+  "filters": [{"column": "http.route", "op": "!=", "value": "/api/health"}],
   "time_range": 7200,
-  "granularity": 60
+  "granularity": 120
 }
 ```
 
-Visualization: `line` with `overlaid_charts: true`. Title: "Request Latency Distribution (p50/p95/p99, ms)"
+Visualization: `line` with `overlaid_charts: true`. Title: "Latency: P50 and P99 (ms)"
 
-## Error rate by status code
+Filter out health checks — they skew latency downward and aren't user-facing.
+
+## Error rate (aggregate)
+
+Use `AVG` on a boolean error column. Honeycomb computes the proportion of `true` values, giving you the error rate as a 0.0–1.0 decimal.
 
 ```json
 {
-  "calculations": [{"op": "COUNT"}],
-  "filters": [{"column": "http.status_code", "op": ">=", "value": 400}],
-  "breakdowns": ["http.status_code"],
+  "calculations": [{"op": "AVG", "column": "error"}],
   "time_range": 7200,
-  "granularity": 60
+  "granularity": 120
 }
 ```
 
-Visualization: `stacked`. Title: "Errors by Status Code"
+Visualization: `line`. Title: "Error Rate"
+
+## Error rate by service
+
+Break down by service to answer "where are errors coming from?" Use 5-min granularity to smooth noise from sparse buckets.
+
+```json
+{
+  "calculations": [{"op": "AVG", "column": "error"}],
+  "breakdowns": ["service.name"],
+  "time_range": 7200,
+  "granularity": 300
+}
+```
+
+Visualization: `line`. Title: "Error Rate by Service"
+
+Do NOT break down by `http.status_code` — individual codes produce noisy, unactionable charts.
 
 ## Throughput by service
 
@@ -54,12 +60,12 @@ Visualization: `stacked`. Title: "Errors by Status Code"
   "calculations": [{"op": "COUNT"}],
   "breakdowns": ["service.name"],
   "time_range": 7200,
-  "granularity": 60,
+  "granularity": 120,
   "limit": 20
 }
 ```
 
-Visualization: `tsbar`. Title: "Request Volume by Service"
+Visualization: `stacked` bar — shows both total volume and per-service composition. Title: "Request Volume by Service"
 
 ## Slow requests (HAVING filter)
 
