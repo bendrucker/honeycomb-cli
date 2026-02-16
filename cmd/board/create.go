@@ -129,6 +129,11 @@ func createFromFile(ctx context.Context, client *api.ClientWithResponses, opts *
 		return fmt.Errorf("stripping read-only fields: %w", err)
 	}
 
+	data, err = stripPanelDataset(data)
+	if err != nil {
+		return fmt.Errorf("stripping panel dataset: %w", err)
+	}
+
 	resp, err := client.CreateBoardWithBodyWithResponse(ctx, "application/json", bytes.NewReader(data), auth)
 	if err != nil {
 		return fmt.Errorf("creating board: %w", err)
