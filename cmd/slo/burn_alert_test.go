@@ -22,7 +22,7 @@ func setupBurnAlertTest(t *testing.T, handler http.Handler) (*options.RootOption
 	srv := httptest.NewServer(handler)
 	t.Cleanup(srv.Close)
 
-	ts := iostreams.Test()
+	ts := iostreams.Test(t)
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
 		Config:    &config.Config{},
@@ -191,7 +191,7 @@ func TestBurnAlertDelete_RequiresYesNonInteractive(t *testing.T) {
 }
 
 func TestBurnAlertList_NoKey(t *testing.T) {
-	ts := iostreams.Test()
+	ts := iostreams.Test(t)
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
 		Config:    &config.Config{},

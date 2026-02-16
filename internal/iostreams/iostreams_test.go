@@ -10,7 +10,7 @@ func TestSystem(t *testing.T) {
 }
 
 func TestTest(t *testing.T) {
-	ts := Test()
+	ts := Test(t)
 	if ts.CanPrompt() {
 		t.Fatal("Test streams should not be promptable")
 	}
@@ -32,7 +32,7 @@ func TestCanPrompt(t *testing.T) {
 }
 
 func TestColorEnabled(t *testing.T) {
-	ts := Test()
+	ts := Test(t)
 	if ts.ColorEnabled() {
 		t.Fatal("Test streams should not have color enabled")
 	}

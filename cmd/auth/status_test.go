@@ -25,7 +25,7 @@ func writeJSON(t *testing.T, w http.ResponseWriter, v any) {
 }
 
 func TestAuthStatus_NoKeys(t *testing.T) {
-	ts := iostreams.Test()
+	ts := iostreams.Test(t)
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
 		Config:    &config.Config{},
@@ -43,7 +43,7 @@ func TestAuthStatus_NoKeys(t *testing.T) {
 }
 
 func TestAuthStatus_Offline(t *testing.T) {
-	ts := iostreams.Test()
+	ts := iostreams.Test(t)
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
 		Config:    &config.Config{},
@@ -165,7 +165,7 @@ func TestAuthStatus_Verify(t *testing.T) {
 			srv := httptest.NewServer(tt.handler)
 			t.Cleanup(srv.Close)
 
-			ts := iostreams.Test()
+			ts := iostreams.Test(t)
 			opts := &options.RootOptions{
 				IOStreams: ts.IOStreams,
 				Config:    &config.Config{},
@@ -226,7 +226,7 @@ func TestAuthStatus_MultipleKeys(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	ts := iostreams.Test()
+	ts := iostreams.Test(t)
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
 		Config:    &config.Config{},

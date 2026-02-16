@@ -24,7 +24,7 @@ func setupTest(t *testing.T, handler http.Handler, kt config.KeyType, key string
 	srv := httptest.NewServer(handler)
 	t.Cleanup(srv.Close)
 
-	ts := iostreams.Test()
+	ts := iostreams.Test(t)
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
 		Config:    &config.Config{},
@@ -166,7 +166,7 @@ func TestRun_NonSuccess(t *testing.T) {
 }
 
 func TestRun_NoKey(t *testing.T) {
-	ts := iostreams.Test()
+	ts := iostreams.Test(t)
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
 		Config:    &config.Config{},
@@ -185,7 +185,7 @@ func TestRun_NoKey(t *testing.T) {
 }
 
 func TestRun_InvalidKeyType(t *testing.T) {
-	ts := iostreams.Test()
+	ts := iostreams.Test(t)
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
 		Config:    &config.Config{},
@@ -249,7 +249,7 @@ func TestRun_Paginate(t *testing.T) {
 }
 
 func TestRun_PaginateNonGET(t *testing.T) {
-	ts := iostreams.Test()
+	ts := iostreams.Test(t)
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
 		Config:    &config.Config{},
@@ -284,7 +284,7 @@ func TestRun_InputStdin(t *testing.T) {
 		_, _ = w.Write([]byte(`{"received":true}`))
 	}), config.KeyIngest, "test-key")
 
-	ts := iostreams.Test()
+	ts := iostreams.Test(t)
 	ts.InBuf.WriteString(`{"data":[]}`)
 	opts.IOStreams = ts.IOStreams
 
@@ -515,7 +515,7 @@ func TestRun_V2_InputNotWrapped(t *testing.T) {
 		_, _ = w.Write([]byte(`{"data":{"id":"1","type":"environments","attributes":{}}}`))
 	}), config.KeyManagement, "mgmt-key")
 
-	ts := iostreams.Test()
+	ts := iostreams.Test(t)
 	ts.InBuf.WriteString(`{"data":{"type":"environments","attributes":{"name":"prod"}}}`)
 	opts.IOStreams = ts.IOStreams
 

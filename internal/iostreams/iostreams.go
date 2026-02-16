@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"strings"
+	"testing"
 
 	"github.com/mattn/go-isatty"
 )
@@ -38,7 +40,8 @@ type TestStreams struct {
 	ErrBuf *bytes.Buffer
 }
 
-func Test() *TestStreams {
+func Test(tb testing.TB) *TestStreams {
+	tb.Helper()
 	in := &bytes.Buffer{}
 	out := &bytes.Buffer{}
 	errBuf := &bytes.Buffer{}
@@ -47,12 +50,22 @@ func Test() *TestStreams {
 		IOStreams: &IOStreams{
 			In:  io.NopCloser(in),
 			Out: out,
-			Err: errBuf,
+			Err: io.MultiWriter(errBuf, &testLogWriter{tb: tb}),
 		},
 		InBuf:  in,
 		OutBuf: out,
 		ErrBuf: errBuf,
 	}
+}
+
+type testLogWriter struct {
+	tb testing.TB
+}
+
+func (w *testLogWriter) Write(p []byte) (int, error) {
+	w.tb.Helper()
+	w.tb.Log(strings.TrimRight(string(p), "\n"))
+	return len(p), nil
 }
 
 func (s *IOStreams) CanPrompt() bool {

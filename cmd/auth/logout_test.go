@@ -11,7 +11,7 @@ import (
 )
 
 func TestAuthLogout_SingleKeyType(t *testing.T) {
-	ts := iostreams.Test()
+	ts := iostreams.Test(t)
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
 		Config:    &config.Config{},
@@ -44,7 +44,7 @@ func TestAuthLogout_SingleKeyType(t *testing.T) {
 }
 
 func TestAuthLogout_AllKeys(t *testing.T) {
-	ts := iostreams.Test()
+	ts := iostreams.Test(t)
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
 		Config:    &config.Config{},
@@ -80,7 +80,7 @@ func TestAuthLogout_AllKeys(t *testing.T) {
 }
 
 func TestAuthLogout_NoKeys(t *testing.T) {
-	ts := iostreams.Test()
+	ts := iostreams.Test(t)
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
 		Config:    &config.Config{},
@@ -98,7 +98,7 @@ func TestAuthLogout_NoKeys(t *testing.T) {
 }
 
 func TestAuthLogout_KeyTypeNotFound(t *testing.T) {
-	ts := iostreams.Test()
+	ts := iostreams.Test(t)
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
 		Config:    &config.Config{},
@@ -121,7 +121,7 @@ func TestAuthLogout_KeyTypeNotFound(t *testing.T) {
 }
 
 func TestAuthLogout_InvalidKeyType(t *testing.T) {
-	ts := iostreams.Test()
+	ts := iostreams.Test(t)
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
 		Config:    &config.Config{},
@@ -138,7 +138,7 @@ func TestAuthLogout_InvalidKeyType(t *testing.T) {
 }
 
 func TestAuthLogout_NonDefaultProfile(t *testing.T) {
-	ts := iostreams.Test()
+	ts := iostreams.Test(t)
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
 		Config:    &config.Config{},

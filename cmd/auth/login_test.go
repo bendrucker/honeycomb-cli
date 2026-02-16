@@ -111,7 +111,7 @@ func TestAuthLogin_Success(t *testing.T) {
 				apiURL = srv.URL
 			}
 
-			ts := iostreams.Test()
+			ts := iostreams.Test(t)
 			opts := &options.RootOptions{
 				IOStreams: ts.IOStreams,
 				Config:    &config.Config{},
@@ -154,7 +154,7 @@ func TestAuthLogin_InvalidKey(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	ts := iostreams.Test()
+	ts := iostreams.Test(t)
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
 		Config:    &config.Config{},
@@ -178,7 +178,7 @@ func TestAuthLogin_InvalidKey(t *testing.T) {
 }
 
 func TestAuthLogin_MissingKeyType(t *testing.T) {
-	ts := iostreams.Test()
+	ts := iostreams.Test(t)
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
 		Config:    &config.Config{},
@@ -196,7 +196,7 @@ func TestAuthLogin_MissingKeyType(t *testing.T) {
 }
 
 func TestAuthLogin_MissingKeyID(t *testing.T) {
-	ts := iostreams.Test()
+	ts := iostreams.Test(t)
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
 		Config:    &config.Config{},
@@ -214,7 +214,7 @@ func TestAuthLogin_MissingKeyID(t *testing.T) {
 }
 
 func TestAuthLogin_StdinSecret(t *testing.T) {
-	ts := iostreams.Test()
+	ts := iostreams.Test(t)
 	ts.InBuf.WriteString("stdin-secret\n")
 
 	opts := &options.RootOptions{

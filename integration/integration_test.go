@@ -254,7 +254,7 @@ func commonFlags() []string {
 func execCmd(stdin []byte, args ...string) (result, error) {
 	allArgs := append(args, commonFlags()...)
 
-	ts := iostreams.Test()
+	ts := iostreams.Test(t)
 	if stdin != nil {
 		ts.InBuf.Write(stdin)
 	}
