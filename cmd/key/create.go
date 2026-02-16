@@ -177,9 +177,6 @@ func handleCreateResponse(opts *options.RootOptions, resp *api.CreateApiKeyResp)
 
 	if detail.Secret != "" {
 		_, _ = fmt.Fprintf(opts.IOStreams.Err, "Save this key now — it cannot be retrieved again.\n")
-		if detail.KeyType == "ingest" {
-			_, _ = fmt.Fprintf(opts.IOStreams.Err, "Use the \"key\" field (id + secret) as the X-Honeycomb-Team header value.\n")
-		}
 	}
 
 	return writeKeyDetail(opts, detail)
@@ -213,12 +210,7 @@ func createResponseToDetail(resp *api.ApiKeyCreateResponse) keyDetail {
 	}
 
 	if detail.Secret != "" {
-		switch detail.KeyType {
-		case "ingest":
-			detail.Key = detail.ID + detail.Secret
-		default:
-			detail.Key = detail.Secret
-		}
+		detail.Key = detail.Secret
 	}
 
 	return detail

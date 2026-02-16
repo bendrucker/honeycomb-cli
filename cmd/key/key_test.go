@@ -247,8 +247,8 @@ func TestCreate_File(t *testing.T) {
 	if detail.Secret != "hcxik_01new_secret_value" {
 		t.Errorf("Secret = %q, want %q", detail.Secret, "hcxik_01new_secret_value")
 	}
-	if detail.Key != "hcxik_01newhcxik_01new_secret_value" {
-		t.Errorf("Key = %q, want %q", detail.Key, "hcxik_01newhcxik_01new_secret_value")
+	if detail.Key != "hcxik_01new_secret_value" {
+		t.Errorf("Key = %q, want %q", detail.Key, "hcxik_01new_secret_value")
 	}
 	if detail.Name != "New Key" {
 		t.Errorf("Name = %q, want %q", detail.Name, "New Key")
@@ -257,9 +257,6 @@ func TestCreate_File(t *testing.T) {
 	errOutput := ts.ErrBuf.String()
 	if !strings.Contains(errOutput, "Save this key now") {
 		t.Errorf("stderr = %q, want key warning", errOutput)
-	}
-	if !strings.Contains(errOutput, "X-Honeycomb-Team") {
-		t.Errorf("stderr = %q, want ingest key usage hint", errOutput)
 	}
 }
 
@@ -272,7 +269,7 @@ func TestCreate_Flags(t *testing.T) {
 		{
 			name:    "ingest key",
 			keyType: "ingest",
-			wantKey: "hcxik_01newsecret123",
+			wantKey: "secret123",
 		},
 		{
 			name:    "configuration key",
