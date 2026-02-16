@@ -180,7 +180,7 @@ Note: piping JSON via stdin can fail if string values contain special characters
 A "saved query" in the Honeycomb UI is a query annotation that references a query ID.
 
 ```
-jq -n '{name: "Panel Title", query_id: "<query-id>"}' | honeycomb query create --dataset <dataset> --file -
+jq -n '{name: "Panel Title", query_id: "<query-id>"}' | honeycomb query annotation create --dataset <dataset> --file -
 ```
 
 ## Reference

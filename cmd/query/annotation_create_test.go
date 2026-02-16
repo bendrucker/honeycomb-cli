@@ -36,7 +36,7 @@ func TestCreate_File(t *testing.T) {
 	ts.InBuf.WriteString(`{"name":"Latency Query","query_id":"q-abc"}`)
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"create", "--dataset", "test-dataset", "--file", "-"})
+	cmd.SetArgs([]string{"annotation", "create", "--dataset", "test-dataset", "--file", "-"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
@@ -84,7 +84,7 @@ func TestCreate_Flags(t *testing.T) {
 	}))
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"create", "--dataset", "test-dataset", "--name", "My Query", "--query-id", "q-123", "--description", "A description"})
+	cmd.SetArgs([]string{"annotation", "create", "--dataset", "test-dataset", "--name", "My Query", "--query-id", "q-123", "--description", "A description"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
@@ -102,7 +102,7 @@ func TestCreate_Flags_MissingQueryID(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"create", "--dataset", "test-dataset", "--name", "My Query"})
+	cmd.SetArgs([]string{"annotation", "create", "--dataset", "test-dataset", "--name", "My Query"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for missing --query-id")
@@ -116,7 +116,7 @@ func TestCreate_Flags_MissingName(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"create", "--dataset", "test-dataset", "--query-id", "q-123"})
+	cmd.SetArgs([]string{"annotation", "create", "--dataset", "test-dataset", "--query-id", "q-123"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for missing --name")
@@ -130,7 +130,7 @@ func TestCreate_NoFile_NonInteractive(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"create", "--dataset", "test-dataset"})
+	cmd.SetArgs([]string{"annotation", "create", "--dataset", "test-dataset"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for missing --file")

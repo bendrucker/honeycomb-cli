@@ -33,8 +33,8 @@ honeycomb query run --dataset my-dataset --file query.json
 echo '{"calculations":[{"op":"COUNT"}],"time_range":3600}' | honeycomb query run --dataset my-dataset --file -
 
 # list/view saved queries
-honeycomb query list --dataset my-dataset
-honeycomb query view <id> --dataset my-dataset
+honeycomb query annotation list --dataset my-dataset
+honeycomb query annotation view <id> --dataset my-dataset
 ```
 
 ## Raw API Requests

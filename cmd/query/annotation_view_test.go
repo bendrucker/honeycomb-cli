@@ -36,7 +36,7 @@ func TestView(t *testing.T) {
 	}))
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"view", "--dataset", "test-dataset", "ann-1"})
+	cmd.SetArgs([]string{"annotation", "view", "--dataset", "test-dataset", "ann-1"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
@@ -70,7 +70,7 @@ func TestView_NotFound(t *testing.T) {
 	}))
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"view", "--dataset", "test-dataset", "nonexistent"})
+	cmd.SetArgs([]string{"annotation", "view", "--dataset", "test-dataset", "nonexistent"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for 404")
@@ -84,7 +84,7 @@ func TestView_MissingArg(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"view", "--dataset", "test-dataset"})
+	cmd.SetArgs([]string{"annotation", "view", "--dataset", "test-dataset"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for missing arg")

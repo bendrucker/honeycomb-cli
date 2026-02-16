@@ -61,7 +61,7 @@ func TestList(t *testing.T) {
 	}))
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"list", "--dataset", "test-dataset"})
+	cmd.SetArgs([]string{"annotation", "list", "--dataset", "test-dataset"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +94,7 @@ func TestList_Empty(t *testing.T) {
 	}))
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"list", "--dataset", "test-dataset"})
+	cmd.SetArgs([]string{"annotation", "list", "--dataset", "test-dataset"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
@@ -118,7 +118,7 @@ func TestList_NoKey(t *testing.T) {
 	}
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"list", "--dataset", "test-dataset"})
+	cmd.SetArgs([]string{"annotation", "list", "--dataset", "test-dataset"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for missing key")
@@ -136,7 +136,7 @@ func TestList_Unauthorized(t *testing.T) {
 	}))
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"list", "--dataset", "test-dataset"})
+	cmd.SetArgs([]string{"annotation", "list", "--dataset", "test-dataset"})
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error for 401")
@@ -159,7 +159,7 @@ func TestList_IncludeBoardAnnotations(t *testing.T) {
 	}))
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"list", "--dataset", "test-dataset", "--include-board-annotations"})
+	cmd.SetArgs([]string{"annotation", "list", "--dataset", "test-dataset", "--include-board-annotations"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
 	}

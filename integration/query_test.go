@@ -49,7 +49,7 @@ func TestSavedQuery(t *testing.T) {
 
 	t.Cleanup(func() {
 		if annotationID != "" {
-			_, _ = runErr(t, nil, "query", "delete", annotationID, "--dataset", dataset, "--yes")
+			_, _ = runErr(t, nil, "query", "annotation", "delete", annotationID, "--dataset", dataset, "--yes")
 		}
 	})
 
@@ -58,7 +58,7 @@ func TestSavedQuery(t *testing.T) {
 			"name":     name,
 			"query_id": qid,
 		})
-		r := run(t, body, "query", "create", "--dataset", dataset, "-f", "-")
+		r := run(t, body, "query", "annotation", "create", "--dataset", dataset, "-f", "-")
 		annotation := parseJSON[map[string]any](t, r.stdout)
 		v, ok := annotation["id"].(string)
 		if !ok || v == "" {
@@ -72,7 +72,7 @@ func TestSavedQuery(t *testing.T) {
 	}
 
 	t.Run("list", func(t *testing.T) {
-		r := run(t, nil, "query", "list", "--dataset", dataset)
+		r := run(t, nil, "query", "annotation", "list", "--dataset", dataset)
 		annotations := parseJSON[[]map[string]any](t, r.stdout)
 		found := false
 		for _, a := range annotations {
@@ -87,7 +87,7 @@ func TestSavedQuery(t *testing.T) {
 	})
 
 	t.Run("view", func(t *testing.T) {
-		r := run(t, nil, "query", "view", annotationID, "--dataset", dataset)
+		r := run(t, nil, "query", "annotation", "view", annotationID, "--dataset", dataset)
 		annotation := parseJSON[map[string]any](t, r.stdout)
 		if got := annotation["name"]; got != name {
 			t.Errorf("expected name %q, got %q", name, got)
@@ -96,7 +96,7 @@ func TestSavedQuery(t *testing.T) {
 
 	t.Run("update", func(t *testing.T) {
 		updatedName := name + "-upd"
-		r := run(t, nil, "query", "update", annotationID, "--dataset", dataset, "--name", updatedName)
+		r := run(t, nil, "query", "annotation", "update", annotationID, "--dataset", dataset, "--name", updatedName)
 		annotation := parseJSON[map[string]any](t, r.stdout)
 		if got := annotation["name"]; got != updatedName {
 			t.Errorf("expected name %q, got %q", updatedName, got)
@@ -109,14 +109,14 @@ func TestSavedQuery(t *testing.T) {
 			"name":     name + "-del",
 			"query_id": qid,
 		})
-		r := run(t, body, "query", "create", "--dataset", dataset, "-f", "-")
+		r := run(t, body, "query", "annotation", "create", "--dataset", dataset, "-f", "-")
 		throwaway := parseJSON[map[string]any](t, r.stdout)
 		throwawayID, ok := throwaway["id"].(string)
 		if !ok || throwawayID == "" {
 			t.Fatal("expected non-empty id for throwaway annotation")
 		}
 
-		run(t, nil, "query", "delete", throwawayID, "--dataset", dataset, "--yes")
+		run(t, nil, "query", "annotation", "delete", throwawayID, "--dataset", dataset, "--yes")
 	})
 }
 
