@@ -53,7 +53,7 @@ func TestCreate(t *testing.T) {
 	}
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"create", "--dataset", "test-dataset", "--file", file})
+	cmd.SetArgs([]string{"create", "--dataset", "test-dataset", "-f", file})
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
@@ -70,10 +70,122 @@ func TestCreate(t *testing.T) {
 	}
 }
 
-func TestCreate_NoFileNonInteractive(t *testing.T) {
+func TestCreate_Stdin(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id":   "trigger-new",
+			"name": "From Stdin",
+		})
+	}))
+
+	ts.InBuf.WriteString(`{"name":"From Stdin","threshold":{"op":">","value":100},"frequency":900}`)
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"create", "--dataset", "test-dataset", "-f", "-"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCreate_NameOverride(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		var parsed map[string]any
+		_ = json.Unmarshal(body, &parsed)
+		if parsed["name"] != "Override Name" {
+			t.Errorf("name = %v, want %q", parsed["name"], "Override Name")
+		}
+		if parsed["frequency"] != float64(900) {
+			t.Errorf("frequency = %v, want 900", parsed["frequency"])
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id":   "trigger-new",
+			"name": "Override Name",
+		})
+	}))
+
+	dir := t.TempDir()
+	file := filepath.Join(dir, "trigger.json")
+	if err := os.WriteFile(file, []byte(`{"name":"File Name","frequency":900}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"create", "--dataset", "test-dataset", "-f", file, "--name", "Override Name"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCreate_DisabledFlag(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		var parsed map[string]any
+		_ = json.Unmarshal(body, &parsed)
+		if parsed["disabled"] != true {
+			t.Errorf("disabled = %v, want true", parsed["disabled"])
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id":       "trigger-new",
+			"name":     "Test",
+			"disabled": true,
+		})
+	}))
+
+	dir := t.TempDir()
+	file := filepath.Join(dir, "trigger.json")
+	if err := os.WriteFile(file, []byte(`{"name":"Test"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"create", "--dataset", "test-dataset", "-f", file, "--disabled"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCreate_EnabledFlag(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		var parsed map[string]any
+		_ = json.Unmarshal(body, &parsed)
+		if parsed["disabled"] != false {
+			t.Errorf("disabled = %v, want false", parsed["disabled"])
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id":       "trigger-new",
+			"name":     "Test",
+			"disabled": false,
+		})
+	}))
+
+	dir := t.TempDir()
+	file := filepath.Join(dir, "trigger.json")
+	if err := os.WriteFile(file, []byte(`{"name":"Test","disabled":true}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"create", "--dataset", "test-dataset", "-f", file, "--enabled"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCreate_NoFile(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
-	opts.NoInteractive = true
-	opts.IOStreams.SetNeverPrompt(true)
 
 	cmd := NewCmd(opts)
 	cmd.SetArgs([]string{"create", "--dataset", "test-dataset"})
