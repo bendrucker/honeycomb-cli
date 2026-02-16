@@ -46,7 +46,7 @@ func setupMCPTest(t *testing.T) (*server.MCPServer, *options.RootOptions, *iostr
 
 	srv := server.NewMCPServer("test-server", "1.0.0")
 
-	ts := iostreams.Test()
+	ts := iostreams.Test(t)
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
 		Config:    &config.Config{},

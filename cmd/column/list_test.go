@@ -22,7 +22,7 @@ func setupTest(t *testing.T, handler http.Handler) (*options.RootOptions, *iostr
 	srv := httptest.NewServer(handler)
 	t.Cleanup(srv.Close)
 
-	ts := iostreams.Test()
+	ts := iostreams.Test(t)
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
 		Config:    &config.Config{},
@@ -111,7 +111,7 @@ func TestList_Empty(t *testing.T) {
 }
 
 func TestList_NoKey(t *testing.T) {
-	ts := iostreams.Test()
+	ts := iostreams.Test(t)
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
 		Config:    &config.Config{},

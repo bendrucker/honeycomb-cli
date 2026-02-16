@@ -60,7 +60,7 @@ func TestDefinitionGet(t *testing.T) {
 }
 
 func TestDefinitionGet_NoKey(t *testing.T) {
-	ts := iostreams.Test()
+	ts := iostreams.Test(t)
 	opts := &options.RootOptions{
 		IOStreams: ts.IOStreams,
 		Config:    &config.Config{},

@@ -91,7 +91,7 @@ func execAuthCmd(profile string, stdin []byte, args ...string) (result, error) {
 	}
 	allArgs := append(args, flags...)
 
-	ts := iostreams.Test()
+	ts := iostreams.Test(t)
 	if stdin != nil {
 		ts.InBuf.Write(stdin)
 	}
