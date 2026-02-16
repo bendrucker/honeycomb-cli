@@ -223,6 +223,86 @@ func TestStripPanelDataset(t *testing.T) {
 	}
 }
 
+func TestUpdate_FileReplaceFillsRequiredFields(t *testing.T) {
+	for _, tc := range []struct {
+		name         string
+		input        string
+		expectedName string
+		expectedType string
+		expectGET    bool
+	}{
+		{
+			name:         "missing name and type",
+			input:        `{"description":"new desc"}`,
+			expectedName: "Existing Board",
+			expectedType: "flexible",
+			expectGET:    true,
+		},
+		{
+			name:         "missing type only",
+			input:        `{"name":"Custom Name"}`,
+			expectedName: "Custom Name",
+			expectedType: "flexible",
+			expectGET:    true,
+		},
+		{
+			name:         "missing name only",
+			input:        `{"type":"flexible","description":"new desc"}`,
+			expectedName: "Existing Board",
+			expectedType: "flexible",
+			expectGET:    true,
+		},
+		{
+			name:         "both present",
+			input:        `{"name":"Custom","type":"flexible"}`,
+			expectedName: "Custom",
+			expectedType: "flexible",
+			expectGET:    false,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var gotGET bool
+			opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				if r.Method == http.MethodGet {
+					gotGET = true
+					_ = json.NewEncoder(w).Encode(map[string]any{
+						"id":   "abc123",
+						"name": "Existing Board",
+						"type": "flexible",
+					})
+					return
+				}
+				var body map[string]any
+				_ = json.NewDecoder(r.Body).Decode(&body)
+				if body["name"] != tc.expectedName {
+					t.Errorf("name = %v, want %q", body["name"], tc.expectedName)
+				}
+				if body["type"] != tc.expectedType {
+					t.Errorf("type = %v, want %q", body["type"], tc.expectedType)
+				}
+				_ = json.NewEncoder(w).Encode(map[string]any{
+					"id":   "abc123",
+					"name": tc.expectedName,
+					"type": tc.expectedType,
+				})
+			}))
+
+			ts.InBuf.WriteString(tc.input)
+
+			cmd := NewCmd(opts)
+			cmd.SetArgs([]string{"update", "abc123", "--file", "-", "--replace"})
+			if err := cmd.Execute(); err != nil {
+				t.Fatal(err)
+			}
+
+			if gotGET != tc.expectGET {
+				t.Errorf("GET request = %v, want %v", gotGET, tc.expectGET)
+			}
+		})
+	}
+}
+
 func TestUpdate_StripsPanelDataset(t *testing.T) {
 	calls := 0
 	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -124,10 +124,15 @@ func updateFromFile(ctx context.Context, client *api.ClientWithResponses, opts *
 	var data []byte
 
 	if replace {
-		var err error
-		data, err = io.ReadAll(r)
-		if err != nil {
-			return fmt.Errorf("reading file: %w", err)
+		raw, readErr := io.ReadAll(r)
+		if readErr != nil {
+			return fmt.Errorf("reading file: %w", readErr)
+		}
+
+		var fillErr error
+		data, fillErr = fillRequiredFields(ctx, client, auth, boardID, raw)
+		if fillErr != nil {
+			return fillErr
 		}
 	} else {
 		incoming, err := readBoardJSON(r)
@@ -212,6 +217,38 @@ func mergeBoard(dst *api.Board, src *api.Board) {
 	if src.Tags != nil {
 		dst.Tags = src.Tags
 	}
+}
+
+// fillRequiredFields ensures that "name" and "type" are present in the board
+// JSON, fetching the current board to fill them in when missing. This allows
+// --replace to work without redundantly specifying fields that are already known.
+func fillRequiredFields(ctx context.Context, client *api.ClientWithResponses, auth api.RequestEditorFn, boardID string, data []byte) ([]byte, error) {
+	var m map[string]json.RawMessage
+	if err := json.Unmarshal(data, &m); err != nil {
+		return nil, fmt.Errorf("parsing board JSON: %w", err)
+	}
+
+	_, hasName := m["name"]
+	_, hasType := m["type"]
+	if hasName && hasType {
+		return data, nil
+	}
+
+	current, err := getBoard(ctx, client, auth, boardID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !hasName {
+		raw, _ := json.Marshal(current.Name)
+		m["name"] = raw
+	}
+	if !hasType {
+		raw, _ := json.Marshal(current.Type)
+		m["type"] = raw
+	}
+
+	return json.Marshal(m)
 }
 
 func encodeJSON(v any) ([]byte, error) {
