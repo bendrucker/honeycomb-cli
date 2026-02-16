@@ -10,8 +10,8 @@ func TestDataset(t *testing.T) {
 
 	t.Cleanup(func() {
 		if slug != "" {
-			_, _ = runErr(nil, "dataset", "update", slug, "--delete-protected=false")
-			_, _ = runErr(nil, "dataset", "delete", slug, "--yes")
+			_, _ = runErr(t, nil, "dataset", "update", slug, "--delete-protected=false")
+			_, _ = runErr(t, nil, "dataset", "delete", slug, "--yes")
 		}
 	})
 

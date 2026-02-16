@@ -13,7 +13,7 @@ func TestRecipient(t *testing.T) {
 
 	t.Cleanup(func() {
 		if id != "" {
-			_, _ = runErr(nil, "recipient", "delete", id, "--yes")
+			_, _ = runErr(t, nil, "recipient", "delete", id, "--yes")
 		}
 	})
 

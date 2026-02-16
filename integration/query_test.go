@@ -43,7 +43,7 @@ func TestSavedQuery(t *testing.T) {
 
 	t.Cleanup(func() {
 		if annotationID != "" {
-			_, _ = runErr(nil, "query", "delete", annotationID, "--dataset", dataset, "--yes")
+			_, _ = runErr(t, nil, "query", "delete", annotationID, "--dataset", dataset, "--yes")
 		}
 	})
 

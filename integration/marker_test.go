@@ -12,7 +12,7 @@ func TestMarker(t *testing.T) {
 
 	t.Cleanup(func() {
 		if id != "" {
-			_, _ = runErr(nil, "marker", "delete", id, "--dataset", dataset, "--yes")
+			_, _ = runErr(t, nil, "marker", "delete", id, "--dataset", dataset, "--yes")
 		}
 	})
 
@@ -72,7 +72,7 @@ func TestMarkerSetting(t *testing.T) {
 
 	t.Cleanup(func() {
 		if id != "" {
-			_, _ = runErr(nil, "marker", "setting", "delete", id, "--dataset", dataset, "--yes")
+			_, _ = runErr(t, nil, "marker", "setting", "delete", id, "--dataset", dataset, "--yes")
 		}
 	})
 

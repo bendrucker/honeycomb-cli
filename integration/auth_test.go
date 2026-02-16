@@ -13,11 +13,11 @@ func TestAuth(t *testing.T) {
 	const profile = "integration-test-auth"
 
 	t.Cleanup(func() {
-		execAuthCmd(profile, nil, "auth", "logout")
+		execAuthCmd(t, profile, nil, "auth", "logout")
 	})
 
 	t.Run("login", func(t *testing.T) {
-		_, err := execAuthCmd(profile, nil,
+		_, err := execAuthCmd(t, profile, nil,
 			"auth", "login",
 			"--key-type", "config",
 			"--key-secret", configKeySecret,
@@ -77,21 +77,21 @@ func TestAuth(t *testing.T) {
 	})
 
 	t.Run("status after logout", func(t *testing.T) {
-		_, err := execAuthCmd(profile, nil, "auth", "status")
+		_, err := execAuthCmd(t, profile, nil, "auth", "status")
 		if err == nil {
 			t.Errorf("expected auth status to fail after logout")
 		}
 	})
 }
 
-func execAuthCmd(profile string, stdin []byte, args ...string) (result, error) {
+func execAuthCmd(tb testing.TB, profile string, stdin []byte, args ...string) (result, error) {
 	flags := []string{"--no-interactive", "--profile", profile, "--format", "json"}
 	if apiURL != "" {
 		flags = append(flags, "--api-url", apiURL)
 	}
 	allArgs := append(args, flags...)
 
-	ts := iostreams.Test(t)
+	ts := iostreams.Test(tb)
 	if stdin != nil {
 		ts.InBuf.Write(stdin)
 	}
@@ -105,7 +105,7 @@ func execAuthCmd(profile string, stdin []byte, args ...string) (result, error) {
 
 func authRun(t *testing.T, profile string, args ...string) result {
 	t.Helper()
-	r, err := execAuthCmd(profile, nil, args...)
+	r, err := execAuthCmd(t, profile, nil, args...)
 	if err != nil {
 		t.Fatalf("command failed: %v\nargs: %v\nstderr: %s", err, args, r.stderr)
 	}

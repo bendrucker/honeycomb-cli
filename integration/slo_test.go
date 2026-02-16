@@ -30,10 +30,10 @@ func TestSLO(t *testing.T) {
 
 	t.Cleanup(func() {
 		if sloID != "" {
-			_, _ = runErr(nil, "slo", "delete", sloID, "--dataset", dataset, "--yes")
+			_, _ = runErr(t, nil, "slo", "delete", sloID, "--dataset", dataset, "--yes")
 		}
 		if dcID != "" {
-			_, _ = runErr(nil, "column", "calculated", "delete", dcID, "--dataset", dataset, "--yes")
+			_, _ = runErr(t, nil, "column", "calculated", "delete", dcID, "--dataset", dataset, "--yes")
 		}
 	})
 
@@ -132,13 +132,13 @@ func TestBurnAlert(t *testing.T) {
 
 	t.Cleanup(func() {
 		if burnAlertID != "" {
-			_, _ = runErr(nil, "slo", "burn-alert", "delete", burnAlertID, "--dataset", dataset, "--yes")
+			_, _ = runErr(t, nil, "slo", "burn-alert", "delete", burnAlertID, "--dataset", dataset, "--yes")
 		}
 		if sloID != "" {
-			_, _ = runErr(nil, "slo", "delete", sloID, "--dataset", dataset, "--yes")
+			_, _ = runErr(t, nil, "slo", "delete", sloID, "--dataset", dataset, "--yes")
 		}
 		if dcID != "" {
-			_, _ = runErr(nil, "column", "calculated", "delete", dcID, "--dataset", dataset, "--yes")
+			_, _ = runErr(t, nil, "column", "calculated", "delete", dcID, "--dataset", dataset, "--yes")
 		}
 	})
 

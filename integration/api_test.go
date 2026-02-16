@@ -47,7 +47,7 @@ func TestAPI(t *testing.T) {
 		}
 
 		t.Cleanup(func() {
-			_, _ = runErr(nil, "api", "-X", "DELETE", fmt.Sprintf("/1/markers/%s/%s", dataset, markerID))
+			_, _ = runErr(t, nil, "api", "-X", "DELETE", fmt.Sprintf("/1/markers/%s/%s", dataset, markerID))
 		})
 	})
 }

@@ -16,15 +16,15 @@ type result struct {
 
 func run(t *testing.T, stdin []byte, args ...string) result {
 	t.Helper()
-	r, err := execCmd(stdin, args...)
+	r, err := execCmd(t, stdin, args...)
 	if err != nil {
 		t.Fatalf("command failed: %v\nargs: %v\nstderr: %s", err, args, r.stderr)
 	}
 	return r
 }
 
-func runErr(stdin []byte, args ...string) (result, error) {
-	return execCmd(stdin, args...)
+func runErr(tb testing.TB, stdin []byte, args ...string) (result, error) {
+	return execCmd(tb, stdin, args...)
 }
 
 func parseJSON[T any](t *testing.T, data []byte) T {
