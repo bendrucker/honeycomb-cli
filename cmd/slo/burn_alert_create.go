@@ -14,14 +14,14 @@ import (
 
 func NewBurnAlertCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	var (
-		file                   string
-		sloID                  string
-		alertType              string
-		exhaustionMinutes      int
-		budgetRateWindowMin    int
-		budgetRateThreshold    int
-		recipients             []string
-		description            string
+		file                string
+		sloID               string
+		alertType           string
+		exhaustionMinutes   int
+		budgetRateWindowMin int
+		budgetRateThreshold int
+		recipients          []string
+		description         string
 	)
 
 	cmd := &cobra.Command{

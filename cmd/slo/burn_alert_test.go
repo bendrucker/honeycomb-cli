@@ -230,11 +230,11 @@ func TestBurnAlertCreate_BudgetRate(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"id":                                       "ba-new",
-			"alert_type":                               "budget_rate",
-			"budget_rate_window_minutes":               60,
+			"id":                         "ba-new",
+			"alert_type":                 "budget_rate",
+			"budget_rate_window_minutes": 60,
 			"budget_rate_decrease_threshold_per_million": 50000,
-			"slo_id":                                   "slo-1",
+			"slo_id": "slo-1",
 		})
 	}))
 
