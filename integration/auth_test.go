@@ -13,7 +13,9 @@ func TestAuth(t *testing.T) {
 	const profile = "integration-test-auth"
 
 	t.Cleanup(func() {
-		execAuthCmd(t, profile, nil, "auth", "logout")
+		if _, err := execAuthCmd(t, profile, nil, "auth", "logout"); err != nil {
+			t.Errorf("cleanup: auth logout: %v", err)
+		}
 	})
 
 	t.Run("login", func(t *testing.T) {
