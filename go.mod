@@ -7,7 +7,7 @@ require (
 	github.com/charmbracelet/huh/spinner v0.0.0-20260209112015-5c5971ef3aeb
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/itchyny/gojq v0.12.18
-	github.com/mark3labs/mcp-go v0.43.2
+	github.com/mark3labs/mcp-go v0.44.0
 	github.com/mattn/go-isatty v0.0.20
 	github.com/oapi-codegen/nullable v1.1.0
 	github.com/oapi-codegen/runtime v1.1.2
