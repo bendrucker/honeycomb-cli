@@ -3,7 +3,7 @@ module github.com/bendrucker/honeycomb-cli
 go 1.25.6
 
 require (
-	github.com/charmbracelet/huh v0.8.0
+	github.com/charmbracelet/huh v1.0.0
 	github.com/charmbracelet/huh/spinner v0.0.0-20260209112015-5c5971ef3aeb
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/itchyny/gojq v0.12.18
