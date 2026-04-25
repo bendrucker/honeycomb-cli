@@ -10,7 +10,7 @@ require (
 	github.com/mark3labs/mcp-go v0.45.0
 	github.com/mattn/go-isatty v0.0.20
 	github.com/oapi-codegen/nullable v1.1.0
-	github.com/oapi-codegen/runtime v1.3.0
+	github.com/oapi-codegen/runtime v1.4.0
 	github.com/peterhellberg/link v1.2.0
 	github.com/spf13/cobra v1.10.2
 	github.com/zalando/go-keyring v0.2.7
@@ -69,11 +69,11 @@ require (
 	github.com/woodsbury/decimal128 v1.3.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
-	golang.org/x/mod v0.21.0 // indirect
-	golang.org/x/sync v0.15.0 // indirect
+	golang.org/x/mod v0.30.0 // indirect
+	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.43.0 // indirect
-	golang.org/x/text v0.23.0 // indirect
-	golang.org/x/tools v0.25.1 // indirect
+	golang.org/x/text v0.32.0 // indirect
+	golang.org/x/tools v0.39.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
