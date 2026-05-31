@@ -71,12 +71,20 @@ func (w *Writer) Write(data any, td TableDef) error {
 	}
 }
 
-func (w *Writer) WriteValue(data any, writeTable func(io.Writer) error) error {
+// WriteMessage emits data as JSON, or a single human-readable line in table
+// mode. An empty line writes nothing in table mode. It covers the "JSON
+// object, or one status line" shape that previously required callers to pass
+// a table-building closure.
+func (w *Writer) WriteMessage(data any, line string) error {
 	switch w.format {
 	case FormatJSON:
 		return w.writeJSON(data)
 	case FormatTable:
-		return writeTable(w.out)
+		if line == "" {
+			return nil
+		}
+		_, err := fmt.Fprintln(w.out, line)
+		return err
 	default:
 		return fmt.Errorf("unsupported format: %s", w.format)
 	}
@@ -180,8 +188,5 @@ func (w *Writer) writeDynamicTable(td DynamicTableDef) error {
 }
 
 func (w *Writer) WriteDeleted(id, msg string) error {
-	return w.WriteValue(map[string]string{"id": id}, func(out io.Writer) error {
-		_, err := fmt.Fprintln(out, msg)
-		return err
-	})
+	return w.WriteMessage(map[string]string{"id": id}, msg)
 }

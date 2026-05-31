@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
@@ -212,22 +211,23 @@ func confirmOverwrite(opts *options.RootOptions, keyType string) (abort bool, er
 }
 
 func writeLoginResult(opts *options.RootOptions, result loginResult) error {
-	return opts.OutputWriter().WriteValue(result, func(w io.Writer) error {
-		if result.Verified {
-			if result.Team != "" {
-				_, _ = fmt.Fprintf(w, "Authenticated as %s", result.Team)
-				if result.Environment != "" {
-					_, _ = fmt.Fprintf(w, " (%s)", result.Environment)
-				}
-				_, _ = fmt.Fprintln(w)
-			} else if result.Name != "" {
-				_, _ = fmt.Fprintf(w, "Authenticated with key %q\n", result.Name)
-			} else {
-				_, _ = fmt.Fprintln(w, "Key verified and stored.")
-			}
-		} else {
-			_, _ = fmt.Fprintln(w, "Key stored (unverified).")
+	return opts.OutputWriter().WriteMessage(result, loginMessage(result))
+}
+
+func loginMessage(result loginResult) string {
+	if !result.Verified {
+		return "Key stored (unverified)."
+	}
+	switch {
+	case result.Team != "":
+		msg := fmt.Sprintf("Authenticated as %s", result.Team)
+		if result.Environment != "" {
+			msg += fmt.Sprintf(" (%s)", result.Environment)
 		}
-		return nil
-	})
+		return msg
+	case result.Name != "":
+		return fmt.Sprintf("Authenticated with key %q", result.Name)
+	default:
+		return "Key verified and stored."
+	}
 }
