@@ -37,12 +37,12 @@ type sloItem struct {
 }
 
 type sloDetail struct {
-	ID               string   `json:"id"`
-	Name             string   `json:"name"`
-	Description      string   `json:"description,omitempty"`
+	ID               string   `json:"id" detail:"ID"`
+	Name             string   `json:"name" detail:"Name"`
+	Description      string   `json:"description,omitempty" detail:"Description"`
 	TargetPerMillion int      `json:"target_per_million"`
 	TimePeriodDays   int      `json:"time_period_days"`
-	SLIAlias         string   `json:"sli_alias"`
+	SLIAlias         string   `json:"sli_alias" detail:"SLI Alias"`
 	DatasetSlugs     []string `json:"dataset_slugs,omitempty"`
 	CreatedAt        string   `json:"created_at,omitempty"`
 	UpdatedAt        string   `json:"updated_at,omitempty"`
@@ -93,14 +93,11 @@ func detailedToDetail(s sloDetailedResponse) sloDetail {
 }
 
 func writeSloDetail(opts *options.RootOptions, detail sloDetail) error {
-	fields := []output.Field{
-		{Label: "ID", Value: detail.ID},
-		{Label: "Name", Value: detail.Name},
-		{Label: "Description", Value: detail.Description},
-		{Label: "SLI Alias", Value: detail.SLIAlias},
-		{Label: "Target", Value: formatTarget(detail.TargetPerMillion)},
-		{Label: "Time Period", Value: formatTimePeriod(detail.TimePeriodDays)},
-	}
+	fields := output.FieldsFromTags(detail)
+	fields = append(fields,
+		output.Field{Label: "Target", Value: formatTarget(detail.TargetPerMillion)},
+		output.Field{Label: "Time Period", Value: formatTimePeriod(detail.TimePeriodDays)},
+	)
 	if len(detail.DatasetSlugs) > 0 {
 		fields = append(fields, output.Field{Label: "Datasets", Value: strings.Join(detail.DatasetSlugs, ", ")})
 	}

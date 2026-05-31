@@ -47,10 +47,7 @@ func runBurnAlertGet(ctx context.Context, opts *options.RootOptions, dataset, bu
 }
 
 func writeBurnAlertDetail(opts *options.RootOptions, detail burnAlertDetail) error {
-	fields := []output.Field{
-		{Label: "ID", Value: detail.ID},
-		{Label: "Alert Type", Value: detail.AlertType},
-	}
+	fields := output.FieldsFromTags(detail)
 	if detail.Description != "" {
 		fields = append(fields, output.Field{Label: "Description", Value: detail.Description})
 	}

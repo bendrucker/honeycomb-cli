@@ -11,22 +11,17 @@ import (
 )
 
 type viewItem struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID   string `json:"id" col:"ID"`
+	Name string `json:"name" col:"Name"`
 }
 
 type viewDetail struct {
-	ID      string          `json:"id"`
-	Name    string          `json:"name"`
+	ID      string          `json:"id" detail:"ID"`
+	Name    string          `json:"name" detail:"Name"`
 	Filters json.RawMessage `json:"filters,omitempty"`
 }
 
-var viewListTable = output.TableDef{
-	Columns: []output.Column{
-		{Header: "ID", Value: func(v any) string { return v.(viewItem).ID }},
-		{Header: "Name", Value: func(v any) string { return v.(viewItem).Name }},
-	},
-}
+var viewListTable = output.TableFromTags[viewItem]()
 
 func viewResponseToItem(v api.BoardViewResponse) viewItem {
 	return viewItem{
@@ -48,10 +43,7 @@ func viewResponseToDetail(v api.BoardViewResponse) viewDetail {
 }
 
 func writeViewDetail(opts *options.RootOptions, detail viewDetail) error {
-	return opts.OutputWriter().WriteFields(detail, []output.Field{
-		{Label: "ID", Value: detail.ID},
-		{Label: "Name", Value: detail.Name},
-	})
+	return opts.OutputWriter().WriteFields(detail, output.FieldsFromTags(detail))
 }
 
 func NewViewCmd(opts *options.RootOptions) *cobra.Command {

@@ -11,15 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var environmentListTable = output.TableDef{
-	Columns: []output.Column{
-		{Header: "ID", Value: func(v any) string { return v.(environmentItem).ID }},
-		{Header: "Name", Value: func(v any) string { return v.(environmentItem).Name }},
-		{Header: "Slug", Value: func(v any) string { return v.(environmentItem).Slug }},
-		{Header: "Description", Value: func(v any) string { return v.(environmentItem).Description }},
-		{Header: "Color", Value: func(v any) string { return v.(environmentItem).Color }},
-	},
-}
+var environmentListTable = output.TableFromTags[environmentItem]()
 
 func NewListCmd(opts *options.RootOptions, team *string) *cobra.Command {
 	return &cobra.Command{

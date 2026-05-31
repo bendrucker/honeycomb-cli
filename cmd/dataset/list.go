@@ -13,33 +13,32 @@ import (
 )
 
 type datasetItem struct {
-	Name        string  `json:"name"`
-	Slug        string  `json:"slug"`
-	Description string  `json:"description,omitempty"`
+	Name        string  `json:"name" col:"Name"`
+	Slug        string  `json:"slug" col:"Slug"`
+	Description string  `json:"description,omitempty" col:"Description"`
 	Columns     *int    `json:"columns,omitempty"`
 	LastWritten *string `json:"last_written,omitempty"`
 	CreatedAt   string  `json:"created_at"`
 }
 
-var datasetListTable = output.TableDef{
-	Columns: []output.Column{
-		{Header: "Name", Value: func(v any) string { return v.(datasetItem).Name }},
-		{Header: "Slug", Value: func(v any) string { return v.(datasetItem).Slug }},
-		{Header: "Description", Value: func(v any) string { return v.(datasetItem).Description }},
-		{Header: "Columns", Value: func(v any) string {
+var datasetListTable = func() output.TableDef {
+	table := output.TableFromTags[datasetItem]()
+	table.Columns = append(table.Columns,
+		output.Column{Header: "Columns", Value: func(v any) string {
 			if c := v.(datasetItem).Columns; c != nil {
 				return fmt.Sprintf("%d", *c)
 			}
 			return "—"
 		}},
-		{Header: "Last Written", Value: func(v any) string {
+		output.Column{Header: "Last Written", Value: func(v any) string {
 			if lw := v.(datasetItem).LastWritten; lw != nil {
 				return *lw
 			}
 			return "—"
 		}},
-	},
-}
+	)
+	return table
+}()
 
 func NewListCmd(opts *options.RootOptions) *cobra.Command {
 	return &cobra.Command{

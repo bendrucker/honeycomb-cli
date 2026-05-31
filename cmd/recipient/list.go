@@ -11,13 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var recipientListTable = output.TableDef{
-	Columns: []output.Column{
-		{Header: "ID", Value: func(v any) string { return v.(recipientItem).ID }},
-		{Header: "Type", Value: func(v any) string { return v.(recipientItem).Type }},
-		{Header: "Target", Value: func(v any) string { return v.(recipientItem).Target }},
-	},
-}
+var recipientListTable = output.TableFromTags[recipientItem]()
 
 func NewListCmd(opts *options.RootOptions) *cobra.Command {
 	return &cobra.Command{

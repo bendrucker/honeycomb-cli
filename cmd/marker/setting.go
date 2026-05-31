@@ -9,20 +9,14 @@ import (
 )
 
 type settingItem struct {
-	ID        string `json:"id"`
-	Type      string `json:"type"`
-	Color     string `json:"color"`
-	CreatedAt string `json:"created_at,omitempty"`
-	UpdatedAt string `json:"updated_at,omitempty"`
+	ID        string `json:"id" col:"ID" detail:"ID"`
+	Type      string `json:"type" col:"Type" detail:"Type"`
+	Color     string `json:"color" col:"Color" detail:"Color"`
+	CreatedAt string `json:"created_at,omitempty" detail:"Created At"`
+	UpdatedAt string `json:"updated_at,omitempty" detail:"Updated At"`
 }
 
-var settingListTable = output.TableDef{
-	Columns: []output.Column{
-		{Header: "ID", Value: func(v any) string { return v.(settingItem).ID }},
-		{Header: "Type", Value: func(v any) string { return v.(settingItem).Type }},
-		{Header: "Color", Value: func(v any) string { return v.(settingItem).Color }},
-	},
-}
+var settingListTable = output.TableFromTags[settingItem]()
 
 func toSettingItem(s api.MarkerSetting) settingItem {
 	item := settingItem{
@@ -38,13 +32,7 @@ func toSettingItem(s api.MarkerSetting) settingItem {
 }
 
 func writeSettingDetail(opts *options.RootOptions, item settingItem) error {
-	return opts.OutputWriter().WriteFields(item, []output.Field{
-		{Label: "ID", Value: item.ID},
-		{Label: "Type", Value: item.Type},
-		{Label: "Color", Value: item.Color},
-		{Label: "Created At", Value: item.CreatedAt},
-		{Label: "Updated At", Value: item.UpdatedAt},
-	})
+	return opts.OutputWriter().WriteFields(item, output.FieldsFromTags(item))
 }
 
 func NewSettingCmd(opts *options.RootOptions, dataset *string) *cobra.Command {

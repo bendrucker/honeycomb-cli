@@ -36,26 +36,20 @@ type boardListItem struct {
 }
 
 type boardDetail struct {
-	ID            string          `json:"id"`
-	Name          string          `json:"name"`
-	Description   string          `json:"description,omitempty"`
-	Type          string          `json:"type"`
-	ColumnLayout  string          `json:"column_layout,omitempty"`
-	URL           string          `json:"url,omitempty"`
+	ID            string          `json:"id" detail:"ID"`
+	Name          string          `json:"name" detail:"Name"`
+	Description   string          `json:"description,omitempty" detail:"Description"`
+	Type          string          `json:"type" detail:"Type"`
+	ColumnLayout  string          `json:"column_layout,omitempty" detail:"Column Layout"`
+	URL           string          `json:"url,omitempty" detail:"URL"`
 	PresetFilters json.RawMessage `json:"preset_filters,omitempty"`
 	Panels        json.RawMessage `json:"panels,omitempty"`
 }
 
 func writeBoardDetail(opts *options.RootOptions, detail boardDetail) error {
-	return opts.OutputWriter().WriteFields(detail, []output.Field{
-		{Label: "ID", Value: detail.ID},
-		{Label: "Name", Value: detail.Name},
-		{Label: "Description", Value: detail.Description},
-		{Label: "Type", Value: detail.Type},
-		{Label: "Column Layout", Value: detail.ColumnLayout},
-		{Label: "URL", Value: detail.URL},
-		{Label: "Preset Filters", Value: string(detail.PresetFilters)},
-	})
+	fields := output.FieldsFromTags(detail)
+	fields = append(fields, output.Field{Label: "Preset Filters", Value: string(detail.PresetFilters)})
+	return opts.OutputWriter().WriteFields(detail, fields)
 }
 
 func boardToDetail(b api.Board) boardDetail {

@@ -2,7 +2,6 @@ package environment
 
 import (
 	"encoding/json"
-	"strconv"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
@@ -31,20 +30,20 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 }
 
 type environmentItem struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Slug        string `json:"slug"`
-	Description string `json:"description,omitempty"`
-	Color       string `json:"color,omitempty"`
+	ID          string `json:"id" col:"ID"`
+	Name        string `json:"name" col:"Name"`
+	Slug        string `json:"slug" col:"Slug"`
+	Description string `json:"description,omitempty" col:"Description"`
+	Color       string `json:"color,omitempty" col:"Color"`
 }
 
 type environmentDetail struct {
-	ID              string `json:"id"`
-	Name            string `json:"name"`
-	Slug            string `json:"slug"`
-	Description     string `json:"description,omitempty"`
-	Color           string `json:"color,omitempty"`
-	DeleteProtected bool   `json:"delete_protected"`
+	ID              string `json:"id" detail:"ID"`
+	Name            string `json:"name" detail:"Name"`
+	Slug            string `json:"slug" detail:"Slug"`
+	Description     string `json:"description,omitempty" detail:"Description"`
+	Color           string `json:"color,omitempty" detail:"Color"`
+	DeleteProtected bool   `json:"delete_protected" detail:"Delete Protected"`
 }
 
 func colorString(c api.Environment_Attributes_Color) string {
@@ -81,12 +80,5 @@ func envToDetail(e api.Environment) environmentDetail {
 }
 
 func writeEnvironmentDetail(opts *options.RootOptions, detail environmentDetail) error {
-	return opts.OutputWriter().WriteFields(detail, []output.Field{
-		{Label: "ID", Value: detail.ID},
-		{Label: "Name", Value: detail.Name},
-		{Label: "Slug", Value: detail.Slug},
-		{Label: "Description", Value: detail.Description},
-		{Label: "Color", Value: detail.Color},
-		{Label: "Delete Protected", Value: strconv.FormatBool(detail.DeleteProtected)},
-	})
+	return opts.OutputWriter().WriteFields(detail, output.FieldsFromTags(detail))
 }

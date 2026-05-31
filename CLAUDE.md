@@ -107,6 +107,14 @@ A Honeycomb MCP server is configured and available as a reference implementation
 
 The `--format` flag supports `json` and `table`. Default is `table` in TTY, `json` otherwise. List commands always default to `table` regardless of TTY detection, using `OutputWriterList()` instead of `OutputWriter()`.
 
+Derive list columns and detail fields from struct tags on the projection
+struct: `col:"Header"` for `output.TableFromTags[T]()`, `detail:"Label"` for
+`output.FieldsFromTags(v)`. Both format plain string/bool/int/float fields the
+way the hand-written closures did. A column or field that needs a join,
+pointer deref, conditional, or custom number/time formatting gets no tag and
+stays an explicit `output.Column`/`output.Field` appended after the derived
+set.
+
 ## Command Design
 
 Commands follow a consistent pattern:

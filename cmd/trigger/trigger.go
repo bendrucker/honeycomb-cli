@@ -2,7 +2,6 @@ package trigger
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
@@ -34,31 +33,31 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 }
 
 type triggerItem struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description,omitempty"`
-	Disabled    bool   `json:"disabled"`
-	Triggered   bool   `json:"triggered"`
-	AlertType   string `json:"alert_type,omitempty"`
-	Threshold   string `json:"threshold,omitempty"`
+	ID          string `json:"id" col:"ID"`
+	Name        string `json:"name" col:"Name"`
+	Description string `json:"description,omitempty" col:"Description"`
+	Disabled    bool   `json:"disabled" col:"Disabled"`
+	Triggered   bool   `json:"triggered" col:"Triggered"`
+	AlertType   string `json:"alert_type,omitempty" col:"Alert Type"`
+	Threshold   string `json:"threshold,omitempty" col:"Threshold"`
 }
 
 type triggerDetail struct {
-	ID          string            `json:"id"`
-	Name        string            `json:"name"`
-	Description string            `json:"description,omitempty"`
-	DatasetSlug string            `json:"dataset_slug,omitempty"`
-	Disabled    bool              `json:"disabled"`
-	Triggered   bool              `json:"triggered"`
-	AlertType   string            `json:"alert_type,omitempty"`
-	Frequency   int               `json:"frequency,omitempty"`
+	ID          string            `json:"id" detail:"ID"`
+	Name        string            `json:"name" detail:"Name"`
+	Description string            `json:"description,omitempty" detail:"Description"`
+	DatasetSlug string            `json:"dataset_slug,omitempty" detail:"Dataset Slug"`
+	Disabled    bool              `json:"disabled" detail:"Disabled"`
+	Triggered   bool              `json:"triggered" detail:"Triggered"`
+	AlertType   string            `json:"alert_type,omitempty" detail:"Alert Type"`
+	Frequency   int               `json:"frequency,omitempty" detail:"Frequency"`
 	Threshold   *triggerThreshold `json:"threshold,omitempty"`
 	QueryID     string            `json:"query_id,omitempty"`
 	HasQuery    bool              `json:"has_query,omitempty"`
 	Recipients  []recipientItem   `json:"recipients,omitempty"`
 	Tags        []tagItem         `json:"tags,omitempty"`
-	CreatedAt   string            `json:"created_at,omitempty"`
-	UpdatedAt   string            `json:"updated_at,omitempty"`
+	CreatedAt   string            `json:"created_at,omitempty" detail:"Created At"`
+	UpdatedAt   string            `json:"updated_at,omitempty" detail:"Updated At"`
 }
 
 type triggerThreshold struct {
@@ -137,28 +136,15 @@ func toDetail(t api.TriggerResponse) triggerDetail {
 }
 
 func writeTriggerDetail(opts *options.RootOptions, detail triggerDetail) error {
-	fields := []output.Field{
-		{Label: "ID", Value: detail.ID},
-		{Label: "Name", Value: detail.Name},
-		{Label: "Description", Value: detail.Description},
-		{Label: "Disabled", Value: strconv.FormatBool(detail.Disabled)},
-		{Label: "Triggered", Value: strconv.FormatBool(detail.Triggered)},
-		{Label: "Alert Type", Value: detail.AlertType},
-		{Label: "Dataset Slug", Value: detail.DatasetSlug},
-		{Label: "Frequency", Value: strconv.Itoa(detail.Frequency)},
-		{Label: "Threshold", Value: formatThresholdDetail(detail.Threshold)},
-	}
+	fields := output.FieldsFromTags(detail)
+
+	fields = append(fields, output.Field{Label: "Threshold", Value: formatThresholdDetail(detail.Threshold)})
 
 	if detail.QueryID != "" {
 		fields = append(fields, output.Field{Label: "Query ID", Value: detail.QueryID})
 	} else if detail.HasQuery {
 		fields = append(fields, output.Field{Label: "Query ID", Value: "(inline)"})
 	}
-
-	fields = append(fields,
-		output.Field{Label: "Created At", Value: detail.CreatedAt},
-		output.Field{Label: "Updated At", Value: detail.UpdatedAt},
-	)
 
 	if len(detail.Recipients) > 0 {
 		targets := make([]string, len(detail.Recipients))
