@@ -1,12 +1,7 @@
 package query
 
 import (
-	"fmt"
-	"io"
-	"os"
-
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
-	"github.com/bendrucker/honeycomb-cli/internal/jsonutil"
 	"github.com/spf13/cobra"
 )
 
@@ -26,30 +21,4 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 	cmd.AddCommand(NewAnnotationCmd(opts, &dataset))
 
 	return cmd
-}
-
-func readFile(opts *options.RootOptions, file string) ([]byte, error) {
-	var r io.Reader
-	if file == "-" {
-		r = opts.IOStreams.In
-	} else {
-		f, err := os.Open(file)
-		if err != nil {
-			return nil, fmt.Errorf("opening file: %w", err)
-		}
-		defer f.Close() //nolint:errcheck // best-effort close on read-only file
-		r = f
-	}
-
-	data, err := io.ReadAll(r)
-	if err != nil {
-		return nil, fmt.Errorf("reading file: %w", err)
-	}
-
-	data, err = jsonutil.Sanitize(data)
-	if err != nil {
-		return nil, fmt.Errorf("invalid JSON: %w", err)
-	}
-
-	return data, nil
 }

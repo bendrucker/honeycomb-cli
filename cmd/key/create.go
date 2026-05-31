@@ -5,8 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
@@ -80,7 +80,7 @@ func runKeyCreateFromFile(ctx context.Context, opts *options.RootOptions, team, 
 		return err
 	}
 
-	data, err := readBodyFile(opts, file)
+	data, err := command.ReadDefinitionFile(opts.IOStreams, file)
 	if err != nil {
 		return err
 	}
@@ -294,12 +294,4 @@ func createResponseToDetail(resp *api.ApiKeyCreateResponse) keyDetail {
 	}
 
 	return detail
-}
-
-func openFile(path string) (*os.File, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, fmt.Errorf("opening file: %w", err)
-	}
-	return f, nil
 }

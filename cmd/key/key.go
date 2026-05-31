@@ -2,13 +2,11 @@ package key
 
 import (
 	"fmt"
-	"io"
 	"strconv"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/deref"
-	"github.com/bendrucker/honeycomb-cli/internal/jsonutil"
 	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -107,27 +105,4 @@ func fillFromAttributes(name *string, keyType *string, disabled *bool, attrs api
 		*disabled = deref.Bool(cfg.Disabled)
 		return
 	}
-}
-
-func readBodyFile(ios *options.RootOptions, file string) ([]byte, error) {
-	var r io.Reader
-	if file == "-" {
-		r = ios.IOStreams.In
-	} else {
-		f, err := openFile(file)
-		if err != nil {
-			return nil, err
-		}
-		defer func() { _ = f.Close() }()
-		r = f
-	}
-	data, err := io.ReadAll(r)
-	if err != nil {
-		return nil, fmt.Errorf("reading file: %w", err)
-	}
-	data, err = jsonutil.Sanitize(data)
-	if err != nil {
-		return nil, fmt.Errorf("invalid JSON: %w", err)
-	}
-	return data, nil
 }

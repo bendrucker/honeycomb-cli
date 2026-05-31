@@ -3,12 +3,11 @@ package trigger
 import (
 	"context"
 	"fmt"
-	"strings"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
-	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/spf13/cobra"
 )
 
@@ -35,31 +34,24 @@ func runDelete(ctx context.Context, opts *options.RootOptions, dataset, triggerI
 		return err
 	}
 
-	if !yes {
-		if !opts.IOStreams.CanPrompt() {
-			return fmt.Errorf("--yes is required in non-interactive mode")
-		}
-
+	proceed, err := command.ConfirmDelete(opts.IOStreams, yes, "trigger", triggerID, func() (string, error) {
 		resp, err := client.GetTriggerWithResponse(ctx, dataset, triggerID)
 		if err != nil {
-			return fmt.Errorf("getting trigger: %w", err)
+			return "", fmt.Errorf("getting trigger: %w", err)
 		}
 		if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
-			return err
+			return "", err
 		}
-
-		name := triggerID
 		if resp.JSON200 != nil && resp.JSON200.Name != nil {
-			name = *resp.JSON200.Name
+			return *resp.JSON200.Name, nil
 		}
-
-		answer, err := prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, fmt.Sprintf("Delete trigger %q? (y/N): ", name))
-		if err != nil {
-			return err
-		}
-		if !strings.EqualFold(answer, "y") {
-			return nil
-		}
+		return "", nil
+	})
+	if err != nil {
+		return err
+	}
+	if !proceed {
+		return nil
 	}
 
 	resp, err := client.DeleteTriggerWithResponse(ctx, dataset, triggerID)

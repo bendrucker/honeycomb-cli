@@ -3,12 +3,11 @@ package board
 import (
 	"context"
 	"fmt"
-	"strings"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
-	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/spf13/cobra"
 )
 
@@ -35,28 +34,21 @@ func runViewDelete(ctx context.Context, opts *options.RootOptions, boardID, view
 		return err
 	}
 
-	if !yes {
-		if !opts.IOStreams.CanPrompt() {
-			return fmt.Errorf("--yes is required in non-interactive mode")
-		}
-
+	proceed, err := command.ConfirmDelete(opts.IOStreams, yes, "view", viewID, func() (string, error) {
 		view, err := getView(ctx, client, boardID, viewID)
 		if err != nil {
-			return err
+			return "", err
 		}
-
-		name := viewID
 		if view.Name != nil {
-			name = *view.Name
+			return *view.Name, nil
 		}
-
-		answer, err := prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, fmt.Sprintf("Delete view %q? (y/N): ", name))
-		if err != nil {
-			return err
-		}
-		if !strings.EqualFold(answer, "y") {
-			return fmt.Errorf("aborted")
-		}
+		return "", nil
+	})
+	if err != nil {
+		return err
+	}
+	if !proceed {
+		return fmt.Errorf("aborted")
 	}
 
 	resp, err := client.DeleteBoardViewWithResponse(ctx, boardID, viewID)

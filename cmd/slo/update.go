@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
@@ -100,7 +101,7 @@ func runSLOUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, sloID,
 }
 
 func updateFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, dataset, sloID, file string) error {
-	raw, err := readFile(opts, file)
+	raw, err := command.ReadDefinitionFile(opts.IOStreams, file)
 	if err != nil {
 		return err
 	}

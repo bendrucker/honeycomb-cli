@@ -2,13 +2,10 @@ package board
 
 import (
 	"encoding/json"
-	"fmt"
-	"io"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/deref"
-	"github.com/bendrucker/honeycomb-cli/internal/jsonutil"
 	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -59,24 +56,6 @@ func writeBoardDetail(opts *options.RootOptions, detail boardDetail) error {
 		{Label: "URL", Value: detail.URL},
 		{Label: "Preset Filters", Value: string(detail.PresetFilters)},
 	})
-}
-
-func readBoardJSON(r io.Reader) (api.Board, error) {
-	data, err := io.ReadAll(r)
-	if err != nil {
-		return api.Board{}, fmt.Errorf("reading input: %w", err)
-	}
-
-	data, err = jsonutil.Sanitize(data)
-	if err != nil {
-		return api.Board{}, fmt.Errorf("parsing board JSON: %w", err)
-	}
-
-	var board api.Board
-	if err := json.Unmarshal(data, &board); err != nil {
-		return api.Board{}, fmt.Errorf("parsing board JSON: %w", err)
-	}
-	return board, nil
 }
 
 func boardToDetail(b api.Board) boardDetail {

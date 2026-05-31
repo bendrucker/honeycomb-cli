@@ -4,13 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
-	"os"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
-	"github.com/bendrucker/honeycomb-cli/internal/jsonutil"
 	"github.com/spf13/cobra"
 )
 
@@ -38,7 +36,7 @@ func runDefinitionUpdate(ctx context.Context, opts *options.RootOptions, slug, f
 		return err
 	}
 
-	data, err := readDefinitionFile(opts, file)
+	data, err := command.ReadDefinitionFile(opts.IOStreams, file)
 	if err != nil {
 		return err
 	}
@@ -54,30 +52,4 @@ func runDefinitionUpdate(ctx context.Context, opts *options.RootOptions, slug, f
 	}
 
 	return writeDefinitions(opts, defs)
-}
-
-func readDefinitionFile(opts *options.RootOptions, file string) ([]byte, error) {
-	var r io.Reader
-	if file == "-" {
-		r = opts.IOStreams.In
-	} else {
-		f, err := os.Open(file)
-		if err != nil {
-			return nil, fmt.Errorf("opening file: %w", err)
-		}
-		defer f.Close() //nolint:errcheck // best-effort close on read-only file
-		r = f
-	}
-
-	data, err := io.ReadAll(r)
-	if err != nil {
-		return nil, fmt.Errorf("reading file: %w", err)
-	}
-
-	data, err = jsonutil.Sanitize(data)
-	if err != nil {
-		return nil, fmt.Errorf("invalid JSON: %w", err)
-	}
-
-	return data, nil
 }

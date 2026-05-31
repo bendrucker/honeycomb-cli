@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
@@ -54,7 +55,7 @@ func runKeyUpdateFromFile(ctx context.Context, opts *options.RootOptions, team, 
 		return err
 	}
 
-	data, err := readBodyFile(opts, file)
+	data, err := command.ReadDefinitionFile(opts.IOStreams, file)
 	if err != nil {
 		return err
 	}

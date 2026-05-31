@@ -4,14 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
-	"os"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/bendrucker/honeycomb-cli/internal/deref"
-	"github.com/bendrucker/honeycomb-cli/internal/jsonutil"
 	"github.com/spf13/cobra"
 )
 
@@ -94,26 +92,9 @@ func runViewUpdate(cmd *cobra.Command, opts *options.RootOptions, boardID, viewI
 }
 
 func updateViewFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, boardID, viewID, file string) error {
-	var r io.Reader
-	if file == "-" {
-		r = opts.IOStreams.In
-	} else {
-		f, err := os.Open(file)
-		if err != nil {
-			return fmt.Errorf("opening file: %w", err)
-		}
-		defer func() { _ = f.Close() }()
-		r = f
-	}
-
-	data, err := io.ReadAll(r)
+	data, err := command.ReadDefinitionFile(opts.IOStreams, file)
 	if err != nil {
-		return fmt.Errorf("reading file: %w", err)
-	}
-
-	data, err = jsonutil.Sanitize(data)
-	if err != nil {
-		return fmt.Errorf("invalid JSON: %w", err)
+		return err
 	}
 
 	resp, err := client.UpdateBoardViewWithBodyWithResponse(ctx, boardID, viewID, "application/json", bytes.NewReader(data))

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
@@ -103,7 +104,7 @@ func resolveQueryID(ctx context.Context, opts *options.RootOptions, client *api.
 }
 
 func createQueryFromFile(ctx context.Context, opts *options.RootOptions, client *api.ClientWithResponses, dataset string, file string) (string, error) {
-	data, err := readFile(opts, file)
+	data, err := command.ReadDefinitionFile(opts.IOStreams, file)
 	if err != nil {
 		return "", err
 	}

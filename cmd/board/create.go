@@ -4,13 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
-	"os"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
-	"github.com/bendrucker/honeycomb-cli/internal/jsonutil"
 	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/spf13/cobra"
 )
@@ -100,26 +98,9 @@ func runBoardCreate(cmd *cobra.Command, opts *options.RootOptions, file, name, d
 }
 
 func createFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, file string) error {
-	var r io.Reader
-	if file == "-" {
-		r = opts.IOStreams.In
-	} else {
-		f, err := os.Open(file)
-		if err != nil {
-			return fmt.Errorf("opening file: %w", err)
-		}
-		defer func() { _ = f.Close() }()
-		r = f
-	}
-
-	raw, err := io.ReadAll(r)
+	raw, err := command.ReadDefinitionFile(opts.IOStreams, file)
 	if err != nil {
-		return fmt.Errorf("reading file: %w", err)
-	}
-
-	raw, err = jsonutil.Sanitize(raw)
-	if err != nil {
-		return fmt.Errorf("invalid JSON: %w", err)
+		return err
 	}
 
 	data, err := api.StripReadOnly(raw, "Board")

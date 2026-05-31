@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
-	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/spf13/cobra"
 )
 
@@ -34,45 +34,31 @@ func runMarkerDelete(ctx context.Context, opts *options.RootOptions, dataset, ma
 		return err
 	}
 
-	if !yes {
-		if !opts.IOStreams.CanPrompt() {
-			return fmt.Errorf("--yes is required in non-interactive mode")
-		}
-
-		// Fetch marker for confirmation display
+	proceed, err := command.ConfirmDelete(opts.IOStreams, yes, "marker", markerID, func() (string, error) {
 		listResp, err := client.GetMarkerWithResponse(ctx, dataset)
 		if err != nil {
-			return fmt.Errorf("listing markers: %w", err)
+			return "", fmt.Errorf("listing markers: %w", err)
 		}
 
 		if err := api.CheckResponse(listResp.StatusCode(), listResp.Body); err != nil {
-			return err
+			return "", err
 		}
 
 		if listResp.JSON200 == nil {
-			return fmt.Errorf("unexpected response: %s", listResp.Status())
+			return "", fmt.Errorf("unexpected response: %s", listResp.Status())
 		}
 
-		m, err := findMarker(*listResp.JSON200, markerID)
-		if err != nil {
-			return err
+		if _, err := findMarker(*listResp.JSON200, markerID); err != nil {
+			return "", err
 		}
 
-		markerType := ""
-		if m.Type != nil {
-			markerType = *m.Type
-		}
-
-		answer, err := prompt.Choice(opts.IOStreams.Err, opts.IOStreams.In,
-			fmt.Sprintf("Delete marker %q (type: %s)? (y/N): ", markerID, markerType),
-			[]string{"y", "N"},
-		)
-		if err != nil {
-			return err
-		}
-		if answer != "y" {
-			return nil
-		}
+		return "", nil
+	})
+	if err != nil {
+		return err
+	}
+	if !proceed {
+		return nil
 	}
 
 	resp, err := client.DeleteMarkerWithResponse(ctx, dataset, markerID)

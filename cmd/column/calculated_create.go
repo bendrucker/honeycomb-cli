@@ -4,13 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
-	"os"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
-	"github.com/bendrucker/honeycomb-cli/internal/jsonutil"
 	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/spf13/cobra"
 )
@@ -83,26 +81,9 @@ func runCalculatedCreateFromFile(ctx context.Context, opts *options.RootOptions,
 		return err
 	}
 
-	var r io.Reader
-	if file == "-" {
-		r = opts.IOStreams.In
-	} else {
-		f, err := os.Open(file)
-		if err != nil {
-			return fmt.Errorf("opening file: %w", err)
-		}
-		defer func() { _ = f.Close() }()
-		r = f
-	}
-
-	data, err := io.ReadAll(r)
+	data, err := command.ReadDefinitionFile(opts.IOStreams, file)
 	if err != nil {
-		return fmt.Errorf("reading file: %w", err)
-	}
-
-	data, err = jsonutil.Sanitize(data)
-	if err != nil {
-		return fmt.Errorf("invalid JSON: %w", err)
+		return err
 	}
 
 	resp, err := client.CreateCalculatedFieldWithBodyWithResponse(ctx, dataset, "application/json", bytes.NewReader(data))

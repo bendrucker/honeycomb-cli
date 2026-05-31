@@ -143,6 +143,19 @@ field is read directly. Responses decoded by hand (SLO union types, the raw
 `ListColumns` body) keep their own `api.CheckResponse` + `json.Unmarshal`.
 Delete commands keep `api.CheckResponse` and any status guard.
 
+The `cmd/command` package holds CRUD command helpers:
+
+- `ConfirmDelete(ios, yes, noun, fallbackName, fetchName)`: the `--yes`
+  short-circuit, non-interactive guard, and y/N prompt. `fetchName` resolves a
+  display name lazily (only when prompting); pass `nil` to show `fallbackName`.
+  It returns whether to proceed; the caller decides what a declined delete
+  means.
+- `ReadDefinitionFile(ios, path)`: reads a JSON definition from a file or `-`
+  (stdin) and runs `jsonutil.Sanitize`.
+- `ApplyOverrides(data, overrides)`: merges flag overrides into a JSON object
+  body. Use only when the body is handled as `map[string]any`; commands that
+  build a typed request struct set fields directly.
+
 ## Testing
 
 **Unit tests** use `keyring.MockInit()` for an in-memory keyring and `httptest.NewServer` for API stubs. These run in `go test` with no external dependencies.
