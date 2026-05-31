@@ -3,6 +3,8 @@ package config
 import (
 	"net/http"
 	"testing"
+
+	"github.com/zalando/go-keyring"
 )
 
 func TestParseKeyType(t *testing.T) {
@@ -28,6 +30,42 @@ func TestParseKeyType(t *testing.T) {
 				t.Errorf("ParseKeyType(%q) = %q, want %q", tt.input, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestKeyTypes(t *testing.T) {
+	want := []KeyType{KeyConfig, KeyIngest, KeyManagement}
+	got := KeyTypes()
+	if len(got) != len(want) {
+		t.Fatalf("KeyTypes() len = %d, want %d", len(got), len(want))
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("KeyTypes()[%d] = %q, want %q", i, got[i], want[i])
+		}
+	}
+}
+
+func TestManagementKey(t *testing.T) {
+	if got := ManagementKey("id-123", "secret-456"); got != "id-123:secret-456" {
+		t.Errorf("ManagementKey() = %q, want %q", got, "id-123:secret-456")
+	}
+}
+
+func TestSetManagementKey(t *testing.T) {
+	keyring.MockInit()
+
+	if err := SetManagementKey("test-profile", "id-123", "secret-456"); err != nil {
+		t.Fatalf("SetManagementKey() error = %v", err)
+	}
+	t.Cleanup(func() { _ = DeleteKey("test-profile", KeyManagement) })
+
+	got, err := GetKey("test-profile", KeyManagement)
+	if err != nil {
+		t.Fatalf("GetKey() error = %v", err)
+	}
+	if got != "id-123:secret-456" {
+		t.Errorf("stored value = %q, want %q", got, "id-123:secret-456")
 	}
 }
 

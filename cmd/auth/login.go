@@ -132,11 +132,6 @@ func runAuthLogin(ctx context.Context, opts *options.RootOptions, keyType, keyID
 		return err
 	}
 
-	value := keySecret
-	if kt == config.KeyManagement {
-		value = keyID + ":" + keySecret
-	}
-
 	result := loginResult{
 		Type: keyType,
 	}
@@ -145,6 +140,11 @@ func runAuthLogin(ctx context.Context, opts *options.RootOptions, keyType, keyID
 		client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
 		if err != nil {
 			return fmt.Errorf("creating API client: %w", err)
+		}
+
+		value := keySecret
+		if kt == config.KeyManagement {
+			value = config.ManagementKey(keyID, keySecret)
 		}
 
 		ks, err := verifyKey(ctx, client, kt, value)
@@ -166,7 +166,12 @@ func runAuthLogin(ctx context.Context, opts *options.RootOptions, keyType, keyID
 	}
 
 	profile := opts.ActiveProfile()
-	if err := config.SetKey(profile, kt, value); err != nil {
+	if kt == config.KeyManagement {
+		err = config.SetManagementKey(profile, keyID, keySecret)
+	} else {
+		err = config.SetKey(profile, kt, keySecret)
+	}
+	if err != nil {
 		return fmt.Errorf("storing key: %w", err)
 	}
 

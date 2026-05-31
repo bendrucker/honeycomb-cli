@@ -66,7 +66,7 @@ func runProfileList(opts *options.RootOptions) error {
 			Active: name == active,
 		}
 
-		for _, kt := range keyTypes {
+		for _, kt := range config.KeyTypes() {
 			_, err := config.GetKey(name, kt)
 			if errors.Is(err, keyring.ErrNotFound) {
 				continue

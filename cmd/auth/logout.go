@@ -42,7 +42,7 @@ func runAuthLogout(opts *options.RootOptions, keyType string) error {
 		}
 		targets = []config.KeyType{kt}
 	} else {
-		targets = keyTypes
+		targets = config.KeyTypes()
 	}
 
 	var deleted []logoutResult
