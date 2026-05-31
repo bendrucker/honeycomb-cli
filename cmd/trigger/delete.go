@@ -30,14 +30,9 @@ func NewDeleteCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 }
 
 func runDelete(ctx context.Context, opts *options.RootOptions, dataset, triggerID string, yes bool) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
-	}
-
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
 	}
 
 	if !yes {
@@ -45,7 +40,7 @@ func runDelete(ctx context.Context, opts *options.RootOptions, dataset, triggerI
 			return fmt.Errorf("--yes is required in non-interactive mode")
 		}
 
-		resp, err := client.GetTriggerWithResponse(ctx, dataset, triggerID, auth)
+		resp, err := client.GetTriggerWithResponse(ctx, dataset, triggerID)
 		if err != nil {
 			return fmt.Errorf("getting trigger: %w", err)
 		}
@@ -67,7 +62,7 @@ func runDelete(ctx context.Context, opts *options.RootOptions, dataset, triggerI
 		}
 	}
 
-	resp, err := client.DeleteTriggerWithResponse(ctx, dataset, triggerID, auth)
+	resp, err := client.DeleteTriggerWithResponse(ctx, dataset, triggerID)
 	if err != nil {
 		return fmt.Errorf("deleting trigger: %w", err)
 	}

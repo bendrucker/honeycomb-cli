@@ -47,14 +47,9 @@ func NewBurnAlertUpdateCmd(opts *options.RootOptions, dataset *string) *cobra.Co
 var burnAlertUpdateFlags = []string{"exhaustion-minutes", "budget-rate-window-minutes", "budget-rate-threshold", "recipient", "description"}
 
 func runBurnAlertUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, burnAlertID, file string, exhaustionMinutes, budgetRateWindow, budgetRateThreshold int, recipients []string, description string) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
-	}
-
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
 	}
 
 	ctx := cmd.Context()
@@ -66,7 +61,7 @@ func runBurnAlertUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, 
 			return err
 		}
 	} else if hasAnyFlag(cmd, burnAlertUpdateFlags...) {
-		resp, err := client.GetBurnAlertWithResponse(ctx, dataset, burnAlertID, auth)
+		resp, err := client.GetBurnAlertWithResponse(ctx, dataset, burnAlertID)
 		if err != nil {
 			return fmt.Errorf("getting burn alert: %w", err)
 		}
@@ -89,7 +84,7 @@ func runBurnAlertUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, 
 		return fmt.Errorf("--file, --exhaustion-minutes, --budget-rate-window-minutes, --budget-rate-threshold, --recipient, or --description is required")
 	}
 
-	resp, err := client.UpdateBurnAlertWithBodyWithResponse(ctx, dataset, burnAlertID, "application/json", bytes.NewReader(data), auth)
+	resp, err := client.UpdateBurnAlertWithBodyWithResponse(ctx, dataset, burnAlertID, "application/json", bytes.NewReader(data))
 	if err != nil {
 		return fmt.Errorf("updating burn alert: %w", err)
 	}

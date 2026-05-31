@@ -78,7 +78,7 @@ func NewCalculatedCreateCmd(opts *options.RootOptions, dataset *string) *cobra.C
 }
 
 func runCalculatedCreateFromFile(ctx context.Context, opts *options.RootOptions, dataset, file string) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -105,50 +105,34 @@ func runCalculatedCreateFromFile(ctx context.Context, opts *options.RootOptions,
 		return fmt.Errorf("invalid JSON: %w", err)
 	}
 
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
-	}
-
-	resp, err := client.CreateCalculatedFieldWithBodyWithResponse(ctx, dataset, "application/json", bytes.NewReader(data), auth)
+	resp, err := client.CreateCalculatedFieldWithBodyWithResponse(ctx, dataset, "application/json", bytes.NewReader(data))
 	if err != nil {
 		return fmt.Errorf("creating calculated column: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	field, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON201)
+	if err != nil {
 		return err
 	}
 
-	if resp.JSON201 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	return writeCalculatedDetail(opts, *resp.JSON201)
+	return writeCalculatedDetail(opts, *field)
 }
 
 func runCalculatedCreate(ctx context.Context, opts *options.RootOptions, dataset string, body api.CreateCalculatedFieldJSONRequestBody) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
 	}
 
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
-	}
-
-	resp, err := client.CreateCalculatedFieldWithResponse(ctx, dataset, body, auth)
+	resp, err := client.CreateCalculatedFieldWithResponse(ctx, dataset, body)
 	if err != nil {
 		return fmt.Errorf("creating calculated column: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	field, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON201)
+	if err != nil {
 		return err
 	}
 
-	if resp.JSON201 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	return writeCalculatedDetail(opts, *resp.JSON201)
+	return writeCalculatedDetail(opts, *field)
 }

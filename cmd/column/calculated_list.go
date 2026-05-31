@@ -23,20 +23,15 @@ func NewCalculatedListCmd(opts *options.RootOptions, dataset *string) *cobra.Com
 }
 
 func runCalculatedList(ctx context.Context, opts *options.RootOptions, dataset string) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
-	}
-
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
 	}
 
 	// Use the raw ListCalculatedFields method because the generated
 	// ListCalculatedFieldsWithResponse parser cannot unmarshal the response
 	// into its union type (JSON200 is struct { union json.RawMessage }).
-	resp, err := client.ListCalculatedFields(ctx, dataset, nil, auth)
+	resp, err := client.ListCalculatedFields(ctx, dataset, nil)
 	if err != nil {
 		return fmt.Errorf("listing calculated columns: %w", err)
 	}

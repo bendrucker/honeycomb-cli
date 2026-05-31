@@ -49,14 +49,9 @@ func NewUpdateCmd(opts *options.RootOptions, team *string) *cobra.Command {
 }
 
 func runKeyUpdateFromFile(ctx context.Context, opts *options.RootOptions, team, id, file string) error {
-	auth, err := opts.KeyEditor(config.KeyManagement)
+	client, err := opts.Client(config.KeyManagement)
 	if err != nil {
 		return err
-	}
-
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
 	}
 
 	data, err := readBodyFile(opts, file)
@@ -64,20 +59,17 @@ func runKeyUpdateFromFile(ctx context.Context, opts *options.RootOptions, team, 
 		return err
 	}
 
-	resp, err := client.UpdateApiKeyWithBodyWithResponse(ctx, api.TeamSlug(team), api.ID(id), "application/vnd.api+json", bytes.NewReader(data), auth)
+	resp, err := client.UpdateApiKeyWithBodyWithResponse(ctx, api.TeamSlug(team), api.ID(id), "application/vnd.api+json", bytes.NewReader(data))
 	if err != nil {
 		return fmt.Errorf("updating API key: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	updated, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.ApplicationvndApiJSON200)
+	if err != nil {
 		return err
 	}
 
-	if resp.ApplicationvndApiJSON200 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	return writeKeyDetail(opts, objectToDetail(resp.ApplicationvndApiJSON200.Data))
+	return writeKeyDetail(opts, objectToDetail(updated.Data))
 }
 
 func runKeyUpdateFromFlags(cmd *cobra.Command, opts *options.RootOptions, team, id, name string) error {
@@ -85,30 +77,23 @@ func runKeyUpdateFromFlags(cmd *cobra.Command, opts *options.RootOptions, team, 
 		return fmt.Errorf("--file, --name, --disabled, or --enabled is required")
 	}
 
-	auth, err := opts.KeyEditor(config.KeyManagement)
+	client, err := opts.Client(config.KeyManagement)
 	if err != nil {
 		return err
-	}
-
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
 	}
 
 	ctx := cmd.Context()
 
-	getResp, err := client.GetApiKeyWithResponse(ctx, api.TeamSlug(team), api.ID(id), auth)
+	getResp, err := client.GetApiKeyWithResponse(ctx, api.TeamSlug(team), api.ID(id))
 	if err != nil {
 		return fmt.Errorf("getting API key: %w", err)
 	}
-	if err := api.CheckResponse(getResp.StatusCode(), getResp.Body); err != nil {
+	existing, err := api.Decode(getResp.StatusCode(), getResp.Status(), getResp.Body, getResp.ApplicationvndApiJSON200)
+	if err != nil {
 		return err
 	}
-	if getResp.ApplicationvndApiJSON200 == nil {
-		return fmt.Errorf("unexpected response: %s", getResp.Status())
-	}
 
-	current := objectToDetail(getResp.ApplicationvndApiJSON200.Data)
+	current := objectToDetail(existing.Data)
 
 	if cmd.Flags().Changed("name") {
 		current.Name = name
@@ -125,20 +110,17 @@ func runKeyUpdateFromFlags(cmd *cobra.Command, opts *options.RootOptions, team, 
 		return err
 	}
 
-	resp, err := client.UpdateApiKeyWithApplicationVndAPIPlusJSONBodyWithResponse(ctx, api.TeamSlug(team), api.ID(id), body, auth)
+	resp, err := client.UpdateApiKeyWithApplicationVndAPIPlusJSONBodyWithResponse(ctx, api.TeamSlug(team), api.ID(id), body)
 	if err != nil {
 		return fmt.Errorf("updating API key: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	updated, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.ApplicationvndApiJSON200)
+	if err != nil {
 		return err
 	}
 
-	if resp.ApplicationvndApiJSON200 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	return writeKeyDetail(opts, objectToDetail(resp.ApplicationvndApiJSON200.Data))
+	return writeKeyDetail(opts, objectToDetail(updated.Data))
 }
 
 func buildKeyUpdateRequest(id, name string, disabled bool) (api.ApiKeyUpdateRequest, error) {

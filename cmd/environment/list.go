@@ -35,31 +35,23 @@ func NewListCmd(opts *options.RootOptions, team *string) *cobra.Command {
 }
 
 func runEnvironmentList(ctx context.Context, opts *options.RootOptions, team string) error {
-	auth, err := opts.KeyEditor(config.KeyManagement)
+	client, err := opts.Client(config.KeyManagement)
 	if err != nil {
 		return err
 	}
 
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
-	}
-
-	resp, err := client.ListEnvironmentsWithResponse(ctx, team, nil, auth)
+	resp, err := client.ListEnvironmentsWithResponse(ctx, team, nil)
 	if err != nil {
 		return fmt.Errorf("listing environments: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	list, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.ApplicationvndApiJSON200)
+	if err != nil {
 		return err
 	}
 
-	if resp.ApplicationvndApiJSON200 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	items := make([]environmentItem, len(resp.ApplicationvndApiJSON200.Data))
-	for i, e := range resp.ApplicationvndApiJSON200.Data {
+	items := make([]environmentItem, len(list.Data))
+	for i, e := range list.Data {
 		items[i] = envToItem(e)
 	}
 

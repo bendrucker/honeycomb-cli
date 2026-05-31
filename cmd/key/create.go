@@ -75,14 +75,9 @@ func runKeyCreate(cmd *cobra.Command, opts *options.RootOptions, team, file, nam
 }
 
 func runKeyCreateFromFile(ctx context.Context, opts *options.RootOptions, team, file string) error {
-	auth, err := opts.KeyEditor(config.KeyManagement)
+	client, err := opts.Client(config.KeyManagement)
 	if err != nil {
 		return err
-	}
-
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
 	}
 
 	data, err := readBodyFile(opts, file)
@@ -90,7 +85,7 @@ func runKeyCreateFromFile(ctx context.Context, opts *options.RootOptions, team, 
 		return err
 	}
 
-	resp, err := client.CreateApiKeyWithBodyWithResponse(ctx, api.TeamSlug(team), "application/vnd.api+json", bytes.NewReader(data), auth)
+	resp, err := client.CreateApiKeyWithBodyWithResponse(ctx, api.TeamSlug(team), "application/vnd.api+json", bytes.NewReader(data))
 	if err != nil {
 		return fmt.Errorf("creating API key: %w", err)
 	}
@@ -149,14 +144,9 @@ func runKeyCreateFromFlags(cmd *cobra.Command, opts *options.RootOptions, team, 
 		}
 	}
 
-	auth, err := opts.KeyEditor(config.KeyManagement)
+	client, err := opts.Client(config.KeyManagement)
 	if err != nil {
 		return err
-	}
-
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
 	}
 
 	body := api.ApiKeyCreateRequest{}
@@ -192,7 +182,7 @@ func runKeyCreateFromFlags(cmd *cobra.Command, opts *options.RootOptions, team, 
 		return fmt.Errorf("building request: %w", err)
 	}
 
-	resp, err := client.CreateApiKeyWithApplicationVndAPIPlusJSONBodyWithResponse(cmd.Context(), api.TeamSlug(team), body, auth)
+	resp, err := client.CreateApiKeyWithApplicationVndAPIPlusJSONBodyWithResponse(cmd.Context(), api.TeamSlug(team), body)
 	if err != nil {
 		return fmt.Errorf("creating API key: %w", err)
 	}
@@ -258,15 +248,12 @@ func setPermissions(attrs *api.ConfigurationKeyAttributes, permissions []string)
 }
 
 func handleCreateResponse(opts *options.RootOptions, resp *api.CreateApiKeyResp) error {
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	created, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.ApplicationvndApiJSON201)
+	if err != nil {
 		return err
 	}
 
-	if resp.ApplicationvndApiJSON201 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	detail := createResponseToDetail(resp.ApplicationvndApiJSON201)
+	detail := createResponseToDetail(created)
 
 	if detail.Secret != "" {
 		_, _ = fmt.Fprintf(opts.IOStreams.Err, "Save this key now — it cannot be retrieved again.\n")

@@ -29,14 +29,9 @@ func NewCalculatedDeleteCmd(opts *options.RootOptions, dataset *string) *cobra.C
 }
 
 func runCalculatedDelete(ctx context.Context, opts *options.RootOptions, dataset, id string, yes bool) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
-	}
-
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
 	}
 
 	if !yes {
@@ -44,7 +39,7 @@ func runCalculatedDelete(ctx context.Context, opts *options.RootOptions, dataset
 			return fmt.Errorf("--yes is required in non-interactive mode")
 		}
 
-		getResp, err := client.GetCalculatedFieldWithResponse(ctx, dataset, id, auth)
+		getResp, err := client.GetCalculatedFieldWithResponse(ctx, dataset, id)
 		if err != nil {
 			return fmt.Errorf("getting calculated column: %w", err)
 		}
@@ -66,7 +61,7 @@ func runCalculatedDelete(ctx context.Context, opts *options.RootOptions, dataset
 		}
 	}
 
-	resp, err := client.DeleteCalculatedFieldWithResponse(ctx, dataset, id, auth)
+	resp, err := client.DeleteCalculatedFieldWithResponse(ctx, dataset, id)
 	if err != nil {
 		return fmt.Errorf("deleting calculated column: %w", err)
 	}

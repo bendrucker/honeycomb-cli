@@ -30,14 +30,9 @@ func NewDeleteCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 }
 
 func runAnnotationDelete(ctx context.Context, opts *options.RootOptions, dataset, annotationID string, yes bool) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
-	}
-
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
 	}
 
 	if !yes {
@@ -45,7 +40,7 @@ func runAnnotationDelete(ctx context.Context, opts *options.RootOptions, dataset
 			return fmt.Errorf("--yes is required in non-interactive mode")
 		}
 
-		a, err := getAnnotation(ctx, client, auth, dataset, annotationID)
+		a, err := getAnnotation(ctx, client, dataset, annotationID)
 		if err != nil {
 			return err
 		}
@@ -59,7 +54,7 @@ func runAnnotationDelete(ctx context.Context, opts *options.RootOptions, dataset
 		}
 	}
 
-	resp, err := client.DeleteQueryAnnotationWithResponse(ctx, dataset, annotationID, auth)
+	resp, err := client.DeleteQueryAnnotationWithResponse(ctx, dataset, annotationID)
 	if err != nil {
 		return fmt.Errorf("deleting query annotation: %w", err)
 	}

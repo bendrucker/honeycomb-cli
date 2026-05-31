@@ -51,27 +51,22 @@ preset_filters array requires both "column" (the column name) and "alias"
 }
 
 func runBoardUpdate(cmd *cobra.Command, opts *options.RootOptions, boardID, file string, replace bool, name, desc string) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
-	}
-
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
 	}
 
 	ctx := cmd.Context()
 
 	if file != "" {
-		return updateFromFile(ctx, client, opts, auth, boardID, file, replace)
+		return updateFromFile(ctx, client, opts, boardID, file, replace)
 	}
 
 	if !cmd.Flags().Changed("name") && !cmd.Flags().Changed("description") {
 		return fmt.Errorf("--file, --name, or --description is required")
 	}
 
-	current, err := getBoard(ctx, client, auth, boardID)
+	current, err := getBoard(ctx, client, boardID)
 	if err != nil {
 		return err
 	}
@@ -93,23 +88,20 @@ func runBoardUpdate(cmd *cobra.Command, opts *options.RootOptions, boardID, file
 		return fmt.Errorf("stripping panel dataset: %w", err)
 	}
 
-	resp, err := client.UpdateBoardWithBodyWithResponse(ctx, boardID, "application/json", bytes.NewReader(data), auth)
+	resp, err := client.UpdateBoardWithBodyWithResponse(ctx, boardID, "application/json", bytes.NewReader(data))
 	if err != nil {
 		return fmt.Errorf("updating board: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	updated, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON200)
+	if err != nil {
 		return err
 	}
 
-	if resp.JSON200 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	return writeBoardDetail(opts, boardToDetail(*resp.JSON200))
+	return writeBoardDetail(opts, boardToDetail(*updated))
 }
 
-func updateFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, auth api.RequestEditorFn, boardID, file string, replace bool) error {
+func updateFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, boardID, file string, replace bool) error {
 	var r io.Reader
 	if file == "-" {
 		r = opts.IOStreams.In
@@ -131,7 +123,7 @@ func updateFromFile(ctx context.Context, client *api.ClientWithResponses, opts *
 		}
 
 		var fillErr error
-		data, fillErr = fillRequiredFields(ctx, client, auth, boardID, raw)
+		data, fillErr = fillRequiredFields(ctx, client, boardID, raw)
 		if fillErr != nil {
 			return fillErr
 		}
@@ -146,7 +138,7 @@ func updateFromFile(ctx context.Context, client *api.ClientWithResponses, opts *
 			return err
 		}
 
-		current, err := getBoard(ctx, client, auth, boardID)
+		current, err := getBoard(ctx, client, boardID)
 		if err != nil {
 			return err
 		}
@@ -169,37 +161,26 @@ func updateFromFile(ctx context.Context, client *api.ClientWithResponses, opts *
 		return fmt.Errorf("stripping panel dataset: %w", panelErr)
 	}
 
-	resp, err := client.UpdateBoardWithBodyWithResponse(ctx, boardID, "application/json", bytes.NewReader(data), auth)
+	resp, err := client.UpdateBoardWithBodyWithResponse(ctx, boardID, "application/json", bytes.NewReader(data))
 	if err != nil {
 		return fmt.Errorf("updating board: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	updated, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON200)
+	if err != nil {
 		return err
 	}
 
-	if resp.JSON200 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	return writeBoardDetail(opts, boardToDetail(*resp.JSON200))
+	return writeBoardDetail(opts, boardToDetail(*updated))
 }
 
-func getBoard(ctx context.Context, client *api.ClientWithResponses, auth api.RequestEditorFn, boardID string) (*api.Board, error) {
-	resp, err := client.GetBoardWithResponse(ctx, boardID, auth)
+func getBoard(ctx context.Context, client *api.ClientWithResponses, boardID string) (*api.Board, error) {
+	resp, err := client.GetBoardWithResponse(ctx, boardID)
 	if err != nil {
 		return nil, fmt.Errorf("getting board: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
-		return nil, err
-	}
-
-	if resp.JSON200 == nil {
-		return nil, fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	return resp.JSON200, nil
+	return api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON200)
 }
 
 // mergeBoard applies non-zero fields from src onto dst.
@@ -228,7 +209,7 @@ func mergeBoard(dst *api.Board, src *api.Board) {
 // fillRequiredFields ensures that "name" and "type" are present in the board
 // JSON, fetching the current board to fill them in when missing. This allows
 // --replace to work without redundantly specifying fields that are already known.
-func fillRequiredFields(ctx context.Context, client *api.ClientWithResponses, auth api.RequestEditorFn, boardID string, data []byte) ([]byte, error) {
+func fillRequiredFields(ctx context.Context, client *api.ClientWithResponses, boardID string, data []byte) ([]byte, error) {
 	var m map[string]json.RawMessage
 	if err := json.Unmarshal(data, &m); err != nil {
 		return nil, fmt.Errorf("parsing board JSON: %w", err)
@@ -240,7 +221,7 @@ func fillRequiredFields(ctx context.Context, client *api.ClientWithResponses, au
 		return data, nil
 	}
 
-	current, err := getBoard(ctx, client, auth, boardID)
+	current, err := getBoard(ctx, client, boardID)
 	if err != nil {
 		return nil, err
 	}

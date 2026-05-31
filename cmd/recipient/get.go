@@ -22,17 +22,12 @@ func NewGetCmd(opts *options.RootOptions) *cobra.Command {
 }
 
 func runGet(ctx context.Context, opts *options.RootOptions, recipientID string) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
 	}
 
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
-	}
-
-	resp, err := client.GetRecipientWithResponse(ctx, recipientID, auth)
+	resp, err := client.GetRecipientWithResponse(ctx, recipientID)
 	if err != nil {
 		return fmt.Errorf("getting recipient: %w", err)
 	}

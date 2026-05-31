@@ -92,6 +92,21 @@ func (o *RootOptions) KeyEditor(kt config.KeyType) (api.RequestEditorFn, error) 
 	}, nil
 }
 
+// Client builds an API client with auth for the given key type baked in via a
+// request editor, so call sites issue requests without threading an editor
+// argument through every WithResponse call.
+func (o *RootOptions) Client(kt config.KeyType) (*api.ClientWithResponses, error) {
+	editor, err := o.KeyEditor(kt)
+	if err != nil {
+		return nil, err
+	}
+	client, err := api.NewClientWithResponses(o.ResolveAPIUrl(), api.WithRequestEditorFn(editor))
+	if err != nil {
+		return nil, fmt.Errorf("creating API client: %w", err)
+	}
+	return client, nil
+}
+
 func (o *RootOptions) OutputWriter() *output.Writer {
 	return output.New(o.IOStreams.Out, o.ResolveFormat())
 }

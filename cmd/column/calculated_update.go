@@ -74,14 +74,9 @@ type calculatedUpdateFlags struct {
 }
 
 func runCalculatedUpdate(ctx context.Context, opts *options.RootOptions, dataset, id string, flags calculatedUpdateFlags) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
-	}
-
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
 	}
 
 	var body api.CalculatedField
@@ -111,17 +106,15 @@ func runCalculatedUpdate(ctx context.Context, opts *options.RootOptions, dataset
 			return fmt.Errorf("parsing calculated column JSON: %w", err)
 		}
 	} else {
-		getResp, err := client.GetCalculatedFieldWithResponse(ctx, dataset, id, auth)
+		getResp, err := client.GetCalculatedFieldWithResponse(ctx, dataset, id)
 		if err != nil {
 			return fmt.Errorf("getting calculated column: %w", err)
 		}
-		if err := api.CheckResponse(getResp.StatusCode(), getResp.Body); err != nil {
+		current, err := api.Decode(getResp.StatusCode(), getResp.Status(), getResp.Body, getResp.JSON200)
+		if err != nil {
 			return err
 		}
-		if getResp.JSON200 == nil {
-			return fmt.Errorf("unexpected response: %s", getResp.Status())
-		}
-		body = *getResp.JSON200
+		body = *current
 
 		if flags.hasAlias {
 			body.Alias = flags.alias
@@ -139,18 +132,15 @@ func runCalculatedUpdate(ctx context.Context, opts *options.RootOptions, dataset
 		return fmt.Errorf("encoding calculated column: %w", err)
 	}
 
-	resp, err := client.UpdateCalculatedFieldWithBodyWithResponse(ctx, dataset, id, "application/json", bytes.NewReader(data), auth)
+	resp, err := client.UpdateCalculatedFieldWithBodyWithResponse(ctx, dataset, id, "application/json", bytes.NewReader(data))
 	if err != nil {
 		return fmt.Errorf("updating calculated column: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	updated, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON200)
+	if err != nil {
 		return err
 	}
 
-	if resp.JSON200 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	return writeCalculatedDetail(opts, *resp.JSON200)
+	return writeCalculatedDetail(opts, *updated)
 }

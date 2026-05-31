@@ -60,14 +60,9 @@ func runDatasetCreate(ctx context.Context, opts *options.RootOptions, name, desc
 		}
 	}
 
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
-	}
-
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
 	}
 
 	body := api.DatasetCreationPayload{
@@ -80,7 +75,7 @@ func runDatasetCreate(ctx context.Context, opts *options.RootOptions, name, desc
 		body.ExpandJsonDepth = expandJsonDepth
 	}
 
-	resp, err := client.CreateDatasetWithResponse(ctx, body, auth)
+	resp, err := client.CreateDatasetWithResponse(ctx, body)
 	if err != nil {
 		return fmt.Errorf("creating dataset: %w", err)
 	}

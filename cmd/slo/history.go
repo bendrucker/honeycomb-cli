@@ -39,14 +39,9 @@ func NewHistoryCmd(opts *options.RootOptions, _ *string) *cobra.Command {
 }
 
 func runHistory(ctx context.Context, opts *options.RootOptions, sloIDs []string, startTime, endTime int) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
-	}
-
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
 	}
 
 	ids := make([]interface{}, len(sloIDs))
@@ -60,20 +55,17 @@ func runHistory(ctx context.Context, opts *options.RootOptions, sloIDs []string,
 		EndTime:   endTime,
 	}
 
-	resp, err := client.GetSloHistoryWithResponse(ctx, body, auth)
+	resp, err := client.GetSloHistoryWithResponse(ctx, body)
 	if err != nil {
 		return fmt.Errorf("getting SLO history: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	history, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON200)
+	if err != nil {
 		return err
 	}
 
-	if resp.JSON200 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	data := *resp.JSON200
+	data := *history
 
 	return opts.OutputWriter().WriteDynamic(data, historyTable(data))
 }

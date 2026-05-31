@@ -42,27 +42,22 @@ func NewViewUpdateCmd(opts *options.RootOptions, board *string) *cobra.Command {
 }
 
 func runViewUpdate(cmd *cobra.Command, opts *options.RootOptions, boardID, viewID, file, name string, filterArgs []string) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
-	}
-
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
 	}
 
 	ctx := cmd.Context()
 
 	if file != "" {
-		return updateViewFromFile(ctx, client, opts, auth, boardID, viewID, file)
+		return updateViewFromFile(ctx, client, opts, boardID, viewID, file)
 	}
 
 	if !cmd.Flags().Changed("name") && !cmd.Flags().Changed("filter") {
 		return fmt.Errorf("--file, --name, or --filter is required")
 	}
 
-	current, err := getView(ctx, client, auth, boardID, viewID)
+	current, err := getView(ctx, client, boardID, viewID)
 	if err != nil {
 		return err
 	}
@@ -85,23 +80,20 @@ func runViewUpdate(cmd *cobra.Command, opts *options.RootOptions, boardID, viewI
 		body.Filters = *current.Filters
 	}
 
-	resp, err := client.UpdateBoardViewWithResponse(ctx, boardID, viewID, body, auth)
+	resp, err := client.UpdateBoardViewWithResponse(ctx, boardID, viewID, body)
 	if err != nil {
 		return fmt.Errorf("updating board view: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	updated, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON200)
+	if err != nil {
 		return err
 	}
 
-	if resp.JSON200 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	return writeViewDetail(opts, viewResponseToDetail(*resp.JSON200))
+	return writeViewDetail(opts, viewResponseToDetail(*updated))
 }
 
-func updateViewFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, auth api.RequestEditorFn, boardID, viewID, file string) error {
+func updateViewFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, boardID, viewID, file string) error {
 	var r io.Reader
 	if file == "-" {
 		r = opts.IOStreams.In
@@ -124,35 +116,24 @@ func updateViewFromFile(ctx context.Context, client *api.ClientWithResponses, op
 		return fmt.Errorf("invalid JSON: %w", err)
 	}
 
-	resp, err := client.UpdateBoardViewWithBodyWithResponse(ctx, boardID, viewID, "application/json", bytes.NewReader(data), auth)
+	resp, err := client.UpdateBoardViewWithBodyWithResponse(ctx, boardID, viewID, "application/json", bytes.NewReader(data))
 	if err != nil {
 		return fmt.Errorf("updating board view: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	updated, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON200)
+	if err != nil {
 		return err
 	}
 
-	if resp.JSON200 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	return writeViewDetail(opts, viewResponseToDetail(*resp.JSON200))
+	return writeViewDetail(opts, viewResponseToDetail(*updated))
 }
 
-func getView(ctx context.Context, client *api.ClientWithResponses, auth api.RequestEditorFn, boardID, viewID string) (*api.BoardViewResponse, error) {
-	resp, err := client.GetBoardViewWithResponse(ctx, boardID, viewID, auth)
+func getView(ctx context.Context, client *api.ClientWithResponses, boardID, viewID string) (*api.BoardViewResponse, error) {
+	resp, err := client.GetBoardViewWithResponse(ctx, boardID, viewID)
 	if err != nil {
 		return nil, fmt.Errorf("getting board view: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
-		return nil, err
-	}
-
-	if resp.JSON200 == nil {
-		return nil, fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	return resp.JSON200, nil
+	return api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON200)
 }

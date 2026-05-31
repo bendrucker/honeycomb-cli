@@ -58,30 +58,22 @@ func NewGetCmd(opts *options.RootOptions) *cobra.Command {
 }
 
 func runDatasetGet(ctx context.Context, opts *options.RootOptions, slug string) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
 	}
 
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
-	}
-
-	resp, err := client.GetDatasetWithResponse(ctx, slug, auth)
+	resp, err := client.GetDatasetWithResponse(ctx, slug)
 	if err != nil {
 		return fmt.Errorf("getting dataset: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	dataset, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON200)
+	if err != nil {
 		return err
 	}
 
-	if resp.JSON200 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	detail := mapDatasetDetail(resp.JSON200)
+	detail := mapDatasetDetail(dataset)
 	return writeDatasetDetail(opts, detail)
 }
 

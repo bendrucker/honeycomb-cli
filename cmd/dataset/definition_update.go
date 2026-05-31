@@ -33,7 +33,7 @@ func NewDefinitionUpdateCmd(opts *options.RootOptions) *cobra.Command {
 }
 
 func runDefinitionUpdate(ctx context.Context, opts *options.RootOptions, slug, file string) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -43,25 +43,17 @@ func runDefinitionUpdate(ctx context.Context, opts *options.RootOptions, slug, f
 		return err
 	}
 
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
-	}
-
-	resp, err := client.PatchDatasetDefinitionsWithBodyWithResponse(ctx, slug, "application/json", bytes.NewReader(data), auth)
+	resp, err := client.PatchDatasetDefinitionsWithBodyWithResponse(ctx, slug, "application/json", bytes.NewReader(data))
 	if err != nil {
 		return fmt.Errorf("updating dataset definitions: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	defs, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON200)
+	if err != nil {
 		return err
 	}
 
-	if resp.JSON200 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	return writeDefinitions(opts, resp.JSON200)
+	return writeDefinitions(opts, defs)
 }
 
 func readDefinitionFile(opts *options.RootOptions, file string) ([]byte, error) {

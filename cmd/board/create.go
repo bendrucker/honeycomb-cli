@@ -48,20 +48,15 @@ characters) for each entry:
 }
 
 func runBoardCreate(cmd *cobra.Command, opts *options.RootOptions, file, name, desc string) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
-	}
-
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
 	}
 
 	ctx := cmd.Context()
 
 	if file != "" {
-		return createFromFile(ctx, client, opts, auth, file)
+		return createFromFile(ctx, client, opts, file)
 	}
 
 	if name == "" {
@@ -91,23 +86,20 @@ func runBoardCreate(cmd *cobra.Command, opts *options.RootOptions, file, name, d
 		board.Description = &desc
 	}
 
-	resp, err := client.CreateBoardWithResponse(ctx, board, auth)
+	resp, err := client.CreateBoardWithResponse(ctx, board)
 	if err != nil {
 		return fmt.Errorf("creating board: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	created, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON201)
+	if err != nil {
 		return err
 	}
 
-	if resp.JSON201 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	return writeBoardDetail(opts, boardToDetail(*resp.JSON201))
+	return writeBoardDetail(opts, boardToDetail(*created))
 }
 
-func createFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, auth api.RequestEditorFn, file string) error {
+func createFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, file string) error {
 	var r io.Reader
 	if file == "-" {
 		r = opts.IOStreams.In
@@ -140,18 +132,15 @@ func createFromFile(ctx context.Context, client *api.ClientWithResponses, opts *
 		return fmt.Errorf("stripping panel dataset: %w", err)
 	}
 
-	resp, err := client.CreateBoardWithBodyWithResponse(ctx, "application/json", bytes.NewReader(data), auth)
+	resp, err := client.CreateBoardWithBodyWithResponse(ctx, "application/json", bytes.NewReader(data))
 	if err != nil {
 		return fmt.Errorf("creating board: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	created, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON201)
+	if err != nil {
 		return err
 	}
 
-	if resp.JSON201 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	return writeBoardDetail(opts, boardToDetail(*resp.JSON201))
+	return writeBoardDetail(opts, boardToDetail(*created))
 }

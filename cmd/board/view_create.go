@@ -42,20 +42,15 @@ func NewViewCreateCmd(opts *options.RootOptions, board *string) *cobra.Command {
 }
 
 func runViewCreate(cmd *cobra.Command, opts *options.RootOptions, boardID, file, name string, filterArgs []string) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
-	}
-
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
 	}
 
 	ctx := cmd.Context()
 
 	if file != "" {
-		return createViewFromFile(ctx, client, opts, auth, boardID, file)
+		return createViewFromFile(ctx, client, opts, boardID, file)
 	}
 
 	if name == "" {
@@ -85,20 +80,17 @@ func runViewCreate(cmd *cobra.Command, opts *options.RootOptions, boardID, file,
 		Filters: filters,
 	}
 
-	resp, err := client.CreateBoardViewWithResponse(ctx, boardID, body, auth)
+	resp, err := client.CreateBoardViewWithResponse(ctx, boardID, body)
 	if err != nil {
 		return fmt.Errorf("creating board view: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	created, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON201)
+	if err != nil {
 		return err
 	}
 
-	if resp.JSON201 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	return writeViewDetail(opts, viewResponseToDetail(*resp.JSON201))
+	return writeViewDetail(opts, viewResponseToDetail(*created))
 }
 
 func parseViewFilters(args []string) ([]api.BoardViewFilter, error) {
@@ -120,7 +112,7 @@ func parseViewFilters(args []string) ([]api.BoardViewFilter, error) {
 	return filters, nil
 }
 
-func createViewFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, auth api.RequestEditorFn, boardID, file string) error {
+func createViewFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, boardID, file string) error {
 	var r io.Reader
 	if file == "-" {
 		r = opts.IOStreams.In
@@ -143,18 +135,15 @@ func createViewFromFile(ctx context.Context, client *api.ClientWithResponses, op
 		return fmt.Errorf("invalid JSON: %w", err)
 	}
 
-	resp, err := client.CreateBoardViewWithBodyWithResponse(ctx, boardID, "application/json", bytes.NewReader(data), auth)
+	resp, err := client.CreateBoardViewWithBodyWithResponse(ctx, boardID, "application/json", bytes.NewReader(data))
 	if err != nil {
 		return fmt.Errorf("creating board view: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	created, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON201)
+	if err != nil {
 		return err
 	}
 
-	if resp.JSON201 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	return writeViewDetail(opts, viewResponseToDetail(*resp.JSON201))
+	return writeViewDetail(opts, viewResponseToDetail(*created))
 }

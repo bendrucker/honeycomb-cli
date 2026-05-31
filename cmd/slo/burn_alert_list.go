@@ -29,18 +29,13 @@ func NewBurnAlertListCmd(opts *options.RootOptions, dataset *string) *cobra.Comm
 }
 
 func runBurnAlertList(ctx context.Context, opts *options.RootOptions, dataset, sloID string) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
 	}
 
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
-	}
-
 	params := &api.ListBurnAlertsBySloParams{SloId: sloID}
-	resp, err := client.ListBurnAlertsBySloWithResponse(ctx, dataset, params, auth)
+	resp, err := client.ListBurnAlertsBySloWithResponse(ctx, dataset, params)
 	if err != nil {
 		return fmt.Errorf("listing burn alerts: %w", err)
 	}

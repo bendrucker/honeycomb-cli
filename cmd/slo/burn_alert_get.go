@@ -24,17 +24,12 @@ func NewBurnAlertGetCmd(opts *options.RootOptions, dataset *string) *cobra.Comma
 }
 
 func runBurnAlertGet(ctx context.Context, opts *options.RootOptions, dataset, burnAlertID string) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
 	}
 
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
-	}
-
-	resp, err := client.GetBurnAlertWithResponse(ctx, dataset, burnAlertID, auth)
+	resp, err := client.GetBurnAlertWithResponse(ctx, dataset, burnAlertID)
 	if err != nil {
 		return fmt.Errorf("getting burn alert: %w", err)
 	}

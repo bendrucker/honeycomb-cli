@@ -47,14 +47,9 @@ func NewUpdateCmd(opts *options.RootOptions) *cobra.Command {
 }
 
 func runUpdate(cmd *cobra.Command, opts *options.RootOptions, recipientID, file, recipientType, target, channel, integrationKey, name, url string) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
-	}
-
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
 	}
 
 	ctx := cmd.Context()
@@ -66,7 +61,7 @@ func runUpdate(cmd *cobra.Command, opts *options.RootOptions, recipientID, file,
 			return err
 		}
 	} else if hasAnyFlag(cmd, "type", "target", "channel", "integration-key", "name", "url") {
-		resp, err := client.GetRecipientWithResponse(ctx, recipientID, auth)
+		resp, err := client.GetRecipientWithResponse(ctx, recipientID)
 		if err != nil {
 			return fmt.Errorf("getting recipient: %w", err)
 		}
@@ -89,7 +84,7 @@ func runUpdate(cmd *cobra.Command, opts *options.RootOptions, recipientID, file,
 		return fmt.Errorf("--file, --type, --target, --channel, --integration-key, --name, or --url is required")
 	}
 
-	resp, err := client.UpdateRecipientWithBodyWithResponse(ctx, recipientID, "application/json", bytes.NewReader(data), auth)
+	resp, err := client.UpdateRecipientWithBodyWithResponse(ctx, recipientID, "application/json", bytes.NewReader(data))
 	if err != nil {
 		return fmt.Errorf("updating recipient: %w", err)
 	}

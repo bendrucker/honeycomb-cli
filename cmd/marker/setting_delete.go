@@ -29,14 +29,9 @@ func NewSettingDeleteCmd(opts *options.RootOptions, dataset *string) *cobra.Comm
 }
 
 func runSettingDelete(ctx context.Context, opts *options.RootOptions, dataset, settingID string, yes bool) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
-	}
-
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
 	}
 
 	if !yes {
@@ -56,7 +51,7 @@ func runSettingDelete(ctx context.Context, opts *options.RootOptions, dataset, s
 		}
 	}
 
-	resp, err := client.DeleteMarkerSettingsWithResponse(ctx, api.DatasetSlugOrAll(dataset), settingID, auth)
+	resp, err := client.DeleteMarkerSettingsWithResponse(ctx, api.DatasetSlugOrAll(dataset), settingID)
 	if err != nil {
 		return fmt.Errorf("deleting marker setting: %w", err)
 	}
