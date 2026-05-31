@@ -1,6 +1,6 @@
 # Honeycomb CLI
 
-CLI for [Honeycomb](https://www.honeycomb.io/), modeled after the [GitHub CLI](https://cli.github.com/) (`gh`).
+Unofficial CLI for [Honeycomb](https://www.honeycomb.io/), modeled after the [GitHub CLI](https://cli.github.com/) (`gh`).
 
 ## Installation
 
