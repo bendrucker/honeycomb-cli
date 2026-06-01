@@ -30,14 +30,9 @@ func NewViewDeleteCmd(opts *options.RootOptions, board *string) *cobra.Command {
 }
 
 func runViewDelete(ctx context.Context, opts *options.RootOptions, boardID, viewID string, yes bool) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
-	}
-
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
 	}
 
 	if !yes {
@@ -45,7 +40,7 @@ func runViewDelete(ctx context.Context, opts *options.RootOptions, boardID, view
 			return fmt.Errorf("--yes is required in non-interactive mode")
 		}
 
-		view, err := getView(ctx, client, auth, boardID, viewID)
+		view, err := getView(ctx, client, boardID, viewID)
 		if err != nil {
 			return err
 		}
@@ -64,7 +59,7 @@ func runViewDelete(ctx context.Context, opts *options.RootOptions, boardID, view
 		}
 	}
 
-	resp, err := client.DeleteBoardViewWithResponse(ctx, boardID, viewID, auth)
+	resp, err := client.DeleteBoardViewWithResponse(ctx, boardID, viewID)
 	if err != nil {
 		return fmt.Errorf("deleting board view: %w", err)
 	}

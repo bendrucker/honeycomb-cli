@@ -29,14 +29,9 @@ func NewDeleteCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 }
 
 func runColumnDelete(ctx context.Context, opts *options.RootOptions, dataset, columnID string, yes bool) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
-	}
-
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
 	}
 
 	if !yes {
@@ -44,7 +39,7 @@ func runColumnDelete(ctx context.Context, opts *options.RootOptions, dataset, co
 			return fmt.Errorf("--yes is required in non-interactive mode")
 		}
 
-		getResp, err := client.GetColumnWithResponse(ctx, dataset, columnID, auth)
+		getResp, err := client.GetColumnWithResponse(ctx, dataset, columnID)
 		if err != nil {
 			return fmt.Errorf("getting column: %w", err)
 		}
@@ -66,7 +61,7 @@ func runColumnDelete(ctx context.Context, opts *options.RootOptions, dataset, co
 		}
 	}
 
-	resp, err := client.DeleteColumnWithResponse(ctx, dataset, columnID, auth)
+	resp, err := client.DeleteColumnWithResponse(ctx, dataset, columnID)
 	if err != nil {
 		return fmt.Errorf("deleting column: %w", err)
 	}

@@ -81,14 +81,9 @@ type updateFlags struct {
 }
 
 func runUpdate(ctx context.Context, opts *options.RootOptions, dataset, triggerID string, flags updateFlags) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
-	}
-
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
 	}
 
 	var body api.TriggerResponse
@@ -102,17 +97,15 @@ func runUpdate(ctx context.Context, opts *options.RootOptions, dataset, triggerI
 			return fmt.Errorf("parsing trigger JSON: %w", err)
 		}
 	} else {
-		resp, err := client.GetTriggerWithResponse(ctx, dataset, triggerID, auth)
+		resp, err := client.GetTriggerWithResponse(ctx, dataset, triggerID)
 		if err != nil {
 			return fmt.Errorf("getting trigger: %w", err)
 		}
-		if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+		current, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON200)
+		if err != nil {
 			return err
 		}
-		if resp.JSON200 == nil {
-			return fmt.Errorf("unexpected response: %s", resp.Status())
-		}
-		body = *resp.JSON200
+		body = *current
 
 		if flags.hasName {
 			body.Name = &flags.name
@@ -134,19 +127,15 @@ func runUpdate(ctx context.Context, opts *options.RootOptions, dataset, triggerI
 		return fmt.Errorf("encoding trigger: %w", err)
 	}
 
-	resp, err := client.UpdateTriggerWithBodyWithResponse(ctx, dataset, triggerID, "application/json", bytes.NewReader(data), auth)
+	resp, err := client.UpdateTriggerWithBodyWithResponse(ctx, dataset, triggerID, "application/json", bytes.NewReader(data))
 	if err != nil {
 		return fmt.Errorf("updating trigger: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	updated, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON200)
+	if err != nil {
 		return err
 	}
 
-	if resp.JSON200 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	detail := toDetail(*resp.JSON200)
-	return writeTriggerDetail(opts, detail)
+	return writeTriggerDetail(opts, toDetail(*updated))
 }

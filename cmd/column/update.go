@@ -32,32 +32,24 @@ func NewUpdateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 }
 
 func runColumnUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, columnID, description string, hidden bool) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
-	}
-
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
 	}
 
 	ctx := cmd.Context()
 
-	getResp, err := client.GetColumnWithResponse(ctx, dataset, columnID, auth)
+	getResp, err := client.GetColumnWithResponse(ctx, dataset, columnID)
 	if err != nil {
 		return fmt.Errorf("getting column: %w", err)
 	}
 
-	if err := api.CheckResponse(getResp.StatusCode(), getResp.Body); err != nil {
+	current, err := api.Decode(getResp.StatusCode(), getResp.Status(), getResp.Body, getResp.JSON200)
+	if err != nil {
 		return err
 	}
 
-	if getResp.JSON200 == nil {
-		return fmt.Errorf("unexpected response: %s", getResp.Status())
-	}
-
-	col := *getResp.JSON200
+	col := *current
 
 	if cmd.Flags().Changed("description") {
 		col.Description = &description
@@ -71,18 +63,15 @@ func runColumnUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, col
 		return fmt.Errorf("encoding column: %w", err)
 	}
 
-	resp, err := client.UpdateColumnWithBodyWithResponse(ctx, dataset, columnID, "application/json", bytes.NewReader(data), auth)
+	resp, err := client.UpdateColumnWithBodyWithResponse(ctx, dataset, columnID, "application/json", bytes.NewReader(data))
 	if err != nil {
 		return fmt.Errorf("updating column: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	updated, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON200)
+	if err != nil {
 		return err
 	}
 
-	if resp.JSON200 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	return writeColumnDetail(opts, *resp.JSON200)
+	return writeColumnDetail(opts, *updated)
 }

@@ -40,14 +40,9 @@ func runEnvironmentUpdate(cmd *cobra.Command, opts *options.RootOptions, team, e
 		return fmt.Errorf("--description, --color, or --delete-protected is required")
 	}
 
-	auth, err := opts.KeyEditor(config.KeyManagement)
+	client, err := opts.Client(config.KeyManagement)
 	if err != nil {
 		return err
-	}
-
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
 	}
 
 	body := api.UpdateEnvironmentRequest{}
@@ -68,18 +63,15 @@ func runEnvironmentUpdate(cmd *cobra.Command, opts *options.RootOptions, team, e
 		}
 	}
 
-	resp, err := client.UpdateEnvironmentWithApplicationVndAPIPlusJSONBodyWithResponse(cmd.Context(), team, envID, body, auth)
+	resp, err := client.UpdateEnvironmentWithApplicationVndAPIPlusJSONBodyWithResponse(cmd.Context(), team, envID, body)
 	if err != nil {
 		return fmt.Errorf("updating environment: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	env, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.ApplicationvndApiJSON200)
+	if err != nil {
 		return err
 	}
 
-	if resp.ApplicationvndApiJSON200 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	return writeEnvironmentDetail(opts, envToDetail(resp.ApplicationvndApiJSON200.Data))
+	return writeEnvironmentDetail(opts, envToDetail(env.Data))
 }

@@ -34,31 +34,23 @@ func NewListCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 }
 
 func runSLOList(ctx context.Context, opts *options.RootOptions, dataset string) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
 	}
 
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
-	}
-
-	resp, err := client.ListSlosWithResponse(ctx, dataset, auth)
+	resp, err := client.ListSlosWithResponse(ctx, dataset)
 	if err != nil {
 		return fmt.Errorf("listing SLOs: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	slos, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON200)
+	if err != nil {
 		return err
 	}
 
-	if resp.JSON200 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	items := make([]sloItem, len(*resp.JSON200))
-	for i, s := range *resp.JSON200 {
+	items := make([]sloItem, len(*slos))
+	for i, s := range *slos {
 		items[i] = sloItem{
 			ID:               deref.String(s.Id),
 			Name:             s.Name,

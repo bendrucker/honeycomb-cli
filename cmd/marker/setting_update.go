@@ -34,18 +34,13 @@ func NewSettingUpdateCmd(opts *options.RootOptions, dataset *string) *cobra.Comm
 func runSettingUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, settingID, settingType, color string) error {
 	ctx := cmd.Context()
 
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
 	}
 
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
-	}
-
 	if settingType == "" || color == "" {
-		existing, err := findMarkerSetting(ctx, client, dataset, settingID, auth)
+		existing, err := findMarkerSetting(ctx, client, dataset, settingID)
 		if err != nil {
 			return err
 		}
@@ -62,34 +57,29 @@ func runSettingUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, se
 		Color: color,
 	}
 
-	resp, err := client.UpdateMarkerSettingsWithResponse(ctx, api.DatasetSlugOrAll(dataset), settingID, body, auth)
+	resp, err := client.UpdateMarkerSettingsWithResponse(ctx, api.DatasetSlugOrAll(dataset), settingID, body)
 	if err != nil {
 		return fmt.Errorf("updating marker setting: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	setting, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON200)
+	if err != nil {
 		return err
 	}
 
-	if resp.JSON200 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	return writeSettingDetail(opts, toSettingItem(*resp.JSON200))
+	return writeSettingDetail(opts, toSettingItem(*setting))
 }
 
-func findMarkerSetting(ctx context.Context, client *api.ClientWithResponses, dataset, settingID string, auth api.RequestEditorFn) (*api.MarkerSetting, error) {
-	resp, err := client.ListMarkerSettingsWithResponse(ctx, api.DatasetSlugOrAll(dataset), auth)
+func findMarkerSetting(ctx context.Context, client *api.ClientWithResponses, dataset, settingID string) (*api.MarkerSetting, error) {
+	resp, err := client.ListMarkerSettingsWithResponse(ctx, api.DatasetSlugOrAll(dataset))
 	if err != nil {
 		return nil, fmt.Errorf("listing marker settings: %w", err)
 	}
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	settings, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON200)
+	if err != nil {
 		return nil, err
 	}
-	if resp.JSON200 == nil {
-		return nil, fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-	for _, s := range *resp.JSON200 {
+	for _, s := range *settings {
 		if s.Id != nil && *s.Id == settingID {
 			return &s, nil
 		}

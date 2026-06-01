@@ -30,14 +30,9 @@ func NewListCmd(opts *options.RootOptions, team *string) *cobra.Command {
 }
 
 func runKeyList(ctx context.Context, opts *options.RootOptions, team, filterType string) error {
-	auth, err := opts.KeyEditor(config.KeyManagement)
+	client, err := opts.Client(config.KeyManagement)
 	if err != nil {
 		return err
-	}
-
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
 	}
 
 	var params *api.ListApiKeysParams
@@ -46,21 +41,18 @@ func runKeyList(ctx context.Context, opts *options.RootOptions, team, filterType
 		params = &api.ListApiKeysParams{FilterType: &ft}
 	}
 
-	resp, err := client.ListApiKeysWithResponse(ctx, api.TeamSlug(team), params, auth)
+	resp, err := client.ListApiKeysWithResponse(ctx, api.TeamSlug(team), params)
 	if err != nil {
 		return fmt.Errorf("listing API keys: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	list, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.ApplicationvndApiJSON200)
+	if err != nil {
 		return err
 	}
 
-	if resp.ApplicationvndApiJSON200 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	items := make([]keyItem, len(resp.ApplicationvndApiJSON200.Data))
-	for i, obj := range resp.ApplicationvndApiJSON200.Data {
+	items := make([]keyItem, len(list.Data))
+	for i, obj := range list.Data {
 		items[i] = objectToItem(obj)
 	}
 

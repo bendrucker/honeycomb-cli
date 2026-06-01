@@ -45,27 +45,22 @@ func NewUpdateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 }
 
 func runSLOUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, sloID, file, name, desc string, target, timePeriod int) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
-	}
-
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
 	}
 
 	ctx := cmd.Context()
 
 	if file != "" {
-		return updateFromFile(ctx, client, opts, auth, dataset, sloID, file)
+		return updateFromFile(ctx, client, opts, dataset, sloID, file)
 	}
 
 	if !cmd.Flags().Changed("name") && !cmd.Flags().Changed("description") && !cmd.Flags().Changed("target") && !cmd.Flags().Changed("time-period") {
 		return fmt.Errorf("--file, --name, --description, --target, or --time-period is required")
 	}
 
-	current, err := getSLO(ctx, client, auth, dataset, sloID)
+	current, err := getSLO(ctx, client, dataset, sloID)
 	if err != nil {
 		return err
 	}
@@ -88,7 +83,7 @@ func runSLOUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, sloID,
 		return fmt.Errorf("encoding SLO: %w", err)
 	}
 
-	resp, err := client.UpdateSloWithBodyWithResponse(ctx, dataset, sloID, "application/json", bytes.NewReader(data), auth)
+	resp, err := client.UpdateSloWithBodyWithResponse(ctx, dataset, sloID, "application/json", bytes.NewReader(data))
 	if err != nil {
 		return fmt.Errorf("updating SLO: %w", err)
 	}
@@ -104,7 +99,7 @@ func runSLOUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, sloID,
 	return writeSloDetail(opts, sloToDetail(*resp.JSON200))
 }
 
-func updateFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, auth api.RequestEditorFn, dataset, sloID, file string) error {
+func updateFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, dataset, sloID, file string) error {
 	raw, err := readFile(opts, file)
 	if err != nil {
 		return err
@@ -115,7 +110,7 @@ func updateFromFile(ctx context.Context, client *api.ClientWithResponses, opts *
 		return fmt.Errorf("stripping read-only fields: %w", err)
 	}
 
-	resp, err := client.UpdateSloWithBodyWithResponse(ctx, dataset, sloID, "application/json", bytes.NewReader(data), auth)
+	resp, err := client.UpdateSloWithBodyWithResponse(ctx, dataset, sloID, "application/json", bytes.NewReader(data))
 	if err != nil {
 		return fmt.Errorf("updating SLO: %w", err)
 	}
@@ -131,8 +126,8 @@ func updateFromFile(ctx context.Context, client *api.ClientWithResponses, opts *
 	return writeSloDetail(opts, sloToDetail(*resp.JSON200))
 }
 
-func getSLO(ctx context.Context, client *api.ClientWithResponses, auth api.RequestEditorFn, dataset, sloID string) (*api.SLO, error) {
-	resp, err := client.GetSloWithResponse(ctx, dataset, sloID, &api.GetSloParams{}, auth)
+func getSLO(ctx context.Context, client *api.ClientWithResponses, dataset, sloID string) (*api.SLO, error) {
+	resp, err := client.GetSloWithResponse(ctx, dataset, sloID, &api.GetSloParams{})
 	if err != nil {
 		return nil, fmt.Errorf("getting SLO: %w", err)
 	}

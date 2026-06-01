@@ -42,31 +42,23 @@ func NewUpdateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 func runMarkerUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, markerID, markerType, message, url string, startTime, endTime int, color string) error {
 	ctx := cmd.Context()
 
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
 	}
 
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
-	}
-
 	// Fetch existing marker (no individual GET — list and filter)
-	listResp, err := client.GetMarkerWithResponse(ctx, dataset, auth)
+	listResp, err := client.GetMarkerWithResponse(ctx, dataset)
 	if err != nil {
 		return fmt.Errorf("listing markers: %w", err)
 	}
 
-	if err := api.CheckResponse(listResp.StatusCode(), listResp.Body); err != nil {
+	markers, err := api.Decode(listResp.StatusCode(), listResp.Status(), listResp.Body, listResp.JSON200)
+	if err != nil {
 		return err
 	}
 
-	if listResp.JSON200 == nil {
-		return fmt.Errorf("unexpected response: %s", listResp.Status())
-	}
-
-	existing, err := findMarker(*listResp.JSON200, markerID)
+	existing, err := findMarker(*markers, markerID)
 	if err != nil {
 		return err
 	}
@@ -96,18 +88,15 @@ func runMarkerUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, mar
 		return fmt.Errorf("encoding marker: %w", err)
 	}
 
-	resp, err := client.UpdateMarkerWithBodyWithResponse(ctx, dataset, markerID, "application/json", bytes.NewReader(data), auth)
+	resp, err := client.UpdateMarkerWithBodyWithResponse(ctx, dataset, markerID, "application/json", bytes.NewReader(data))
 	if err != nil {
 		return fmt.Errorf("updating marker: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	marker, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON200)
+	if err != nil {
 		return err
 	}
 
-	if resp.JSON200 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	return writeDetail(opts, markerToItem(*resp.JSON200))
+	return writeDetail(opts, markerToItem(*marker))
 }

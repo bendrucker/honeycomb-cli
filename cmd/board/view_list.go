@@ -21,31 +21,23 @@ func NewViewListCmd(opts *options.RootOptions, board *string) *cobra.Command {
 }
 
 func runViewList(ctx context.Context, opts *options.RootOptions, boardID string) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
 	}
 
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
-	}
-
-	resp, err := client.ListBoardViewsWithResponse(ctx, boardID, auth)
+	resp, err := client.ListBoardViewsWithResponse(ctx, boardID)
 	if err != nil {
 		return fmt.Errorf("listing board views: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	views, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON200)
+	if err != nil {
 		return err
 	}
 
-	if resp.JSON200 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	items := make([]viewItem, len(*resp.JSON200))
-	for i, v := range *resp.JSON200 {
+	items := make([]viewItem, len(*views))
+	for i, v := range *views {
 		items[i] = viewResponseToItem(v)
 	}
 

@@ -68,7 +68,7 @@ type createFlags struct {
 }
 
 func runCreate(cmd *cobra.Command, opts *options.RootOptions, dataset string, flags createFlags) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -115,24 +115,15 @@ func runCreate(cmd *cobra.Command, opts *options.RootOptions, dataset string, fl
 		}
 	}
 
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
-	}
-
-	resp, err := client.CreateTriggerWithBodyWithResponse(cmd.Context(), dataset, "application/json", bytes.NewReader(data), auth)
+	resp, err := client.CreateTriggerWithBodyWithResponse(cmd.Context(), dataset, "application/json", bytes.NewReader(data))
 	if err != nil {
 		return fmt.Errorf("creating trigger: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	trigger, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON201)
+	if err != nil {
 		return err
 	}
 
-	if resp.JSON201 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	detail := toDetail(*resp.JSON201)
-	return writeTriggerDetail(opts, detail)
+	return writeTriggerDetail(opts, toDetail(*trigger))
 }

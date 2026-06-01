@@ -36,14 +36,9 @@ func NewCreateCmd(opts *options.RootOptions, team *string) *cobra.Command {
 }
 
 func runEnvironmentCreate(cmd *cobra.Command, opts *options.RootOptions, team, name, desc, color string) error {
-	auth, err := opts.KeyEditor(config.KeyManagement)
+	client, err := opts.Client(config.KeyManagement)
 	if err != nil {
 		return err
-	}
-
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
 	}
 
 	if name == "" {
@@ -76,18 +71,15 @@ func runEnvironmentCreate(cmd *cobra.Command, opts *options.RootOptions, team, n
 		body.Data.Attributes.Color = &c
 	}
 
-	resp, err := client.CreateEnvironmentWithApplicationVndAPIPlusJSONBodyWithResponse(cmd.Context(), team, body, auth)
+	resp, err := client.CreateEnvironmentWithApplicationVndAPIPlusJSONBodyWithResponse(cmd.Context(), team, body)
 	if err != nil {
 		return fmt.Errorf("creating environment: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	env, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.ApplicationvndApiJSON201)
+	if err != nil {
 		return err
 	}
 
-	if resp.ApplicationvndApiJSON201 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	return writeEnvironmentDetail(opts, envToDetail(resp.ApplicationvndApiJSON201.Data))
+	return writeEnvironmentDetail(opts, envToDetail(env.Data))
 }

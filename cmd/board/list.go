@@ -40,31 +40,23 @@ func NewListCmd(opts *options.RootOptions) *cobra.Command {
 }
 
 func runBoardList(ctx context.Context, opts *options.RootOptions) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
 	}
 
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
-	}
-
-	resp, err := client.ListBoardsWithResponse(ctx, auth)
+	resp, err := client.ListBoardsWithResponse(ctx)
 	if err != nil {
 		return fmt.Errorf("listing boards: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	boards, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON200)
+	if err != nil {
 		return err
 	}
 
-	if resp.JSON200 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	items := make([]boardListItem, len(*resp.JSON200))
-	for i, b := range *resp.JSON200 {
+	items := make([]boardListItem, len(*boards))
+	for i, b := range *boards {
 		item := boardListItem{
 			ID:           deref.String(b.Id),
 			Name:         b.Name,

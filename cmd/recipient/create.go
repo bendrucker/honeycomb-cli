@@ -237,17 +237,12 @@ func readFile(opts *options.RootOptions, file string) ([]byte, error) {
 }
 
 func sendCreate(ctx context.Context, opts *options.RootOptions, data []byte) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
 	}
 
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
-	}
-
-	resp, err := client.CreateRecipientWithBodyWithResponse(ctx, "application/json", bytes.NewReader(data), auth)
+	resp, err := client.CreateRecipientWithBodyWithResponse(ctx, "application/json", bytes.NewReader(data))
 	if err != nil {
 		return fmt.Errorf("creating recipient: %w", err)
 	}

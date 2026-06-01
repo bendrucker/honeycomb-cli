@@ -116,6 +116,33 @@ Commands follow a consistent pattern:
 - Support `--format` for output
 - Both interactive and non-interactive paths
 
+## API Requests
+
+Build the client with `opts.Client(kt config.KeyType)`, which bakes the auth
+request editor in, so call sites issue requests without passing an editor
+argument:
+
+```go
+client, err := opts.Client(config.KeyConfig)
+if err != nil {
+	return err
+}
+resp, err := client.ListTriggersWithResponse(ctx, dataset)
+if err != nil {
+	return fmt.Errorf("listing triggers: %w", err)
+}
+triggers, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON200)
+if err != nil {
+	return err
+}
+```
+
+`api.Decode` runs `CheckResponse` (the status/error-body check) and guards the
+typed-nil case, returning the typed body. Use it wherever a `JSON200`/`JSON201`
+field is read directly. Responses decoded by hand (SLO union types, the raw
+`ListColumns` body) keep their own `api.CheckResponse` + `json.Unmarshal`.
+Delete commands keep `api.CheckResponse` and any status guard.
+
 ## Testing
 
 **Unit tests** use `keyring.MockInit()` for an in-memory keyring and `httptest.NewServer` for API stubs. These run in `go test` with no external dependencies.

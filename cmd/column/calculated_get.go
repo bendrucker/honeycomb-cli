@@ -22,28 +22,20 @@ func NewCalculatedGetCmd(opts *options.RootOptions, dataset *string) *cobra.Comm
 }
 
 func runCalculatedGet(ctx context.Context, opts *options.RootOptions, dataset, id string) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
 	}
 
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
-	}
-
-	resp, err := client.GetCalculatedFieldWithResponse(ctx, dataset, id, auth)
+	resp, err := client.GetCalculatedFieldWithResponse(ctx, dataset, id)
 	if err != nil {
 		return fmt.Errorf("getting calculated column: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	field, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON200)
+	if err != nil {
 		return err
 	}
 
-	if resp.JSON200 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	return writeCalculatedDetail(opts, *resp.JSON200)
+	return writeCalculatedDetail(opts, *field)
 }

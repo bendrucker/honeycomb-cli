@@ -21,31 +21,23 @@ func NewListCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 }
 
 func runMarkerList(ctx context.Context, opts *options.RootOptions, dataset string) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
 	}
 
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
-	}
-
-	resp, err := client.GetMarkerWithResponse(ctx, dataset, auth)
+	resp, err := client.GetMarkerWithResponse(ctx, dataset)
 	if err != nil {
 		return fmt.Errorf("listing markers: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	markers, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON200)
+	if err != nil {
 		return err
 	}
 
-	if resp.JSON200 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	items := make([]markerItem, len(*resp.JSON200))
-	for i, m := range *resp.JSON200 {
+	items := make([]markerItem, len(*markers))
+	for i, m := range *markers {
 		items[i] = markerToItem(m)
 	}
 

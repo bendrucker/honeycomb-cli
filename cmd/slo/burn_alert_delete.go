@@ -30,7 +30,7 @@ func NewBurnAlertDeleteCmd(opts *options.RootOptions, dataset *string) *cobra.Co
 }
 
 func runBurnAlertDelete(ctx context.Context, opts *options.RootOptions, dataset, burnAlertID string, yes bool) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
 	}
@@ -49,12 +49,7 @@ func runBurnAlertDelete(ctx context.Context, opts *options.RootOptions, dataset,
 		}
 	}
 
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
-	}
-
-	resp, err := client.DeleteBurnAlertWithResponse(ctx, dataset, burnAlertID, auth)
+	resp, err := client.DeleteBurnAlertWithResponse(ctx, dataset, burnAlertID)
 	if err != nil {
 		return fmt.Errorf("deleting burn alert: %w", err)
 	}

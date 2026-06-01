@@ -21,31 +21,23 @@ func NewSettingListCmd(opts *options.RootOptions, dataset *string) *cobra.Comman
 }
 
 func runSettingList(ctx context.Context, opts *options.RootOptions, dataset string) error {
-	auth, err := opts.KeyEditor(config.KeyConfig)
+	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
 		return err
 	}
 
-	client, err := api.NewClientWithResponses(opts.ResolveAPIUrl())
-	if err != nil {
-		return fmt.Errorf("creating API client: %w", err)
-	}
-
-	resp, err := client.ListMarkerSettingsWithResponse(ctx, api.DatasetSlugOrAll(dataset), auth)
+	resp, err := client.ListMarkerSettingsWithResponse(ctx, api.DatasetSlugOrAll(dataset))
 	if err != nil {
 		return fmt.Errorf("listing marker settings: %w", err)
 	}
 
-	if err := api.CheckResponse(resp.StatusCode(), resp.Body); err != nil {
+	settings, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON200)
+	if err != nil {
 		return err
 	}
 
-	if resp.JSON200 == nil {
-		return fmt.Errorf("unexpected response: %s", resp.Status())
-	}
-
-	items := make([]settingItem, len(*resp.JSON200))
-	for i, s := range *resp.JSON200 {
+	items := make([]settingItem, len(*settings))
+	for i, s := range *settings {
 		items[i] = toSettingItem(s)
 	}
 
