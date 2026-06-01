@@ -18,6 +18,14 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 		Use:     "board",
 		Short:   "Manage boards",
 		Aliases: []string{"boards"},
+		Example: `  # List boards
+  honeycomb board list
+
+  # Get a board by ID
+  honeycomb board get abc123
+
+  # Create a board from a file
+  honeycomb board create --file board.json`,
 	}
 
 	cmd.AddCommand(NewListCmd(opts))

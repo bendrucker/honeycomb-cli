@@ -21,7 +21,9 @@ func NewViewCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "view <annotation-id>",
 		Short: "View a query annotation",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # View a query annotation by ID
+  honeycomb query annotation view q-abc --dataset my-dataset`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runAnnotationView(cmd.Context(), opts, *dataset, args[0])
 		},

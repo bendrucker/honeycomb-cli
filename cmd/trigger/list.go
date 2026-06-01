@@ -17,6 +17,11 @@ func NewListCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list",
 		Short: "List triggers",
+		Example: `  # List triggers for a dataset
+  honeycomb trigger list --dataset my-dataset
+
+  # List triggers as JSON
+  honeycomb trigger list --dataset my-dataset --format json`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runList(cmd.Context(), opts, *dataset)
 		},

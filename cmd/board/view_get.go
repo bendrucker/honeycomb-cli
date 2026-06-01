@@ -14,7 +14,9 @@ func NewViewGetCmd(opts *options.RootOptions, board *string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "get <view-id>",
 		Short: "Get a board view",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Get a board view by ID
+  honeycomb board view get view123 --board abc123`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runViewGet(cmd.Context(), opts, *board, args[0])
 		},

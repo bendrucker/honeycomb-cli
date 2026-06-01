@@ -18,6 +18,11 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 		Use:     "key",
 		Short:   "Manage API keys",
 		Aliases: []string{"keys"},
+		Example: `  # List API keys
+  honeycomb key list
+
+  # Get an API key by ID
+  honeycomb key get abc123`,
 	}
 
 	cmd.PersistentFlags().StringVar(&team, "team", "", "Team slug")

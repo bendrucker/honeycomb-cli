@@ -13,6 +13,11 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 		Use:     "query",
 		Short:   "Manage queries and saved queries",
 		Aliases: []string{"queries"},
+		Example: `  # Run a query from a spec file
+  honeycomb query run --dataset my-dataset --file query.json
+
+  # List saved query annotations
+  honeycomb query annotation list --dataset my-dataset`,
 	}
 
 	cmd.PersistentFlags().StringVar(&dataset, "dataset", "", "Dataset slug (required)")

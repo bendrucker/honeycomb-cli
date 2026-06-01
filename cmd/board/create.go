@@ -23,6 +23,11 @@ func NewCreateCmd(opts *options.RootOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a board",
+		Example: `  # Create a board with a name
+  honeycomb board create --name "Latency"
+
+  # Create a board from a JSON file
+  honeycomb board create --file board.json`,
 		Long: `Create a board.
 
 Use --file to provide a full board definition as JSON. The preset_filters array

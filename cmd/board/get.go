@@ -14,7 +14,9 @@ func NewGetCmd(opts *options.RootOptions) *cobra.Command {
 	return &cobra.Command{
 		Use:   "get <board-id>",
 		Short: "Get a board",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Get a board by ID
+  honeycomb board get abc123`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runBoardGet(cmd.Context(), opts, args[0])
 		},

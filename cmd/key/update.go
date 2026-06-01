@@ -23,7 +23,12 @@ func NewUpdateCmd(opts *options.RootOptions, team *string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "update <id>",
 		Short: "Update an API key",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Rename an API key
+  honeycomb key update abc123 --name "renamed"
+
+  # Disable an API key
+  honeycomb key update abc123 --disabled`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := opts.RequireTeam(team); err != nil {
 				return err

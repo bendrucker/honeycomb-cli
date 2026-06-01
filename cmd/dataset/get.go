@@ -49,7 +49,9 @@ func NewGetCmd(opts *options.RootOptions) *cobra.Command {
 	return &cobra.Command{
 		Use:   "get <slug>",
 		Short: "Get a dataset",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Get a dataset by slug
+  honeycomb dataset get my-dataset`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runDatasetGet(cmd.Context(), opts, args[0])
 		},

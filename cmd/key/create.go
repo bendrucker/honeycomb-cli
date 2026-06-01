@@ -43,6 +43,13 @@ func NewCreateCmd(opts *options.RootOptions, team *string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create an API key",
+		Example: `  # Create an ingest key in an environment
+  honeycomb key create --name "ingest" --key-type ingest \
+    --environment env-abc --all-permissions
+
+  # Create a configuration key with specific permissions
+  honeycomb key create --name "config" --key-type configuration \
+    --environment env-abc --permission boards --permission triggers`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := opts.RequireTeam(team); err != nil {
 				return err

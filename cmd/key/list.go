@@ -25,6 +25,11 @@ func NewListCmd(opts *options.RootOptions, team *string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List API keys",
+		Example: `  # List API keys
+  honeycomb key list
+
+  # List only ingest keys
+  honeycomb key list --key-type ingest`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := opts.RequireTeam(team); err != nil {
 				return err

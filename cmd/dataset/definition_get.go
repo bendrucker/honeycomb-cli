@@ -17,7 +17,9 @@ func NewDefinitionGetCmd(opts *options.RootOptions) *cobra.Command {
 	return &cobra.Command{
 		Use:   "get <dataset-slug>",
 		Short: "Get dataset definitions",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Get the definitions for a dataset
+  honeycomb dataset definition get my-dataset`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runDefinitionGet(cmd.Context(), opts, args[0])
 		},

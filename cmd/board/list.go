@@ -25,6 +25,11 @@ func NewListCmd(opts *options.RootOptions) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list",
 		Short: "List boards",
+		Example: `  # List boards
+  honeycomb board list
+
+  # List boards as JSON
+  honeycomb board list --format json`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runBoardList(cmd.Context(), opts)
 		},

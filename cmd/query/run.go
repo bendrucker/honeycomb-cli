@@ -24,6 +24,15 @@ func NewRunCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "Run a query",
+		Example: `  # Run a query from a spec file
+  honeycomb query run --dataset my-dataset --file query.json
+
+  # Pipe a query spec from stdin
+  echo '{"calculations":[{"op":"COUNT"}]}' | \
+    honeycomb query run --dataset my-dataset --file -
+
+  # Re-run a saved query annotation
+  honeycomb query run --dataset my-dataset --annotation q-abc`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runQueryRun(cmd.Context(), opts, *dataset, file, annotation)
 		},

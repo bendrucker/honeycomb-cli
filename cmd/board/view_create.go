@@ -24,6 +24,12 @@ func NewViewCreateCmd(opts *options.RootOptions, board *string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a board view",
+		Example: `  # Create a view with a filter
+  honeycomb board view create --board abc123 --name "Errors" \
+    --filter "status_code:>=:500"
+
+  # Create a view from a JSON file
+  honeycomb board view create --board abc123 --file view.json`,
 		Long: "Create a board view.\n\n" +
 			"Each --filter is column:operation:value. The value is omitted for " +
 			"operations that take no operand (e.g. exists). Valid operations:\n\n  " +

@@ -22,7 +22,12 @@ func NewUpdateCmd(opts *options.RootOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "update <slug>",
 		Short: "Update a dataset",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Update a dataset's description
+  honeycomb dataset update my-dataset --description "Updated"
+
+  # Disable delete protection
+  honeycomb dataset update my-dataset --delete-protected=false`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var dp *bool
 			if cmd.Flags().Changed("delete-protected") {

@@ -17,7 +17,12 @@ func NewDeleteCmd(opts *options.RootOptions, team *string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delete <id>",
 		Short: "Delete an API key",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Delete an API key, prompting for confirmation
+  honeycomb key delete abc123
+
+  # Delete without confirmation
+  honeycomb key delete abc123 --yes`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := opts.RequireTeam(team); err != nil {
 				return err

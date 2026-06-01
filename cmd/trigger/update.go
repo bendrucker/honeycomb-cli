@@ -25,7 +25,12 @@ func NewUpdateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "update <trigger-id>",
 		Short: "Update a trigger",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Disable a trigger
+  honeycomb trigger update abc123 --dataset my-dataset --disabled
+
+  # Update a trigger from a file
+  honeycomb trigger update abc123 --dataset my-dataset --file trigger.json`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			hasFile := cmd.Flags().Changed("file")
 			hasName := cmd.Flags().Changed("name")
