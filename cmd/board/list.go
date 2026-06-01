@@ -13,10 +13,11 @@ import (
 )
 
 func truncate(s string, max int) string {
-	if len(s) <= max {
+	r := []rune(s)
+	if len(r) <= max {
 		return s
 	}
-	return s[:max-1] + "…"
+	return string(r[:max-3]) + "..."
 }
 
 var boardListTable = output.TableDef{
