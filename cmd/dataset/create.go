@@ -7,6 +7,7 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
+	"github.com/bendrucker/honeycomb-cli/internal/deref"
 	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/spf13/cobra"
 )
@@ -16,6 +17,7 @@ func NewCreateCmd(opts *options.RootOptions) *cobra.Command {
 		name            string
 		description     string
 		expandJsonDepth int
+		deleteProtected bool
 	)
 
 	cmd := &cobra.Command{
@@ -26,18 +28,23 @@ func NewCreateCmd(opts *options.RootOptions) *cobra.Command {
 			if cmd.Flags().Changed("expand-json-depth") {
 				ejd = &expandJsonDepth
 			}
-			return runDatasetCreate(cmd.Context(), opts, name, description, ejd)
+			var clearProtection bool
+			if cmd.Flags().Changed("delete-protected") && !deleteProtected {
+				clearProtection = true
+			}
+			return runDatasetCreate(cmd.Context(), opts, name, description, ejd, clearProtection)
 		},
 	}
 
 	cmd.Flags().StringVar(&name, "name", "", "Dataset name (required)")
 	cmd.Flags().StringVar(&description, "description", "", "Dataset description")
 	cmd.Flags().IntVar(&expandJsonDepth, "expand-json-depth", 0, "Maximum unpacking depth of nested JSON fields")
+	cmd.Flags().BoolVar(&deleteProtected, "delete-protected", true, "Protect dataset from deletion")
 
 	return cmd
 }
 
-func runDatasetCreate(ctx context.Context, opts *options.RootOptions, name, description string, expandJsonDepth *int) error {
+func runDatasetCreate(ctx context.Context, opts *options.RootOptions, name, description string, expandJsonDepth *int, clearProtection bool) error {
 	ios := opts.IOStreams
 
 	if ios.CanPrompt() {
@@ -94,6 +101,39 @@ func runDatasetCreate(ctx context.Context, opts *options.RootOptions, name, desc
 		return fmt.Errorf("unexpected response: %s", resp.Status())
 	}
 
+	if clearProtection {
+		dataset, err = clearDatasetProtection(ctx, client, dataset)
+		if err != nil {
+			return err
+		}
+	}
+
 	detail := mapDatasetDetail(dataset)
 	return writeDatasetDetail(opts, detail)
+}
+
+func clearDatasetProtection(ctx context.Context, client *api.ClientWithResponses, created *api.Dataset) (*api.Dataset, error) {
+	protected := false
+	body := api.DatasetUpdatePayload{
+		Description: deref.String(created.Description),
+		Settings: &struct {
+			DeleteProtected *bool `json:"delete_protected,omitempty"`
+		}{
+			DeleteProtected: &protected,
+		},
+	}
+	if created.ExpandJsonDepth != nil {
+		body.ExpandJsonDepth = *created.ExpandJsonDepth
+	}
+
+	resp, err := client.UpdateDatasetWithResponse(ctx, deref.String(created.Slug), body)
+	if err != nil {
+		return nil, fmt.Errorf("clearing delete protection: %w", err)
+	}
+
+	dataset, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON200)
+	if err != nil {
+		return nil, fmt.Errorf("clearing delete protection: %w", err)
+	}
+	return dataset, nil
 }

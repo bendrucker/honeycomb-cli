@@ -94,6 +94,88 @@ func TestCreate_200(t *testing.T) {
 	}
 }
 
+func TestCreate_DeleteProtectedFalse(t *testing.T) {
+	var posted, patched bool
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.Method {
+		case http.MethodPost:
+			posted = true
+			w.WriteHeader(http.StatusCreated)
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"name":       "my-dataset",
+				"slug":       "my-dataset",
+				"created_at": "2025-01-15T10:30:00Z",
+				"settings":   map[string]any{"delete_protected": true},
+			})
+		case http.MethodPut:
+			patched = true
+			if r.URL.Path != "/1/datasets/my-dataset" {
+				t.Errorf("path = %q, want /1/datasets/my-dataset", r.URL.Path)
+			}
+			body, _ := io.ReadAll(r.Body)
+			var payload api.DatasetUpdatePayload
+			if err := json.Unmarshal(body, &payload); err != nil {
+				t.Fatalf("unmarshal request body: %v", err)
+			}
+			if payload.Settings == nil || payload.Settings.DeleteProtected == nil || *payload.Settings.DeleteProtected {
+				t.Errorf("Settings.DeleteProtected = %v, want false", payload.Settings)
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"name":       "my-dataset",
+				"slug":       "my-dataset",
+				"created_at": "2025-01-15T10:30:00Z",
+				"settings":   map[string]any{"delete_protected": false},
+			})
+		default:
+			t.Errorf("unexpected method %q", r.Method)
+		}
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"create", "--name", "my-dataset", "--delete-protected=false"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	if !posted {
+		t.Error("create request not made")
+	}
+	if !patched {
+		t.Error("follow-up update request not made")
+	}
+
+	var detail datasetDetail
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &detail); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+	if detail.DeleteProtected {
+		t.Errorf("DeleteProtected = true, want false")
+	}
+}
+
+func TestCreate_NoFollowUpWhenDefault(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("unexpected %s request to %s", r.Method, r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"name":       "my-dataset",
+			"slug":       "my-dataset",
+			"created_at": "2025-01-15T10:30:00Z",
+			"settings":   map[string]any{"delete_protected": true},
+		})
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"create", "--name", "my-dataset"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestCreate_MissingName(t *testing.T) {
 	opts, _ := setupTest(t, http.NotFoundHandler())
 
