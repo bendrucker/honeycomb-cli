@@ -11,7 +11,10 @@ import (
 )
 
 func NewListCmd(opts *options.RootOptions, team *string) *cobra.Command {
-	var filterType string
+	var (
+		keyType    string
+		legacyType string
+	)
 
 	cmd := &cobra.Command{
 		Use:   "list",
@@ -20,11 +23,18 @@ func NewListCmd(opts *options.RootOptions, team *string) *cobra.Command {
 			if err := opts.RequireTeam(team); err != nil {
 				return err
 			}
+			filterType := keyType
+			if filterType == "" {
+				filterType = legacyType
+			}
 			return runKeyList(cmd.Context(), opts, *team, filterType)
 		},
 	}
 
-	cmd.Flags().StringVar(&filterType, "type", "", "Filter by key type (ingest, configuration)")
+	cmd.Flags().StringVar(&keyType, "key-type", "", "Filter by key type (ingest, configuration)")
+	cmd.Flags().StringVar(&legacyType, "type", "", "Filter by key type (ingest, configuration)")
+	_ = cmd.Flags().MarkHidden("type")
+	_ = cmd.Flags().MarkDeprecated("type", "use --key-type")
 
 	return cmd
 }

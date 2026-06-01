@@ -51,8 +51,8 @@ func TestHistory(t *testing.T) {
 	cmd := NewCmd(opts)
 	cmd.SetArgs([]string{
 		"history",
+		"slo-1",
 		"--dataset", "ignored",
-		"--slo-id", "slo-1",
 		"--slo-id", "slo-2",
 		"--start-time", "1700000000",
 		"--end-time", "1700100000",
@@ -76,6 +76,91 @@ func TestHistory(t *testing.T) {
 	}
 	if result["slo-1"][0].Compliance == nil || *result["slo-1"][0].Compliance != 99.5 {
 		t.Errorf("slo-1[0].Compliance = %v, want 99.5", result["slo-1"][0].Compliance)
+	}
+}
+
+func TestHistory_MergeSLOIDs(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		args    []string
+		flagIDs []string
+		want    []string
+	}{
+		{name: "positional only", args: []string{"a", "b"}, want: []string{"a", "b"}},
+		{name: "flags only", flagIDs: []string{"a", "b"}, want: []string{"a", "b"}},
+		{name: "merged", args: []string{"a"}, flagIDs: []string{"b"}, want: []string{"a", "b"}},
+		{name: "dedup across sources", args: []string{"a", "b"}, flagIDs: []string{"b", "c"}, want: []string{"a", "b", "c"}},
+		{name: "empty", want: nil},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := mergeSLOIDs(tc.args, tc.flagIDs)
+			if len(got) != len(tc.want) {
+				t.Fatalf("got %v, want %v", got, tc.want)
+			}
+			for i := range got {
+				if got[i] != tc.want[i] {
+					t.Fatalf("got %v, want %v", got, tc.want)
+				}
+			}
+		})
+	}
+}
+
+func TestHistory_PositionalOnly(t *testing.T) {
+	opts, ts := setupBurnAlertTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Fatalf("reading request body: %v", err)
+		}
+		var req api.SLOHistoryRequest
+		if err := json.Unmarshal(body, &req); err != nil {
+			t.Fatalf("unmarshalling request body: %v", err)
+		}
+		if len(req.Ids) != 1 {
+			t.Fatalf("ids length = %d, want 1", len(req.Ids))
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"slo-1": []map[string]any{{"timestamp": 1700000000, "compliance": 99.5, "budget_remaining": 0.8}},
+		})
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{
+		"history",
+		"slo-1",
+		"--dataset", "ignored",
+		"--start-time", "1700000000",
+		"--end-time", "1700100000",
+	})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	var result api.SLOHistoryResponse
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &result); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+	if len(result) != 1 {
+		t.Fatalf("got %d SLOs, want 1", len(result))
+	}
+}
+
+func TestHistory_NoSLOID(t *testing.T) {
+	opts, _ := setupBurnAlertTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		t.Error("unexpected API call")
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{
+		"history",
+		"--dataset", "ds",
+		"--start-time", "1700000000",
+		"--end-time", "1700100000",
+	})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error when no SLO ID is provided")
 	}
 }
 
