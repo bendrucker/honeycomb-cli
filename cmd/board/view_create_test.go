@@ -208,6 +208,11 @@ func TestParseViewFilters(t *testing.T) {
 			args:    []string{"nocolon"},
 			wantErr: "invalid filter",
 		},
+		{
+			name:    "unknown operation",
+			args:    []string{"status:equals:error"},
+			wantErr: "unknown operation",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			filters, err := parseViewFilters(tc.args)
@@ -227,5 +232,17 @@ func TestParseViewFilters(t *testing.T) {
 				t.Errorf("filter count = %d, want %d", len(filters), tc.wantCount)
 			}
 		})
+	}
+}
+
+func TestParseViewFilters_UnknownOperationListsAllValid(t *testing.T) {
+	_, err := parseViewFilters([]string{"status:equals:error"})
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	for _, op := range validFilterOperations {
+		if !strings.Contains(err.Error(), string(op)) {
+			t.Errorf("error %q missing valid operation %q", err.Error(), op)
+		}
 	}
 }
