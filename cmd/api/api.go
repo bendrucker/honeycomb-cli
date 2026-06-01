@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	clientapi "github.com/bendrucker/honeycomb-cli/internal/api"
@@ -34,12 +35,16 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 	o := &apiOptions{root: opts}
 
 	cmd := &cobra.Command{
-		Use:   "api <path>",
+		Use:   "api [method] <path>",
 		Short: "Make an authenticated API request",
 		Long:  "Make an authenticated API request to Honeycomb and print the response.",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return run(cmd, o, args[0])
+			path, err := parsePositionalMethod(cmd, o, args)
+			if err != nil {
+				return err
+			}
+			return run(cmd, o, path)
 		},
 	}
 
@@ -187,6 +192,38 @@ func writeBody(w io.Writer, body []byte) {
 	_, _ = w.Write(body)
 	if len(body) > 0 && body[len(body)-1] != '\n' {
 		_, _ = w.Write([]byte{'\n'})
+	}
+}
+
+// parsePositionalMethod supports the gh-style `api <method> <path>` form. With a
+// single positional, it is treated as the path and the method comes from -X or
+// auto-detection. With two positionals, the first must be a known HTTP method,
+// which sets o.method (uppercased), and the second is the path. Passing both a
+// positional method and -X is a conflict.
+func parsePositionalMethod(cmd *cobra.Command, o *apiOptions, args []string) (string, error) {
+	if len(args) == 1 {
+		return args[0], nil
+	}
+
+	method := args[0]
+	if !knownMethod(method) {
+		return "", fmt.Errorf("unknown HTTP method %q: expected GET, POST, PUT, PATCH, DELETE, or HEAD", method)
+	}
+	if cmd.Flags().Changed("method") {
+		return "", fmt.Errorf("cannot set the method via both a positional argument and -X/--method")
+	}
+
+	o.method = strings.ToUpper(method)
+	return args[1], nil
+}
+
+// knownMethod reports whether s is a recognized HTTP method, ignoring case.
+func knownMethod(s string) bool {
+	switch strings.ToUpper(s) {
+	case http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodHead:
+		return true
+	default:
+		return false
 	}
 }
 
