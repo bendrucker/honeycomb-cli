@@ -1,6 +1,7 @@
 package fields
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -86,6 +87,10 @@ func CoerceValue(s string, stdin io.Reader) (any, error) {
 		return readFileValue(s[1:], stdin)
 	}
 
+	if v, ok := parseJSON(s); ok {
+		return v, nil
+	}
+
 	if i, err := strconv.ParseInt(s, 10, 64); err == nil {
 		return i, nil
 	}
@@ -94,6 +99,27 @@ func CoerceValue(s string, stdin io.Reader) (any, error) {
 	}
 
 	return s, nil
+}
+
+// parseJSON parses a JSON object or array value so structured arguments (such
+// as the MCP run_query tool's query_json) reach the server as nested data
+// rather than a string the server cannot interpret. Only values that begin
+// with '{' or '[' are treated as JSON; bare scalars fall through to the
+// numeric and string handling so plain values keep their existing types.
+func parseJSON(s string) (any, bool) {
+	trimmed := strings.TrimSpace(s)
+	if len(trimmed) == 0 {
+		return nil, false
+	}
+	if trimmed[0] != '{' && trimmed[0] != '[' {
+		return nil, false
+	}
+
+	var v any
+	if err := json.Unmarshal([]byte(trimmed), &v); err != nil {
+		return nil, false
+	}
+	return v, true
 }
 
 func readFileValue(path string, stdin io.Reader) (string, error) {

@@ -50,7 +50,7 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 
 	cmd.Flags().StringVarP(&o.method, "method", "X", "", "HTTP method (default: auto-detected)")
 	cmd.Flags().StringArrayVarP(&o.fields, "field", "f", nil, "String field: key=value (repeatable; not a file)")
-	cmd.Flags().StringArrayVarP(&o.typed, "typed-field", "F", nil, "Typed field: bool/number/null coercion, @file")
+	cmd.Flags().StringArrayVarP(&o.typed, "typed-field", "F", nil, "Typed field: bool/number/null/JSON object/array coercion, @file")
 	cmd.Flags().StringArrayVarP(&o.headers, "header", "H", nil, "Request header: key:value")
 	cmd.Flags().StringVarP(&o.jqExpr, "jq", "q", "", "Filter response with jq expression")
 	cmd.Flags().BoolVarP(&o.include, "include", "i", false, "Show response status line and headers")
