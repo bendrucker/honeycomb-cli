@@ -22,11 +22,12 @@ func newTestGroup(ran *bool) *cobra.Command {
 
 func TestGroup(t *testing.T) {
 	for _, tc := range []struct {
-		name      string
-		args      []string
-		wantErr   bool
-		wantChild bool
-		wantHelp  bool
+		name       string
+		args       []string
+		wantErr    bool
+		wantErrSub string
+		wantChild  bool
+		wantHelp   bool
 	}{
 		{
 			name:     "bare parent prints help and errors",
@@ -35,9 +36,10 @@ func TestGroup(t *testing.T) {
 			wantHelp: true,
 		},
 		{
-			name:    "unknown subcommand errors",
-			args:    []string{"bogus"},
-			wantErr: true,
+			name:       "unknown subcommand errors",
+			args:       []string{"bogus"},
+			wantErr:    true,
+			wantErrSub: "unknown command",
 		},
 		{
 			name:      "valid subcommand runs",
@@ -61,6 +63,9 @@ func TestGroup(t *testing.T) {
 			}
 			if !tc.wantErr && err != nil {
 				t.Fatalf("unexpected error: %v", err)
+			}
+			if tc.wantErrSub != "" && (err == nil || !strings.Contains(err.Error(), tc.wantErrSub)) {
+				t.Errorf("error = %v, want substring %q", err, tc.wantErrSub)
 			}
 			if ran != tc.wantChild {
 				t.Errorf("child ran = %v, want %v", ran, tc.wantChild)
