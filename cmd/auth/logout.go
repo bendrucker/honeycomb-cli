@@ -57,13 +57,18 @@ func runAuthLogout(opts *options.RootOptions, keyType string) error {
 		deleted = append(deleted, logoutResult{Type: string(kt)})
 	}
 
-	// A full logout (no --key-type) also clears any stored MCP OAuth token set.
+	// A full logout (no --key-type) also clears any stored MCP OAuth token set
+	// and the persisted DCR client ID.
 	if keyType == "" {
 		err := config.DeleteMCPToken(profile)
 		if err == nil {
 			deleted = append(deleted, logoutResult{Type: "mcp"})
 		} else if !errors.Is(err, keyring.ErrNotFound) {
 			return fmt.Errorf("deleting MCP token: %w", err)
+		}
+
+		if err := config.DeleteMCPClientID(profile); err != nil && !errors.Is(err, keyring.ErrNotFound) {
+			return fmt.Errorf("deleting MCP client ID: %w", err)
 		}
 	}
 

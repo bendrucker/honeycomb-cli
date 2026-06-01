@@ -45,6 +45,12 @@ func (s *keyringTokenStore) GetToken(ctx context.Context) (*transport.Token, err
 	if errors.Is(err, keyring.ErrNotFound) {
 		return nil, transport.ErrNoToken
 	}
+	// A stored-but-unparseable entry is unusable. Treat it as no token so the
+	// library re-runs the authorization flow rather than hard-failing both
+	// refresh and re-auth.
+	if errors.Is(err, config.ErrMCPTokenCorrupt) {
+		return nil, transport.ErrNoToken
+	}
 	if err != nil {
 		return nil, fmt.Errorf("reading MCP token: %w", err)
 	}
@@ -64,8 +70,14 @@ func (s *keyringTokenStore) SaveToken(ctx context.Context, token *transport.Toke
 // oauthConfig builds the library OAuth configuration for a profile, wiring the
 // keyring-backed token store, the requested scopes, a loopback redirect URI per
 // RFC 8252, and PKCE (S256). The config key is never referenced here.
+//
+// A previously persisted DCR client ID is seeded so the refresh-token grant can
+// send a stable client_id across CLI invocations. A missing or unreadable entry
+// leaves the client ID empty, which triggers a fresh registration.
 func oauthConfig(profile, redirectURI string) transport.OAuthConfig {
+	clientID, _ := config.GetMCPClientID(profile)
 	return transport.OAuthConfig{
+		ClientID:    clientID,
 		ClientURI:   "https://github.com/bendrucker/honeycomb-cli",
 		RedirectURI: redirectURI,
 		Scopes:      oauthScopes,
@@ -89,7 +101,7 @@ func newOAuthClient(mcpURL, profile, redirectURI string) (*mcpclient.Client, err
 // required. It starts a loopback callback server, opens the browser to the
 // authorization URL, validates the returned state, and exchanges the code for
 // tokens, which the handler persists through the keyring token store.
-func authorizeInteractive(ctx context.Context, ios *iostreams.IOStreams, authErr error, listener net.Listener) error {
+func authorizeInteractive(ctx context.Context, ios *iostreams.IOStreams, profile string, authErr error, listener net.Listener) error {
 	handler := mcpclient.GetOAuthHandler(authErr)
 	if handler == nil {
 		return fmt.Errorf("MCP server requires authorization but no OAuth handler was provided")
@@ -109,6 +121,13 @@ func authorizeInteractive(ctx context.Context, ios *iostreams.IOStreams, authErr
 	if handler.GetClientID() == "" {
 		if err := handler.RegisterClient(ctx, clientName); err != nil {
 			return fmt.Errorf("registering OAuth client: %w", err)
+		}
+		// Persist the registered client ID so a later invocation's refresh grant
+		// sends a stable client_id instead of forcing a fresh browser flow. A
+		// failure here is non-fatal: the in-memory handler still works for this
+		// session.
+		if id := handler.GetClientID(); id != "" {
+			_ = config.SetMCPClientID(profile, id)
 		}
 	}
 
@@ -171,23 +190,54 @@ type callbackParams struct {
 	err     error
 }
 
+const callbackPath = "/callback"
+
+const successPage = `<!doctype html><html><body>` +
+	`<h1>Authorization complete</h1>` +
+	`<p>You can close this window and return to the terminal.</p>` +
+	`</body></html>`
+
+const failurePage = `<!doctype html><html><body>` +
+	`<h1>Authorization failed</h1>` +
+	`<p>Return to the terminal.</p>` +
+	`</body></html>`
+
+// callbackHandler serves the loopback OAuth redirect. It handles only GET
+// requests to the redirect path that carry an authorization result (a code or
+// an error). Browser probes such as /favicon.ico, or bare hits to the redirect
+// path with neither parameter, get a 404/204 and are never delivered to the
+// channel, so exactly one meaningful result reaches the waiting flow without
+// leaking a blocked-send goroutine. The Go flow remains authoritative for state
+// validation; the rendered page only reflects whether the callback looks valid.
 func callbackHandler(ch chan<- callbackParams) http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc(callbackPath, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
 		q := r.URL.Query()
-		params := callbackParams{
-			code:    q.Get("code"),
-			state:   q.Get("state"),
-			errCode: q.Get("error"),
+		code := q.Get("code")
+		errCode := q.Get("error")
+		state := q.Get("state")
+
+		// A request carrying neither a code nor an error is not an
+		// authorization response (e.g. a browser probe). Do not consume the
+		// channel slot for it.
+		if code == "" && errCode == "" {
+			w.WriteHeader(http.StatusNoContent)
+			return
 		}
 
 		w.Header().Set("Content-Type", "text/html")
-		_, _ = w.Write([]byte(`<!doctype html><html><body>` +
-			`<h1>Authorization complete</h1>` +
-			`<p>You can close this window and return to the terminal.</p>` +
-			`</body></html>`))
+		if errCode == "" && code != "" {
+			_, _ = w.Write([]byte(successPage))
+		} else {
+			_, _ = w.Write([]byte(failurePage))
+		}
 
-		ch <- params
+		ch <- callbackParams{code: code, state: state, errCode: errCode}
 	})
 	return mux
 }
@@ -201,7 +251,7 @@ func newLoopbackListener() (net.Listener, string, error) {
 		return nil, "", fmt.Errorf("starting loopback callback server: %w", err)
 	}
 	addr := l.Addr().(*net.TCPAddr)
-	redirectURI := fmt.Sprintf("http://127.0.0.1:%d/callback", addr.Port)
+	redirectURI := fmt.Sprintf("http://127.0.0.1:%d%s", addr.Port, callbackPath)
 	return l, redirectURI, nil
 }
 

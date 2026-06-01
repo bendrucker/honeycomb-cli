@@ -79,6 +79,88 @@ func TestAuthLogout_AllKeys(t *testing.T) {
 	}
 }
 
+func TestAuthLogout_ClearsMCPToken(t *testing.T) {
+	ts := iostreams.Test(t)
+	opts := &options.RootOptions{
+		IOStreams: ts.IOStreams,
+		Config:    &config.Config{},
+		Format:    "json",
+	}
+
+	if err := config.SetKey("default", config.KeyConfig, "cfg-key"); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = config.DeleteKey("default", config.KeyConfig) })
+	if err := config.SetMCPToken("default", map[string]string{"access_token": "tok"}); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = config.DeleteMCPToken("default") })
+
+	if err := runAuthLogout(opts, ""); err != nil {
+		t.Fatal(err)
+	}
+
+	var results []logoutResult
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &results); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+
+	var sawMCP bool
+	for _, r := range results {
+		if r.Type == "mcp" {
+			sawMCP = true
+		}
+	}
+	if !sawMCP {
+		t.Errorf("expected a mcp result, got %+v", results)
+	}
+
+	var tok map[string]string
+	if err := config.GetMCPToken("default", &tok); err == nil {
+		t.Error("expected MCP token to be deleted")
+	}
+}
+
+func TestAuthLogout_KeyTypeLeavesMCPToken(t *testing.T) {
+	ts := iostreams.Test(t)
+	opts := &options.RootOptions{
+		IOStreams: ts.IOStreams,
+		Config:    &config.Config{},
+		Format:    "json",
+	}
+
+	if err := config.SetKey("default", config.KeyConfig, "cfg-key"); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = config.DeleteKey("default", config.KeyConfig) })
+	if err := config.SetMCPToken("default", map[string]string{"access_token": "tok"}); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = config.DeleteMCPToken("default") })
+
+	// A targeted logout only removes the named key type. The MCP token is left
+	// intact so logging out a single API key does not silently drop the
+	// separately scoped MCP credential.
+	if err := runAuthLogout(opts, "config"); err != nil {
+		t.Fatal(err)
+	}
+
+	var results []logoutResult
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &results); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+	for _, r := range results {
+		if r.Type == "mcp" {
+			t.Errorf("targeted logout reported mcp result: %+v", results)
+		}
+	}
+
+	var tok map[string]string
+	if err := config.GetMCPToken("default", &tok); err != nil {
+		t.Errorf("expected MCP token to remain, got error: %v", err)
+	}
+}
+
 func TestAuthLogout_NoKeys(t *testing.T) {
 	ts := iostreams.Test(t)
 	opts := &options.RootOptions{
