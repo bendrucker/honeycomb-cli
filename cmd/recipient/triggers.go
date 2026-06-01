@@ -56,7 +56,7 @@ func runTriggers(ctx context.Context, opts *options.RootOptions, recipientID str
 		items[i] = toTriggerItem(t)
 	}
 
-	return opts.OutputWriter().Write(items, triggerListTable)
+	return opts.OutputWriterList().Write(items, triggerListTable)
 }
 
 func toTriggerItem(t api.TriggerResponse) triggerItem {
