@@ -425,6 +425,99 @@ func TestCreate(t *testing.T) {
 	}
 }
 
+func TestCreate_DeleteProtectedFalse(t *testing.T) {
+	var posted, patched bool
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			posted = true
+			jsonapiEnvelope(t, w, http.StatusCreated, map[string]any{
+				"data": map[string]any{
+					"id":   "env-new",
+					"type": "environments",
+					"attributes": map[string]any{
+						"name":     "Test Env",
+						"slug":     "test-env",
+						"settings": map[string]any{"delete_protected": true},
+					},
+				},
+			})
+		case http.MethodPatch:
+			patched = true
+			if r.URL.Path != "/2/teams/my-team/environments/env-new" {
+				t.Errorf("path = %q, want /2/teams/my-team/environments/env-new", r.URL.Path)
+			}
+			var body map[string]any
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			data, _ := body["data"].(map[string]any)
+			attrs, _ := data["attributes"].(map[string]any)
+			settings, _ := attrs["settings"].(map[string]any)
+			if settings["delete_protected"] != false {
+				t.Errorf("delete_protected = %v, want false", settings["delete_protected"])
+			}
+			jsonapiEnvelope(t, w, http.StatusOK, map[string]any{
+				"data": map[string]any{
+					"id":   "env-new",
+					"type": "environments",
+					"attributes": map[string]any{
+						"name":     "Test Env",
+						"slug":     "test-env",
+						"settings": map[string]any{"delete_protected": false},
+					},
+				},
+			})
+		default:
+			t.Errorf("unexpected method %q", r.Method)
+		}
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"create", "--team", "my-team", "--name", "Test Env", "--delete-protected=false"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	if !posted {
+		t.Error("create request not made")
+	}
+	if !patched {
+		t.Error("follow-up update request not made")
+	}
+
+	var detail environmentDetail
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &detail); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+	if detail.DeleteProtected {
+		t.Errorf("DeleteProtected = true, want false")
+	}
+}
+
+func TestCreate_NoFollowUpWhenDefault(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("unexpected %s request to %s", r.Method, r.URL.Path)
+		}
+		jsonapiEnvelope(t, w, http.StatusCreated, map[string]any{
+			"data": map[string]any{
+				"id":   "env-new",
+				"type": "environments",
+				"attributes": map[string]any{
+					"name":     "Test Env",
+					"slug":     "test-env",
+					"settings": map[string]any{"delete_protected": true},
+				},
+			},
+		})
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"create", "--team", "my-team", "--name", "Test Env"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestCreate_NoNameNonInteractive(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	opts.IOStreams.SetNeverPrompt(true)

@@ -12,9 +12,10 @@ import (
 
 func NewCreateCmd(opts *options.RootOptions, team *string) *cobra.Command {
 	var (
-		name  string
-		desc  string
-		color string
+		name            string
+		desc            string
+		color           string
+		deleteProtected bool
 	)
 
 	cmd := &cobra.Command{
@@ -24,18 +25,20 @@ func NewCreateCmd(opts *options.RootOptions, team *string) *cobra.Command {
 			if err := opts.RequireTeam(team); err != nil {
 				return err
 			}
-			return runEnvironmentCreate(cmd, opts, *team, name, desc, color)
+			clearProtection := cmd.Flags().Changed("delete-protected") && !deleteProtected
+			return runEnvironmentCreate(cmd, opts, *team, name, desc, color, clearProtection)
 		},
 	}
 
 	cmd.Flags().StringVar(&name, "name", "", "Environment name")
 	cmd.Flags().StringVar(&desc, "description", "", "Environment description")
 	cmd.Flags().StringVar(&color, "color", "", "Environment color")
+	cmd.Flags().BoolVar(&deleteProtected, "delete-protected", true, "Protect environment from deletion")
 
 	return cmd
 }
 
-func runEnvironmentCreate(cmd *cobra.Command, opts *options.RootOptions, team, name, desc, color string) error {
+func runEnvironmentCreate(cmd *cobra.Command, opts *options.RootOptions, team, name, desc, color string, clearProtection bool) error {
 	client, err := opts.Client(config.KeyManagement)
 	if err != nil {
 		return err
@@ -81,5 +84,36 @@ func runEnvironmentCreate(cmd *cobra.Command, opts *options.RootOptions, team, n
 		return err
 	}
 
-	return writeEnvironmentDetail(opts, envToDetail(env.Data))
+	data := env.Data
+	if clearProtection {
+		data, err = clearEnvironmentProtection(cmd, client, team, data.Id)
+		if err != nil {
+			return err
+		}
+	}
+
+	return writeEnvironmentDetail(opts, envToDetail(data))
+}
+
+func clearEnvironmentProtection(cmd *cobra.Command, client *api.ClientWithResponses, team, envID string) (api.Environment, error) {
+	protected := false
+	body := api.UpdateEnvironmentRequest{}
+	body.Data.Id = envID
+	body.Data.Type = api.UpdateEnvironmentRequestDataTypeEnvironments
+	body.Data.Attributes.Settings = &struct {
+		DeleteProtected *bool `json:"delete_protected,omitempty"`
+	}{
+		DeleteProtected: &protected,
+	}
+
+	resp, err := client.UpdateEnvironmentWithApplicationVndAPIPlusJSONBodyWithResponse(cmd.Context(), team, envID, body)
+	if err != nil {
+		return api.Environment{}, fmt.Errorf("clearing delete protection: %w", err)
+	}
+
+	env, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.ApplicationvndApiJSON200)
+	if err != nil {
+		return api.Environment{}, fmt.Errorf("clearing delete protection: %w", err)
+	}
+	return env.Data, nil
 }
