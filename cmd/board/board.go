@@ -2,6 +2,8 @@ package board
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
@@ -46,8 +48,52 @@ type boardDetail struct {
 
 func writeBoardDetail(opts *options.RootOptions, detail boardDetail) error {
 	fields := output.FieldsFromTags(detail)
-	fields = append(fields, output.Field{Label: "Preset Filters", Value: string(detail.PresetFilters)})
+	fields = append(fields,
+		output.Field{Label: "Panels", Value: formatPanels(detail.Panels)},
+		output.Field{Label: "Preset Filters", Value: string(detail.PresetFilters)},
+	)
 	return opts.OutputWriter().WriteFields(detail, fields)
+}
+
+// formatPanels summarizes a board's panels as one line per panel, pairing each
+// panel's type with the query, SLO, or text it references. An empty raw message
+// (no panels) renders as an em-dash.
+func formatPanels(raw json.RawMessage) string {
+	if len(raw) == 0 {
+		return "—"
+	}
+
+	var panels []struct {
+		Type       string `json:"type"`
+		QueryPanel *struct {
+			QueryId string `json:"query_id"`
+		} `json:"query_panel"`
+		SLOPanel *struct {
+			SloId string `json:"slo_id"`
+		} `json:"slo_panel"`
+		TextPanel *struct {
+			Content string `json:"content"`
+		} `json:"text_panel"`
+	}
+	if err := json.Unmarshal(raw, &panels); err != nil {
+		return string(raw)
+	}
+	if len(panels) == 0 {
+		return "—"
+	}
+
+	lines := make([]string, len(panels))
+	for i, p := range panels {
+		switch {
+		case p.QueryPanel != nil:
+			lines[i] = fmt.Sprintf("%s (query %s)", p.Type, p.QueryPanel.QueryId)
+		case p.SLOPanel != nil:
+			lines[i] = fmt.Sprintf("%s (slo %s)", p.Type, p.SLOPanel.SloId)
+		default:
+			lines[i] = p.Type
+		}
+	}
+	return strings.Join(lines, "\n")
 }
 
 func boardToDetail(b api.Board) boardDetail {

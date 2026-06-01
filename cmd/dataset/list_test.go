@@ -94,6 +94,33 @@ func TestList(t *testing.T) {
 	}
 }
 
+func TestList_TableCreated(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]map[string]any{
+			{
+				"name":       "production",
+				"slug":       "production",
+				"created_at": "2024-06-01T00:00:00Z",
+			},
+		})
+	}))
+	opts.Format = "table"
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"list"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	out := ts.OutBuf.String()
+	for _, want := range []string{"CREATED", "2024-06-01T00:00:00Z"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("table output missing %q:\n%s", want, out)
+		}
+	}
+}
+
 func TestList_Empty(t *testing.T) {
 	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

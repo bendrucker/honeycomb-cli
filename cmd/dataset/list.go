@@ -18,7 +18,7 @@ type datasetItem struct {
 	Description string  `json:"description,omitempty" col:"Description"`
 	Columns     *int    `json:"columns,omitempty"`
 	LastWritten *string `json:"last_written,omitempty"`
-	CreatedAt   string  `json:"created_at"`
+	CreatedAt   string  `json:"created_at" col:"Created"`
 }
 
 var datasetListTable = func() output.TableDef {

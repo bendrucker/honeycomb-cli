@@ -75,6 +75,64 @@ func TestGet(t *testing.T) {
 	}
 }
 
+func TestGet_TablePanels(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id":   "abc123",
+			"name": "My Board",
+			"type": "flexible",
+			"panels": []map[string]any{
+				{
+					"type":        "query",
+					"query_panel": map[string]any{"query_id": "q1", "query_annotation_id": "qa1"},
+				},
+				{
+					"type":       "text",
+					"text_panel": map[string]any{"content": "Hello world"},
+				},
+			},
+		})
+	}))
+	opts.Format = "table"
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"get", "abc123"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	out := ts.OutBuf.String()
+	for _, want := range []string{"Panels", "query (query q1)", "text"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("table output missing %q:\n%s", want, out)
+		}
+	}
+}
+
+func TestGet_TableNoPanels(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id":   "abc123",
+			"name": "My Board",
+			"type": "flexible",
+		})
+	}))
+	opts.Format = "table"
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"get", "abc123"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	out := ts.OutBuf.String()
+	if !strings.Contains(out, "Panels") || !strings.Contains(out, "—") {
+		t.Errorf("table output should show Panels row with em-dash:\n%s", out)
+	}
+}
+
 func TestGet_NoPresetFilters(t *testing.T) {
 	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

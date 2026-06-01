@@ -134,7 +134,7 @@ func TestList(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var items []recipientItem
+	var items []recipientDetail
 	if err := json.Unmarshal(ts.OutBuf.Bytes(), &items); err != nil {
 		t.Fatalf("unmarshal output: %v", err)
 	}
@@ -147,14 +147,47 @@ func TestList(t *testing.T) {
 	if items[0].Type != "email" {
 		t.Errorf("items[0].Type = %q, want %q", items[0].Type, "email")
 	}
-	if items[0].Target != "test@example.com" {
-		t.Errorf("items[0].Target = %q, want %q", items[0].Target, "test@example.com")
+	if got, _ := items[0].Details["email_address"].(string); got != "test@example.com" {
+		t.Errorf("items[0].Details[email_address] = %q, want %q", got, "test@example.com")
+	}
+	if items[0].CreatedAt != "2025-01-01T00:00:00Z" {
+		t.Errorf("items[0].CreatedAt = %q, want %q", items[0].CreatedAt, "2025-01-01T00:00:00Z")
+	}
+	if items[0].UpdatedAt != "2025-01-01T00:00:00Z" {
+		t.Errorf("items[0].UpdatedAt = %q, want %q", items[0].UpdatedAt, "2025-01-01T00:00:00Z")
 	}
 	if items[1].Type != "slack" {
 		t.Errorf("items[1].Type = %q, want %q", items[1].Type, "slack")
 	}
-	if items[1].Target != "#alerts" {
-		t.Errorf("items[1].Target = %q, want %q", items[1].Target, "#alerts")
+	if got, _ := items[1].Details["slack_channel"].(string); got != "#alerts" {
+		t.Errorf("items[1].Details[slack_channel] = %q, want %q", got, "#alerts")
+	}
+}
+
+func TestList_Table(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`[
+			{
+				"id": "r1",
+				"type": "email",
+				"details": {"email_address": "test@example.com"}
+			}
+		]`))
+	}))
+	opts.Format = "table"
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"list"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	out := ts.OutBuf.String()
+	for _, want := range []string{"r1", "email", "test@example.com"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("table output missing %q:\n%s", want, out)
+		}
 	}
 }
 
@@ -170,7 +203,7 @@ func TestList_Empty(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var items []recipientItem
+	var items []recipientDetail
 	if err := json.Unmarshal(ts.OutBuf.Bytes(), &items); err != nil {
 		t.Fatalf("unmarshal output: %v", err)
 	}
