@@ -12,7 +12,6 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
-	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/bendrucker/honeycomb-cli/internal/fields"
 	"github.com/bendrucker/honeycomb-cli/internal/jq"
 	"github.com/bendrucker/honeycomb-cli/internal/output"
@@ -21,6 +20,7 @@ import (
 
 type callOptions struct {
 	root    *options.RootOptions
+	token   *string
 	factory clientFactory
 
 	fieldFlags []string
@@ -29,8 +29,8 @@ type callOptions struct {
 	jqExpr     string
 }
 
-func newCallCmd(opts *options.RootOptions, factory clientFactory) *cobra.Command {
-	o := &callOptions{root: opts, factory: factory}
+func newCallCmd(opts *options.RootOptions, token *string, factory clientFactory) *cobra.Command {
+	o := &callOptions{root: opts, token: token, factory: factory}
 
 	cmd := &cobra.Command{
 		Use:   "call <tool-name>",
@@ -60,18 +60,8 @@ func runCall(cmd *cobra.Command, o *callOptions, toolName string) error {
 		return err
 	}
 
-	factory := o.factory
-	if factory == nil {
-		factory = defaultClientFactory
-	}
-
-	key, err := o.root.RequireKey(config.KeyConfig)
-	if err != nil {
-		return err
-	}
-
 	ctx := cmd.Context()
-	c, err := factory(ctx, o.root.ResolveMCPUrl(), key)
+	c, err := connect(ctx, o.root, derefToken(o.token), o.factory)
 	if err != nil {
 		return err
 	}

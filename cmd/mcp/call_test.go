@@ -22,7 +22,7 @@ func TestCall(t *testing.T) {
 		},
 	)
 
-	cmd := newCallCmd(opts, testFactory(srv))
+	cmd := newCallCmd(opts, nil, testFactory(srv))
 	cmd.SetArgs([]string{"echo", "-f", "message=hello"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
@@ -53,7 +53,7 @@ func TestCall_ToolError(t *testing.T) {
 		},
 	)
 
-	cmd := newCallCmd(opts, testFactory(srv))
+	cmd := newCallCmd(opts, nil, testFactory(srv))
 	cmd.SetArgs([]string{"fail"})
 	err := cmd.Execute()
 	if err == nil {
@@ -73,7 +73,7 @@ func TestCall_JQ(t *testing.T) {
 		},
 	)
 
-	cmd := newCallCmd(opts, testFactory(srv))
+	cmd := newCallCmd(opts, nil, testFactory(srv))
 	cmd.SetArgs([]string{"data", "--jq", ".content[0].text"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
@@ -96,7 +96,7 @@ func TestCall_Table(t *testing.T) {
 		},
 	)
 
-	cmd := newCallCmd(opts, testFactory(srv))
+	cmd := newCallCmd(opts, nil, testFactory(srv))
 	cmd.SetArgs([]string{"echo", "-f", "message=hello"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
@@ -119,7 +119,7 @@ func TestCall_NonTextContentJSON(t *testing.T) {
 		},
 	)
 
-	cmd := newCallCmd(opts, testFactory(srv))
+	cmd := newCallCmd(opts, nil, testFactory(srv))
 	cmd.SetArgs([]string{"image"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
@@ -165,7 +165,7 @@ func TestCall_NonTextContentTable(t *testing.T) {
 		},
 	)
 
-	cmd := newCallCmd(opts, testFactory(srv))
+	cmd := newCallCmd(opts, nil, testFactory(srv))
 	cmd.SetArgs([]string{"image"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
@@ -235,7 +235,7 @@ func TestCall_MutuallyExclusiveFlags(t *testing.T) {
 	srv, opts, _ := setupMCPTest(t)
 	srv.AddTool(mcp.NewTool("test"), nil)
 
-	cmd := newCallCmd(opts, testFactory(srv))
+	cmd := newCallCmd(opts, nil, testFactory(srv))
 	cmd.SetArgs([]string{"test", "-f", "key=val", "--input", "file.json"})
 	err := cmd.Execute()
 	if err == nil {

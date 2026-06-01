@@ -7,7 +7,6 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
-	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -19,27 +18,18 @@ var toolsTable = output.TableDef{
 	},
 }
 
-func newToolsCmd(opts *options.RootOptions, factory clientFactory) *cobra.Command {
+func newToolsCmd(opts *options.RootOptions, token *string, factory clientFactory) *cobra.Command {
 	return &cobra.Command{
 		Use:   "tools",
 		Short: "List available MCP tools",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runTools(cmd.Context(), opts, factory)
+			return runTools(cmd.Context(), opts, derefToken(token), factory)
 		},
 	}
 }
 
-func runTools(ctx context.Context, opts *options.RootOptions, factory clientFactory) error {
-	if factory == nil {
-		factory = defaultClientFactory
-	}
-
-	key, err := opts.RequireKey(config.KeyConfig)
-	if err != nil {
-		return err
-	}
-
-	c, err := factory(ctx, opts.ResolveMCPUrl(), key)
+func runTools(ctx context.Context, opts *options.RootOptions, token string, factory clientFactory) error {
+	c, err := connect(ctx, opts, token, factory)
 	if err != nil {
 		return err
 	}
