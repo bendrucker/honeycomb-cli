@@ -41,5 +41,5 @@ func runViewList(ctx context.Context, opts *options.RootOptions, boardID string)
 		items[i] = viewResponseToItem(v)
 	}
 
-	return opts.OutputWriterList().Write(items, viewListTable)
+	return opts.OutputWriterList().WriteList(items, viewListTable, "No board views found.")
 }

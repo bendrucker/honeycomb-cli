@@ -86,6 +86,20 @@ func (w *Writer) Write(data any, td TableDef) error {
 	}
 }
 
+// WriteList renders a slice the same as Write, except that an empty slice in
+// table mode prints emptyMessage on its own line instead of a header-only
+// table. JSON mode is unchanged and always emits the slice (e.g. []).
+func (w *Writer) WriteList(data any, td TableDef, emptyMessage string) error {
+	if w.format == FormatTable {
+		rv := reflect.ValueOf(data)
+		if rv.Kind() == reflect.Slice && rv.Len() == 0 {
+			_, err := fmt.Fprintln(w.out, emptyMessage)
+			return err
+		}
+	}
+	return w.Write(data, td)
+}
+
 // WriteMessage emits data as JSON, or a single human-readable line in table
 // mode. An empty line writes nothing in table mode. It covers the "JSON
 // object, or one status line" shape that previously required callers to pass

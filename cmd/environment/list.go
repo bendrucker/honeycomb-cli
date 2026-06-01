@@ -60,7 +60,7 @@ func runEnvironmentList(ctx context.Context, opts *options.RootOptions, team str
 		params.PageAfter = &cursor
 	}
 
-	return opts.OutputWriterList().Write(items, environmentListTable)
+	return opts.OutputWriterList().WriteList(items, environmentListTable, "No environments found.")
 }
 
 // nextPageCursor extracts the page[after] cursor from a links.next URL.

@@ -94,7 +94,7 @@ func runProfileList(opts *options.RootOptions) error {
 		return fmt.Errorf("no profiles configured (run honeycomb auth login)")
 	}
 
-	return opts.OutputWriterList().Write(entries, profileTable)
+	return opts.OutputWriterList().WriteList(entries, profileTable, "No profiles found.")
 }
 
 func discoverProfiles(cfg *config.Config, active string) []string {

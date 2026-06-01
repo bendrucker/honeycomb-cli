@@ -57,7 +57,7 @@ func runColumnList(ctx context.Context, opts *options.RootOptions, dataset, keyN
 		}
 	}
 
-	return opts.OutputWriterList().Write(items, columnListTable)
+	return opts.OutputWriterList().WriteList(items, columnListTable, "No columns found.")
 }
 
 // listColumns fetches columns via the raw ListColumns method because the

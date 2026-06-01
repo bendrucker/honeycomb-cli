@@ -56,5 +56,5 @@ func runCalculatedList(ctx context.Context, opts *options.RootOptions, dataset s
 		items[i] = toCalculatedItem(f)
 	}
 
-	return opts.OutputWriterList().Write(items, calculatedListTable)
+	return opts.OutputWriterList().WriteList(items, calculatedListTable, "No calculated columns found.")
 }

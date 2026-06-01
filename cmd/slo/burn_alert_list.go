@@ -56,5 +56,5 @@ func runBurnAlertList(ctx context.Context, opts *options.RootOptions, dataset, s
 		}
 	}
 
-	return opts.OutputWriterList().Write(items, burnAlertListTable)
+	return opts.OutputWriterList().WriteList(items, burnAlertListTable, "No burn alerts found.")
 }

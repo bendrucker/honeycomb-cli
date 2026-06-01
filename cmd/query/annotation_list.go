@@ -62,7 +62,7 @@ func runAnnotationList(ctx context.Context, opts *options.RootOptions, dataset s
 		items[i] = item
 	}
 
-	return opts.OutputWriterList().Write(items, annotationListTable)
+	return opts.OutputWriterList().WriteList(items, annotationListTable, "No query annotations found.")
 }
 
 func ptr[T any](v T) *T {

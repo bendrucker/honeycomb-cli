@@ -61,5 +61,5 @@ func runSLOList(ctx context.Context, opts *options.RootOptions, dataset string) 
 		}
 	}
 
-	return opts.OutputWriterList().Write(items, sloListTable)
+	return opts.OutputWriterList().WriteList(items, sloListTable, "No SLOs found.")
 }

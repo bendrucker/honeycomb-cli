@@ -85,5 +85,5 @@ func runDatasetList(ctx context.Context, opts *options.RootOptions) error {
 		items[i] = item
 	}
 
-	return opts.OutputWriterList().Write(items, datasetListTable)
+	return opts.OutputWriterList().WriteList(items, datasetListTable, "No datasets found.")
 }
