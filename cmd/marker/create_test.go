@@ -57,6 +57,42 @@ func TestCreate(t *testing.T) {
 	}
 }
 
+func TestCreate_RequiredFlags_NonInteractive(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		args    []string
+		wantErr string
+	}{
+		{
+			name:    "missing type",
+			args:    []string{"create", "--dataset", "test-dataset", "--message", "v2.0.0"},
+			wantErr: "--type is required in non-interactive mode",
+		},
+		{
+			name:    "missing message",
+			args:    []string{"create", "--dataset", "test-dataset", "--type", "deploy"},
+			wantErr: "--message is required in non-interactive mode",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+				t.Error("API should not be called when required flags are missing")
+			}))
+			opts.IOStreams.SetNeverPrompt(true)
+
+			cmd := NewCmd(opts)
+			cmd.SetArgs(tc.args)
+			err := cmd.Execute()
+			if err == nil {
+				t.Fatal("expected error for missing required flag")
+			}
+			if err.Error() != tc.wantErr {
+				t.Errorf("error = %q, want %q", err.Error(), tc.wantErr)
+			}
+		})
+	}
+}
+
 func TestCreate_DefaultStartTime(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
@@ -79,7 +115,7 @@ func TestCreate_DefaultStartTime(t *testing.T) {
 	}))
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"create", "--dataset", "test-dataset", "--type", "deploy"})
+	cmd.SetArgs([]string{"create", "--dataset", "test-dataset", "--type", "deploy", "--message", "v2.0.0"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
 	}

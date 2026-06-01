@@ -42,6 +42,15 @@ func NewCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 				message = v
 			}
 
+			if !opts.IOStreams.CanPrompt() {
+				if markerType == "" {
+					return fmt.Errorf("--type is required in non-interactive mode")
+				}
+				if message == "" {
+					return fmt.Errorf("--message is required in non-interactive mode")
+				}
+			}
+
 			if !cmd.Flags().Changed("start-time") {
 				startTime = int(time.Now().Unix())
 			}

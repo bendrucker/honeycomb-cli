@@ -129,6 +129,33 @@ func TestList_WithTypeFilter(t *testing.T) {
 	}
 }
 
+func TestList_InvalidKeyType(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		flag string
+	}{
+		{name: "key type flag", flag: "--key-type"},
+		{name: "deprecated type alias", flag: "--type"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+				t.Error("API should not be called for invalid key type")
+			}))
+
+			cmd := NewCmd(opts)
+			cmd.SetArgs([]string{"--team", "my-team", "list", tc.flag, "bogus"})
+			err := cmd.Execute()
+			if err == nil {
+				t.Fatal("expected error for invalid key type")
+			}
+			want := `invalid --key-type "bogus": must be one of ingest, configuration`
+			if err.Error() != want {
+				t.Errorf("error = %q, want %q", err.Error(), want)
+			}
+		})
+	}
+}
+
 func TestList_Empty(t *testing.T) {
 	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/vnd.api+json")
