@@ -178,6 +178,49 @@ func TestUpdate_EnabledFlag(t *testing.T) {
 	}
 }
 
+func TestUpdate_DropsInlineQueryWhenQueryIDPresent(t *testing.T) {
+	var sawQuery, sawQueryID bool
+	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.Method {
+		case http.MethodGet:
+			// The API returns both query_id and the resolved inline query.
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"id":       "trigger-1",
+				"name":     "Old Name",
+				"disabled": false,
+				"query_id": "abc123",
+				"query":    map[string]any{"calculations": []any{map[string]any{"op": "COUNT"}}},
+			})
+		case http.MethodPut:
+			body, _ := io.ReadAll(r.Body)
+			var parsed map[string]any
+			_ = json.Unmarshal(body, &parsed)
+			_, sawQuery = parsed["query"]
+			_, sawQueryID = parsed["query_id"]
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"id":       "trigger-1",
+				"name":     "New Name",
+				"disabled": false,
+				"query_id": "abc123",
+			})
+		}
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"update", "--dataset", "test-dataset", "trigger-1", "--name", "New Name"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	if sawQuery {
+		t.Error("PUT body included inline query alongside query_id (API rejects this with HTTP 400)")
+	}
+	if !sawQueryID {
+		t.Error("PUT body dropped query_id, which must be preserved")
+	}
+}
+
 func TestUpdate_NoFlags(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 

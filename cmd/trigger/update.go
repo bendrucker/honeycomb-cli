@@ -122,6 +122,13 @@ func runUpdate(ctx context.Context, opts *options.RootOptions, dataset, triggerI
 		}
 	}
 
+	// A GET returns both query_id and the resolved inline query, but the update
+	// endpoint rejects a body carrying both (HTTP 400). When query_id is set it
+	// is authoritative, so drop the redundant inline query before sending.
+	if body.QueryId != nil {
+		body.Query = nil
+	}
+
 	data, err := api.MarshalStrippingReadOnly(body, "TriggerResponse")
 	if err != nil {
 		return fmt.Errorf("encoding trigger: %w", err)
