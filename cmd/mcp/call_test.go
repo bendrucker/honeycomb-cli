@@ -44,6 +44,51 @@ func TestCall(t *testing.T) {
 	}
 }
 
+func TestCall_TypedJSONObjectArgument(t *testing.T) {
+	srv, opts, _ := setupMCPTest(t)
+
+	var got map[string]any
+	srv.AddTool(
+		mcp.NewTool("run_query",
+			mcp.WithString("dataset"),
+			mcp.WithObject("query_json"),
+		),
+		func(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			got = req.GetArguments()
+			return mcp.NewToolResultText("ok"), nil
+		},
+	)
+
+	cmd := newCallCmd(opts, nil, testFactory(srv))
+	cmd.SetArgs([]string{"run_query",
+		"-f", "dataset=api",
+		"-F", `query_json={"calculations":[{"op":"SUM","column":"gen_ai.usage.cost"}],"time_range":604800,"granularity":86400}`,
+	})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	if ds, ok := got["dataset"].(string); !ok || ds != "api" {
+		t.Errorf("dataset = %#v, want string %q", got["dataset"], "api")
+	}
+
+	query, ok := got["query_json"].(map[string]any)
+	if !ok {
+		t.Fatalf("query_json = %#v, want map[string]any (a parsed object, not a string)", got["query_json"])
+	}
+	if tr, ok := query["time_range"].(float64); !ok || tr != 604800 {
+		t.Errorf("query_json.time_range = %#v, want 604800", query["time_range"])
+	}
+	calcs, ok := query["calculations"].([]any)
+	if !ok || len(calcs) != 1 {
+		t.Fatalf("query_json.calculations = %#v, want one calculation", query["calculations"])
+	}
+	calc, ok := calcs[0].(map[string]any)
+	if !ok || calc["op"] != "SUM" || calc["column"] != "gen_ai.usage.cost" {
+		t.Errorf("query_json.calculations[0] = %#v, want SUM(gen_ai.usage.cost)", calcs[0])
+	}
+}
+
 func TestCall_ToolError(t *testing.T) {
 	srv, opts, _ := setupMCPTest(t)
 	srv.AddTool(

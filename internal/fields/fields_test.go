@@ -81,6 +81,31 @@ func TestParse(t *testing.T) {
 			raw:  []string{"a[b][c]=deep"},
 			want: `{"a":{"b":{"c":"deep"}}}`,
 		},
+		{
+			name:  "typed JSON object parses to nested map",
+			typed: []string{`query_json={"calculations":[{"op":"SUM","column":"gen_ai.usage.cost"}],"time_range":604800,"granularity":86400}`},
+			want:  `{"query_json":{"calculations":[{"column":"gen_ai.usage.cost","op":"SUM"}],"granularity":86400,"time_range":604800}}`,
+		},
+		{
+			name:  "typed JSON array parses to slice",
+			typed: []string{`tags=["a","b"]`},
+			want:  `{"tags":["a","b"]}`,
+		},
+		{
+			name: "raw JSON object stays a string",
+			raw:  []string{`query_json={"op":"COUNT"}`},
+			want: `{"query_json":"{\"op\":\"COUNT\"}"}`,
+		},
+		{
+			name:  "typed plain string stays a string",
+			typed: []string{"dataset=api"},
+			want:  `{"dataset":"api"}`,
+		},
+		{
+			name:  "typed invalid JSON object falls back to string",
+			typed: []string{"value={not json}"},
+			want:  `{"value":"{not json}"}`,
+		},
 	}
 
 	for _, tt := range tests {
