@@ -3,12 +3,11 @@ package query
 import (
 	"context"
 	"fmt"
-	"strings"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
-	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/spf13/cobra"
 )
 
@@ -35,23 +34,18 @@ func runAnnotationDelete(ctx context.Context, opts *options.RootOptions, dataset
 		return err
 	}
 
-	if !yes {
-		if !opts.IOStreams.CanPrompt() {
-			return fmt.Errorf("--yes is required in non-interactive mode")
-		}
-
+	proceed, err := command.ConfirmDelete(opts.IOStreams, yes, "query annotation", annotationID, func() (string, error) {
 		a, err := getAnnotation(ctx, client, dataset, annotationID)
 		if err != nil {
-			return err
+			return "", err
 		}
-
-		answer, err := prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, fmt.Sprintf("Delete query annotation %q? (y/N): ", a.Name))
-		if err != nil {
-			return err
-		}
-		if !strings.EqualFold(answer, "y") {
-			return fmt.Errorf("aborted")
-		}
+		return a.Name, nil
+	})
+	if err != nil {
+		return err
+	}
+	if !proceed {
+		return fmt.Errorf("aborted")
 	}
 
 	resp, err := client.DeleteQueryAnnotationWithResponse(ctx, dataset, annotationID)

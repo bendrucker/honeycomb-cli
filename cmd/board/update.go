@@ -5,13 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"os"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
-	"github.com/bendrucker/honeycomb-cli/internal/jsonutil"
 	"github.com/spf13/cobra"
 )
 
@@ -102,40 +100,22 @@ func runBoardUpdate(cmd *cobra.Command, opts *options.RootOptions, boardID, file
 }
 
 func updateFromFile(ctx context.Context, client *api.ClientWithResponses, opts *options.RootOptions, boardID, file string, replace bool) error {
-	var r io.Reader
-	if file == "-" {
-		r = opts.IOStreams.In
-	} else {
-		f, err := os.Open(file)
-		if err != nil {
-			return fmt.Errorf("opening file: %w", err)
-		}
-		defer func() { _ = f.Close() }()
-		r = f
+	raw, err := command.ReadDefinitionFile(opts.IOStreams, file)
+	if err != nil {
+		return err
 	}
 
 	var data []byte
 
 	if replace {
-		raw, readErr := io.ReadAll(r)
-		if readErr != nil {
-			return fmt.Errorf("reading file: %w", readErr)
-		}
-
-		var fillErr error
-		data, fillErr = fillRequiredFields(ctx, client, boardID, raw)
-		if fillErr != nil {
-			return fillErr
-		}
-		sanitized, sanitizeErr := jsonutil.Sanitize(data)
-		if sanitizeErr != nil {
-			return fmt.Errorf("invalid JSON: %w", sanitizeErr)
-		}
-		data = sanitized
-	} else {
-		incoming, err := readBoardJSON(r)
+		data, err = fillRequiredFields(ctx, client, boardID, raw)
 		if err != nil {
 			return err
+		}
+	} else {
+		var incoming api.Board
+		if err := json.Unmarshal(raw, &incoming); err != nil {
+			return fmt.Errorf("parsing board JSON: %w", err)
 		}
 
 		current, err := getBoard(ctx, client, boardID)

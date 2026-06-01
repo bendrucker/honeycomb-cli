@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
@@ -56,7 +57,7 @@ func runBurnAlertUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, 
 
 	var data []byte
 	if file != "" {
-		data, err = readFile(opts, file)
+		data, err = command.ReadDefinitionFile(opts.IOStreams, file)
 		if err != nil {
 			return err
 		}

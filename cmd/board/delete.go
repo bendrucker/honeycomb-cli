@@ -3,12 +3,11 @@ package board
 import (
 	"context"
 	"fmt"
-	"strings"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
-	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/spf13/cobra"
 )
 
@@ -35,23 +34,18 @@ func runBoardDelete(ctx context.Context, opts *options.RootOptions, boardID stri
 		return err
 	}
 
-	if !yes {
-		if !opts.IOStreams.CanPrompt() {
-			return fmt.Errorf("--yes is required in non-interactive mode")
-		}
-
+	proceed, err := command.ConfirmDelete(opts.IOStreams, yes, "board", boardID, func() (string, error) {
 		board, err := getBoard(ctx, client, boardID)
 		if err != nil {
-			return err
+			return "", err
 		}
-
-		answer, err := prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, fmt.Sprintf("Delete board %q? (y/N): ", board.Name))
-		if err != nil {
-			return err
-		}
-		if !strings.EqualFold(answer, "y") {
-			return fmt.Errorf("aborted")
-		}
+		return board.Name, nil
+	})
+	if err != nil {
+		return err
+	}
+	if !proceed {
+		return fmt.Errorf("aborted")
 	}
 
 	resp, err := client.DeleteBoardWithResponse(ctx, boardID)

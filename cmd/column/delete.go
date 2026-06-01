@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
-	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/spf13/cobra"
 )
 
@@ -34,31 +34,27 @@ func runColumnDelete(ctx context.Context, opts *options.RootOptions, dataset, co
 		return err
 	}
 
-	if !yes {
-		if !opts.IOStreams.CanPrompt() {
-			return fmt.Errorf("--yes is required in non-interactive mode")
-		}
-
+	proceed, err := command.ConfirmDelete(opts.IOStreams, yes, "column", columnID, func() (string, error) {
 		getResp, err := client.GetColumnWithResponse(ctx, dataset, columnID)
 		if err != nil {
-			return fmt.Errorf("getting column: %w", err)
+			return "", fmt.Errorf("getting column: %w", err)
 		}
 
 		if err := api.CheckResponse(getResp.StatusCode(), getResp.Body); err != nil {
-			return err
+			return "", err
 		}
 
 		if getResp.JSON200 == nil {
-			return fmt.Errorf("unexpected response: %s", getResp.Status())
+			return "", fmt.Errorf("unexpected response: %s", getResp.Status())
 		}
 
-		answer, err := prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, fmt.Sprintf("Delete column %q? (y/N): ", getResp.JSON200.KeyName))
-		if err != nil {
-			return err
-		}
-		if answer != "y" && answer != "Y" {
-			return fmt.Errorf("aborted")
-		}
+		return getResp.JSON200.KeyName, nil
+	})
+	if err != nil {
+		return err
+	}
+	if !proceed {
+		return fmt.Errorf("aborted")
 	}
 
 	resp, err := client.DeleteColumnWithResponse(ctx, dataset, columnID)

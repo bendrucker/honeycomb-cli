@@ -3,12 +3,11 @@ package slo
 import (
 	"context"
 	"fmt"
-	"strings"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
-	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/spf13/cobra"
 )
 
@@ -35,23 +34,18 @@ func runSLODelete(ctx context.Context, opts *options.RootOptions, dataset, sloID
 		return err
 	}
 
-	if !yes {
-		if !opts.IOStreams.CanPrompt() {
-			return fmt.Errorf("--yes is required in non-interactive mode")
-		}
-
+	proceed, err := command.ConfirmDelete(opts.IOStreams, yes, "SLO", sloID, func() (string, error) {
 		s, err := getSLO(ctx, client, dataset, sloID)
 		if err != nil {
-			return err
+			return "", err
 		}
-
-		answer, err := prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, fmt.Sprintf("Delete SLO %q? (y/N): ", s.Name))
-		if err != nil {
-			return err
-		}
-		if !strings.EqualFold(answer, "y") {
-			return fmt.Errorf("aborted")
-		}
+		return s.Name, nil
+	})
+	if err != nil {
+		return err
+	}
+	if !proceed {
+		return fmt.Errorf("aborted")
 	}
 
 	resp, err := client.DeleteSloWithResponse(ctx, dataset, sloID)

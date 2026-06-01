@@ -3,12 +3,11 @@ package environment
 import (
 	"context"
 	"fmt"
-	"strings"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
-	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/spf13/cobra"
 )
 
@@ -38,31 +37,24 @@ func runEnvironmentDelete(ctx context.Context, opts *options.RootOptions, team, 
 		return err
 	}
 
-	if !yes {
-		if !opts.IOStreams.CanPrompt() {
-			return fmt.Errorf("--yes is required in non-interactive mode")
-		}
-
+	proceed, err := command.ConfirmDelete(opts.IOStreams, yes, "environment", envID, func() (string, error) {
 		getResp, err := client.GetEnvironmentWithResponse(ctx, team, envID)
 		if err != nil {
-			return fmt.Errorf("getting environment: %w", err)
+			return "", fmt.Errorf("getting environment: %w", err)
 		}
 		if err := api.CheckResponse(getResp.StatusCode(), getResp.Body); err != nil {
-			return err
+			return "", err
 		}
-
-		name := envID
 		if getResp.ApplicationvndApiJSON200 != nil {
-			name = getResp.ApplicationvndApiJSON200.Data.Attributes.Name
+			return getResp.ApplicationvndApiJSON200.Data.Attributes.Name, nil
 		}
-
-		answer, err := prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, fmt.Sprintf("Delete environment %q? (y/N): ", name))
-		if err != nil {
-			return err
-		}
-		if !strings.EqualFold(answer, "y") {
-			return fmt.Errorf("aborted")
-		}
+		return "", nil
+	})
+	if err != nil {
+		return err
+	}
+	if !proceed {
+		return fmt.Errorf("aborted")
 	}
 
 	resp, err := client.DeleteEnvironmentWithResponse(ctx, team, envID)

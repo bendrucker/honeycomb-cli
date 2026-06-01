@@ -2,11 +2,9 @@ package trigger
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
-	"os"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
@@ -73,46 +71,28 @@ func runCreate(cmd *cobra.Command, opts *options.RootOptions, dataset string, fl
 		return err
 	}
 
-	var r io.Reader
-	if flags.file == "-" {
-		r = opts.IOStreams.In
-	} else {
-		f, err := os.Open(flags.file)
-		if err != nil {
-			return fmt.Errorf("opening file: %w", err)
-		}
-		defer func() { _ = f.Close() }()
-		r = f
-	}
-
-	data, err := io.ReadAll(r)
+	data, err := command.ReadDefinitionFile(opts.IOStreams, flags.file)
 	if err != nil {
-		return fmt.Errorf("reading file: %w", err)
+		return err
 	}
 
-	if flags.hasName || flags.hasDesc || flags.hasDisabled || flags.hasEnabled {
-		var body map[string]any
-		if err := json.Unmarshal(data, &body); err != nil {
-			return fmt.Errorf("parsing trigger JSON: %w", err)
-		}
+	overrides := map[string]any{}
+	if flags.hasName {
+		overrides["name"] = flags.name
+	}
+	if flags.hasDesc {
+		overrides["description"] = flags.description
+	}
+	if flags.hasDisabled {
+		overrides["disabled"] = flags.disabled
+	}
+	if flags.hasEnabled {
+		overrides["disabled"] = false
+	}
 
-		if flags.hasName {
-			body["name"] = flags.name
-		}
-		if flags.hasDesc {
-			body["description"] = flags.description
-		}
-		if flags.hasDisabled {
-			body["disabled"] = flags.disabled
-		}
-		if flags.hasEnabled {
-			body["disabled"] = false
-		}
-
-		data, err = json.Marshal(body)
-		if err != nil {
-			return fmt.Errorf("encoding trigger: %w", err)
-		}
+	data, err = command.ApplyOverrides(data, overrides)
+	if err != nil {
+		return err
 	}
 
 	resp, err := client.CreateTriggerWithBodyWithResponse(cmd.Context(), dataset, "application/json", bytes.NewReader(data))
