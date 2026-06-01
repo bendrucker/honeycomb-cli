@@ -706,6 +706,88 @@ func TestNewCmd_FormatFlagHidden(t *testing.T) {
 	}
 }
 
+func TestRun_PositionalMethod(t *testing.T) {
+	tests := []struct {
+		name       string
+		args       []string
+		wantMethod string
+	}{
+		{
+			name:       "gh-style method positional",
+			args:       []string{"GET", "/1/auth"},
+			wantMethod: http.MethodGet,
+		},
+		{
+			name:       "lowercase method is normalized",
+			args:       []string{"get", "/1/auth"},
+			wantMethod: http.MethodGet,
+		},
+		{
+			name:       "single positional path with -X",
+			args:       []string{"/1/auth", "-X", "DELETE"},
+			wantMethod: http.MethodDelete,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != tt.wantMethod {
+					t.Errorf("method = %q, want %q", r.Method, tt.wantMethod)
+				}
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(`{}`))
+			}), config.KeyConfig, "test-key")
+
+			cmd := NewCmd(opts)
+			cmd.SetArgs(tt.args)
+			if err := cmd.Execute(); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestRun_PositionalMethodErrors(t *testing.T) {
+	tests := []struct {
+		name    string
+		args    []string
+		wantErr string
+	}{
+		{
+			name:    "unknown first token",
+			args:    []string{"NOTAMETHOD", "/1/auth"},
+			wantErr: "unknown HTTP method",
+		},
+		{
+			name:    "method positional conflicts with -X",
+			args:    []string{"GET", "/1/auth", "-X", "POST"},
+			wantErr: "both a positional argument and -X/--method",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ts := iostreams.Test(t)
+			opts := &options.RootOptions{
+				IOStreams: ts.IOStreams,
+				Config:    &config.Config{},
+				APIUrl:    "http://localhost",
+			}
+
+			cmd := NewCmd(opts)
+			cmd.SetArgs(tt.args)
+			err := cmd.Execute()
+			if err == nil {
+				t.Fatal("expected error")
+			}
+			if !strings.Contains(err.Error(), tt.wantErr) {
+				t.Errorf("error = %q, want substring %q", err.Error(), tt.wantErr)
+			}
+		})
+	}
+}
+
 func writeTestFile(path, content string) error {
 	return os.WriteFile(path, []byte(content), 0o644)
 }
