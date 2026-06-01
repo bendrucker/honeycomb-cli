@@ -107,8 +107,8 @@ func TestCreate_Flags_MissingQueryID(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for missing --query-id")
 	}
-	if !strings.Contains(err.Error(), "--query-id is required") {
-		t.Errorf("error = %q, want --query-id required message", err.Error())
+	if !strings.Contains(err.Error(), "query-id") {
+		t.Errorf("error = %q, want missing query-id message", err.Error())
 	}
 }
 
@@ -121,8 +121,25 @@ func TestCreate_Flags_MissingName(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for missing --name")
 	}
+	if !strings.Contains(err.Error(), "name") {
+		t.Errorf("error = %q, want missing name message", err.Error())
+	}
+}
+
+func TestCreate_Flags_DescriptionOnly(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"annotation", "create", "--dataset", "test-dataset", "--description", "A description"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for missing --name")
+	}
 	if !strings.Contains(err.Error(), "--name is required") {
 		t.Errorf("error = %q, want --name required message", err.Error())
+	}
+	if strings.Contains(err.Error(), "--file is required") {
+		t.Errorf("error = %q, should not route to file branch", err.Error())
 	}
 }
 

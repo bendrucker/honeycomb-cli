@@ -24,6 +24,21 @@ func NewCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a query annotation",
+		Long: `Create a query annotation using one of two input modes:
+
+Flag mode: pass --name and --query-id together (--description is optional) to
+build the annotation from flags.
+
+File mode: pass --file with a path to a JSON definition (- for stdin). The file
+flag is mutually exclusive with the flag-mode inputs.`,
+		Example: `  # Flag mode
+  honeycomb query annotation create --dataset my-dataset \
+    --name "Latency Query" --query-id q-abc --description "p99 latency"
+
+  # File mode
+  honeycomb query annotation create --dataset my-dataset --file annotation.json
+  echo '{"name":"...","query_id":"..."}' | honeycomb query annotation create \
+    --dataset my-dataset --file -`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runAnnotationCreate(cmd, opts, *dataset, file, name, desc, queryID)
 		},
@@ -37,6 +52,7 @@ func NewCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	cmd.MarkFlagsMutuallyExclusive("file", "name")
 	cmd.MarkFlagsMutuallyExclusive("file", "description")
 	cmd.MarkFlagsMutuallyExclusive("file", "query-id")
+	cmd.MarkFlagsRequiredTogether("name", "query-id")
 
 	return cmd
 }
@@ -55,7 +71,7 @@ func runAnnotationCreate(cmd *cobra.Command, opts *options.RootOptions, dataset,
 		if err != nil {
 			return err
 		}
-	} else if cmd.Flags().Changed("name") || cmd.Flags().Changed("query-id") {
+	} else if cmd.Flags().Changed("name") || cmd.Flags().Changed("query-id") || cmd.Flags().Changed("description") {
 		if name == "" {
 			return fmt.Errorf("--name is required")
 		}
