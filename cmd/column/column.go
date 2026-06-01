@@ -1,8 +1,6 @@
 package column
 
 import (
-	"strconv"
-
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/deref"
@@ -20,14 +18,14 @@ type columnItem struct {
 }
 
 type columnDetail struct {
-	ID          string `json:"id"`
-	KeyName     string `json:"key_name"`
-	Type        string `json:"type,omitempty"`
-	Description string `json:"description,omitempty"`
-	Hidden      bool   `json:"hidden"`
-	LastWritten string `json:"last_written,omitempty"`
-	CreatedAt   string `json:"created_at,omitempty"`
-	UpdatedAt   string `json:"updated_at,omitempty"`
+	ID          string `json:"id" detail:"ID"`
+	KeyName     string `json:"key_name" detail:"Key Name"`
+	Type        string `json:"type,omitempty" detail:"Type"`
+	Description string `json:"description,omitempty" detail:"Description"`
+	Hidden      bool   `json:"hidden" detail:"Hidden"`
+	LastWritten string `json:"last_written,omitempty" detail:"Last Written"`
+	CreatedAt   string `json:"created_at,omitempty" detail:"Created At"`
+	UpdatedAt   string `json:"updated_at,omitempty" detail:"Updated At"`
 }
 
 var columnListTable = output.TableDef{
@@ -61,16 +59,7 @@ func columnToDetail(c api.Column) columnDetail {
 
 func writeColumnDetail(opts *options.RootOptions, c api.Column) error {
 	d := columnToDetail(c)
-	return opts.OutputWriter().WriteFields(d, []output.Field{
-		{Label: "ID", Value: d.ID},
-		{Label: "Key Name", Value: d.KeyName},
-		{Label: "Type", Value: d.Type},
-		{Label: "Description", Value: d.Description},
-		{Label: "Hidden", Value: strconv.FormatBool(d.Hidden)},
-		{Label: "Last Written", Value: d.LastWritten},
-		{Label: "Created At", Value: d.CreatedAt},
-		{Label: "Updated At", Value: d.UpdatedAt},
-	})
+	return opts.OutputWriter().WriteFields(d, output.FieldsFromTags(d))
 }
 
 func NewCmd(opts *options.RootOptions) *cobra.Command {

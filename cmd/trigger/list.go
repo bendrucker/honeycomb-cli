@@ -3,7 +3,6 @@ package trigger
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
@@ -12,17 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var triggerListTable = output.TableDef{
-	Columns: []output.Column{
-		{Header: "ID", Value: func(v any) string { return v.(triggerItem).ID }},
-		{Header: "Name", Value: func(v any) string { return v.(triggerItem).Name }},
-		{Header: "Description", Value: func(v any) string { return v.(triggerItem).Description }},
-		{Header: "Disabled", Value: func(v any) string { return strconv.FormatBool(v.(triggerItem).Disabled) }},
-		{Header: "Triggered", Value: func(v any) string { return strconv.FormatBool(v.(triggerItem).Triggered) }},
-		{Header: "Alert Type", Value: func(v any) string { return v.(triggerItem).AlertType }},
-		{Header: "Threshold", Value: func(v any) string { return v.(triggerItem).Threshold }},
-	},
-}
+var triggerListTable = output.TableFromTags[triggerItem]()
 
 func NewListCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	return &cobra.Command{

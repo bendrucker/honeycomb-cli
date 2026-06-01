@@ -1,9 +1,6 @@
 package key
 
 import (
-	"fmt"
-	"strconv"
-
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/deref"
@@ -32,37 +29,25 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 }
 
 type keyItem struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	KeyType  string `json:"key_type"`
-	Disabled bool   `json:"disabled"`
+	ID       string `json:"id" col:"ID"`
+	Name     string `json:"name" col:"Name"`
+	KeyType  string `json:"key_type" col:"Key Type"`
+	Disabled bool   `json:"disabled" col:"Disabled"`
 }
 
 type keyDetail struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	KeyType  string `json:"key_type"`
-	Disabled bool   `json:"disabled"`
+	ID       string `json:"id" detail:"ID"`
+	Name     string `json:"name" detail:"Name"`
+	KeyType  string `json:"key_type" detail:"Key Type"`
+	Disabled bool   `json:"disabled" detail:"Disabled"`
 	Secret   string `json:"secret,omitempty"`
 	Key      string `json:"key,omitempty"`
 }
 
-var keyListTable = output.TableDef{
-	Columns: []output.Column{
-		{Header: "ID", Value: func(v any) string { return v.(keyItem).ID }},
-		{Header: "Name", Value: func(v any) string { return v.(keyItem).Name }},
-		{Header: "Key Type", Value: func(v any) string { return v.(keyItem).KeyType }},
-		{Header: "Disabled", Value: func(v any) string { return fmt.Sprintf("%t", v.(keyItem).Disabled) }},
-	},
-}
+var keyListTable = output.TableFromTags[keyItem]()
 
 func writeKeyDetail(opts *options.RootOptions, detail keyDetail) error {
-	fields := []output.Field{
-		{Label: "ID", Value: detail.ID},
-		{Label: "Name", Value: detail.Name},
-		{Label: "Key Type", Value: detail.KeyType},
-		{Label: "Disabled", Value: strconv.FormatBool(detail.Disabled)},
-	}
+	fields := output.FieldsFromTags(detail)
 	if detail.Secret != "" {
 		fields = append(fields, output.Field{Label: "Secret", Value: detail.Secret})
 	}

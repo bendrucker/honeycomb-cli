@@ -3,7 +3,6 @@ package dataset
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
@@ -14,14 +13,14 @@ import (
 )
 
 type datasetDetail struct {
-	Name            string  `json:"name"`
-	Slug            string  `json:"slug"`
+	Name            string  `json:"name" detail:"Name"`
+	Slug            string  `json:"slug" detail:"Slug"`
 	Description     string  `json:"description,omitempty"`
 	ExpandJsonDepth *int    `json:"expand_json_depth,omitempty"`
 	Columns         *int    `json:"columns,omitempty"`
 	LastWritten     *string `json:"last_written,omitempty"`
-	DeleteProtected bool    `json:"delete_protected"`
-	CreatedAt       string  `json:"created_at"`
+	DeleteProtected bool    `json:"delete_protected" detail:"Delete Protected"`
+	CreatedAt       string  `json:"created_at" detail:"Created At"`
 }
 
 func mapDatasetDetail(d *api.Dataset) datasetDetail {
@@ -78,10 +77,7 @@ func runDatasetGet(ctx context.Context, opts *options.RootOptions, slug string) 
 }
 
 func writeDatasetDetail(opts *options.RootOptions, detail datasetDetail) error {
-	fields := []output.Field{
-		{Label: "Name", Value: detail.Name},
-		{Label: "Slug", Value: detail.Slug},
-	}
+	fields := output.FieldsFromTags(detail)
 	if detail.Description != "" {
 		fields = append(fields, output.Field{Label: "Description", Value: detail.Description})
 	}
@@ -94,9 +90,5 @@ func writeDatasetDetail(opts *options.RootOptions, detail datasetDetail) error {
 	if detail.LastWritten != nil {
 		fields = append(fields, output.Field{Label: "Last Written", Value: *detail.LastWritten})
 	}
-	fields = append(fields,
-		output.Field{Label: "Delete Protected", Value: strconv.FormatBool(detail.DeleteProtected)},
-		output.Field{Label: "Created At", Value: detail.CreatedAt},
-	)
 	return opts.OutputWriter().WriteFields(detail, fields)
 }

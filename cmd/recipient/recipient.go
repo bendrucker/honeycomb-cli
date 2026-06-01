@@ -27,14 +27,14 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 }
 
 type recipientItem struct {
-	ID     string `json:"id"`
-	Type   string `json:"type"`
-	Target string `json:"target,omitempty"`
+	ID     string `json:"id" col:"ID"`
+	Type   string `json:"type" col:"Type"`
+	Target string `json:"target,omitempty" col:"Target"`
 }
 
 type recipientDetail struct {
-	ID        string         `json:"id"`
-	Type      string         `json:"type"`
+	ID        string         `json:"id" detail:"ID"`
+	Type      string         `json:"type" detail:"Type"`
 	Details   map[string]any `json:"details,omitempty"`
 	CreatedAt string         `json:"created_at,omitempty"`
 	UpdatedAt string         `json:"updated_at,omitempty"`
@@ -118,10 +118,7 @@ func extractTarget(d recipientDetail) string {
 }
 
 func writeRecipientDetail(opts *options.RootOptions, detail recipientDetail) error {
-	fields := []output.Field{
-		{Label: "ID", Value: detail.ID},
-		{Label: "Type", Value: detail.Type},
-	}
+	fields := output.FieldsFromTags(detail)
 	if target := extractTarget(detail); target != "" {
 		fields = append(fields, output.Field{Label: "Target", Value: target})
 	}

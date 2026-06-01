@@ -58,12 +58,7 @@ func runAnnotationView(ctx context.Context, opts *options.RootOptions, dataset, 
 		Query:            queryResp.JSON200,
 	}
 
-	fields := []output.Field{
-		{Label: "ID", Value: combined.ID},
-		{Label: "Name", Value: combined.Name},
-		{Label: "Description", Value: combined.Description},
-		{Label: "Query ID", Value: combined.QueryID},
-	}
+	fields := output.FieldsFromTags(combined.annotationDetail)
 	if combined.Source != "" {
 		fields = append(fields, output.Field{Label: "Source", Value: combined.Source})
 	}

@@ -7,15 +7,15 @@ import (
 )
 
 type burnAlertItem struct {
-	ID        string `json:"id"`
-	AlertType string `json:"alert_type"`
-	SloID     string `json:"slo_id,omitempty"`
-	CreatedAt string `json:"created_at,omitempty"`
+	ID        string `json:"id" col:"ID"`
+	AlertType string `json:"alert_type" col:"Alert Type"`
+	SloID     string `json:"slo_id,omitempty" col:"SLO ID"`
+	CreatedAt string `json:"created_at,omitempty" col:"Created At"`
 }
 
 type burnAlertDetail struct {
-	ID                                    string `json:"id"`
-	AlertType                             string `json:"alert_type"`
+	ID                                    string `json:"id" detail:"ID"`
+	AlertType                             string `json:"alert_type" detail:"Alert Type"`
 	Description                           string `json:"description,omitempty"`
 	SloID                                 string `json:"slo_id,omitempty"`
 	CreatedAt                             string `json:"created_at,omitempty"`
@@ -25,14 +25,7 @@ type burnAlertDetail struct {
 	BudgetRateWindowMinutes               *int   `json:"budget_rate_window_minutes,omitempty"`
 }
 
-var burnAlertListTable = output.TableDef{
-	Columns: []output.Column{
-		{Header: "ID", Value: func(v any) string { return v.(burnAlertItem).ID }},
-		{Header: "Alert Type", Value: func(v any) string { return v.(burnAlertItem).AlertType }},
-		{Header: "SLO ID", Value: func(v any) string { return v.(burnAlertItem).SloID }},
-		{Header: "Created At", Value: func(v any) string { return v.(burnAlertItem).CreatedAt }},
-	},
-}
+var burnAlertListTable = output.TableFromTags[burnAlertItem]()
 
 func NewBurnAlertCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	cmd := &cobra.Command{

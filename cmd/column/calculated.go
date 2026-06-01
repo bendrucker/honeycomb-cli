@@ -9,29 +9,22 @@ import (
 )
 
 type calculatedItem struct {
-	ID          string `json:"id"`
-	Alias       string `json:"alias"`
-	Expression  string `json:"expression"`
-	Description string `json:"description,omitempty"`
+	ID          string `json:"id" col:"ID"`
+	Alias       string `json:"alias" col:"Alias"`
+	Expression  string `json:"expression" col:"Expression"`
+	Description string `json:"description,omitempty" col:"Description"`
 }
 
 type calculatedDetail struct {
-	ID          string `json:"id"`
-	Alias       string `json:"alias"`
-	Expression  string `json:"expression"`
-	Description string `json:"description,omitempty"`
-	CreatedAt   string `json:"created_at,omitempty"`
-	UpdatedAt   string `json:"updated_at,omitempty"`
+	ID          string `json:"id" detail:"ID"`
+	Alias       string `json:"alias" detail:"Alias"`
+	Expression  string `json:"expression" detail:"Expression"`
+	Description string `json:"description,omitempty" detail:"Description"`
+	CreatedAt   string `json:"created_at,omitempty" detail:"Created At"`
+	UpdatedAt   string `json:"updated_at,omitempty" detail:"Updated At"`
 }
 
-var calculatedListTable = output.TableDef{
-	Columns: []output.Column{
-		{Header: "ID", Value: func(v any) string { return v.(calculatedItem).ID }},
-		{Header: "Alias", Value: func(v any) string { return v.(calculatedItem).Alias }},
-		{Header: "Expression", Value: func(v any) string { return v.(calculatedItem).Expression }},
-		{Header: "Description", Value: func(v any) string { return v.(calculatedItem).Description }},
-	},
-}
+var calculatedListTable = output.TableFromTags[calculatedItem]()
 
 func toCalculatedItem(c api.CalculatedField) calculatedItem {
 	return calculatedItem{
@@ -55,14 +48,7 @@ func toCalculatedDetail(c api.CalculatedField) calculatedDetail {
 
 func writeCalculatedDetail(opts *options.RootOptions, c api.CalculatedField) error {
 	d := toCalculatedDetail(c)
-	return opts.OutputWriter().WriteFields(d, []output.Field{
-		{Label: "ID", Value: d.ID},
-		{Label: "Alias", Value: d.Alias},
-		{Label: "Expression", Value: d.Expression},
-		{Label: "Description", Value: d.Description},
-		{Label: "Created At", Value: d.CreatedAt},
-		{Label: "Updated At", Value: d.UpdatedAt},
-	})
+	return opts.OutputWriter().WriteFields(d, output.FieldsFromTags(d))
 }
 
 func NewCalculatedCmd(opts *options.RootOptions, dataset *string) *cobra.Command {

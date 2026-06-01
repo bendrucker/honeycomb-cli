@@ -9,30 +9,23 @@ import (
 )
 
 type annotationItem struct {
-	ID      string `json:"id"`
-	Name    string `json:"name"`
-	QueryID string `json:"query_id"`
-	Source  string `json:"source,omitempty"`
+	ID      string `json:"id" col:"ID"`
+	Name    string `json:"name" col:"Name"`
+	QueryID string `json:"query_id" col:"Query ID"`
+	Source  string `json:"source,omitempty" col:"Source"`
 }
 
 type annotationDetail struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description,omitempty"`
-	QueryID     string `json:"query_id"`
+	ID          string `json:"id" detail:"ID"`
+	Name        string `json:"name" detail:"Name"`
+	Description string `json:"description,omitempty" detail:"Description"`
+	QueryID     string `json:"query_id" detail:"Query ID"`
 	Source      string `json:"source,omitempty"`
 	CreatedAt   string `json:"created_at,omitempty"`
 	UpdatedAt   string `json:"updated_at,omitempty"`
 }
 
-var annotationListTable = output.TableDef{
-	Columns: []output.Column{
-		{Header: "ID", Value: func(v any) string { return v.(annotationItem).ID }},
-		{Header: "Name", Value: func(v any) string { return v.(annotationItem).Name }},
-		{Header: "Query ID", Value: func(v any) string { return v.(annotationItem).QueryID }},
-		{Header: "Source", Value: func(v any) string { return v.(annotationItem).Source }},
-	},
-}
+var annotationListTable = output.TableFromTags[annotationItem]()
 
 func annotationToDetail(a api.QueryAnnotation) annotationDetail {
 	return annotationDetail{
@@ -47,12 +40,7 @@ func annotationToDetail(a api.QueryAnnotation) annotationDetail {
 }
 
 func writeAnnotationDetail(opts *options.RootOptions, detail annotationDetail) error {
-	fields := []output.Field{
-		{Label: "ID", Value: detail.ID},
-		{Label: "Name", Value: detail.Name},
-		{Label: "Description", Value: detail.Description},
-		{Label: "Query ID", Value: detail.QueryID},
-	}
+	fields := output.FieldsFromTags(detail)
 	if detail.Source != "" {
 		fields = append(fields, output.Field{Label: "Source", Value: detail.Source})
 	}

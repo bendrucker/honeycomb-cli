@@ -11,15 +11,15 @@ import (
 )
 
 type markerItem struct {
-	ID        string `json:"id"`
-	Type      string `json:"type,omitempty"`
-	Message   string `json:"message,omitempty"`
-	URL       string `json:"url,omitempty"`
+	ID        string `json:"id" detail:"ID"`
+	Type      string `json:"type,omitempty" detail:"Type"`
+	Message   string `json:"message,omitempty" detail:"Message"`
+	URL       string `json:"url,omitempty" detail:"URL"`
 	StartTime *int   `json:"start_time,omitempty"`
 	EndTime   *int   `json:"end_time,omitempty"`
-	Color     string `json:"color,omitempty"`
-	CreatedAt string `json:"created_at,omitempty"`
-	UpdatedAt string `json:"updated_at,omitempty"`
+	Color     string `json:"color,omitempty" detail:"Color"`
+	CreatedAt string `json:"created_at,omitempty" detail:"Created At"`
+	UpdatedAt string `json:"updated_at,omitempty" detail:"Updated At"`
 }
 
 var markerListTable = output.TableDef{
@@ -58,23 +58,13 @@ func markerToItem(m api.Marker) markerItem {
 }
 
 func writeDetail(opts *options.RootOptions, item markerItem) error {
-	fields := []output.Field{
-		{Label: "ID", Value: item.ID},
-		{Label: "Type", Value: item.Type},
-		{Label: "Message", Value: item.Message},
-		{Label: "URL", Value: item.URL},
-	}
+	fields := output.FieldsFromTags(item)
 	if item.StartTime != nil {
 		fields = append(fields, output.Field{Label: "Start Time", Value: fmt.Sprintf("%d", *item.StartTime)})
 	}
 	if item.EndTime != nil {
 		fields = append(fields, output.Field{Label: "End Time", Value: fmt.Sprintf("%d", *item.EndTime)})
 	}
-	fields = append(fields,
-		output.Field{Label: "Color", Value: item.Color},
-		output.Field{Label: "Created At", Value: item.CreatedAt},
-		output.Field{Label: "Updated At", Value: item.UpdatedAt},
-	)
 	return opts.OutputWriter().WriteFields(item, fields)
 }
 

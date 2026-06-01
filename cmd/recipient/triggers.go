@@ -3,7 +3,6 @@ package recipient
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
@@ -14,26 +13,16 @@ import (
 )
 
 type triggerItem struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description,omitempty"`
-	Disabled    bool   `json:"disabled"`
-	Triggered   bool   `json:"triggered"`
-	AlertType   string `json:"alert_type,omitempty"`
-	Threshold   string `json:"threshold,omitempty"`
+	ID          string `json:"id" col:"ID"`
+	Name        string `json:"name" col:"Name"`
+	Description string `json:"description,omitempty" col:"Description"`
+	Disabled    bool   `json:"disabled" col:"Disabled"`
+	Triggered   bool   `json:"triggered" col:"Triggered"`
+	AlertType   string `json:"alert_type,omitempty" col:"Alert Type"`
+	Threshold   string `json:"threshold,omitempty" col:"Threshold"`
 }
 
-var triggerListTable = output.TableDef{
-	Columns: []output.Column{
-		{Header: "ID", Value: func(v any) string { return v.(triggerItem).ID }},
-		{Header: "Name", Value: func(v any) string { return v.(triggerItem).Name }},
-		{Header: "Description", Value: func(v any) string { return v.(triggerItem).Description }},
-		{Header: "Disabled", Value: func(v any) string { return strconv.FormatBool(v.(triggerItem).Disabled) }},
-		{Header: "Triggered", Value: func(v any) string { return strconv.FormatBool(v.(triggerItem).Triggered) }},
-		{Header: "Alert Type", Value: func(v any) string { return v.(triggerItem).AlertType }},
-		{Header: "Threshold", Value: func(v any) string { return v.(triggerItem).Threshold }},
-	},
-}
+var triggerListTable = output.TableFromTags[triggerItem]()
 
 func NewTriggersCmd(opts *options.RootOptions) *cobra.Command {
 	return &cobra.Command{
