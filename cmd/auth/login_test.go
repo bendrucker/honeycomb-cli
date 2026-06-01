@@ -140,7 +140,7 @@ func TestAuthLogin_Success(t *testing.T) {
 			kt := config.KeyType(tt.keyType)
 			t.Cleanup(func() { _ = config.DeleteKey("default", kt) })
 
-			err := runAuthLogin(t.Context(), opts, tt.keyType, tt.keyID, tt.keySecret, tt.team, tt.verify)
+			err := runAuthLogin(t.Context(), opts, tt.keyType, tt.keyID, tt.keySecret, true, tt.team, tt.verify)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -195,7 +195,7 @@ func TestAuthLogin_InvalidKey(t *testing.T) {
 		Format:    output.FormatJSON,
 	}
 
-	err := runAuthLogin(t.Context(), opts, "config", "", "badsecret", "", true)
+	err := runAuthLogin(t.Context(), opts, "config", "", "badsecret", true, "", true)
 	if err == nil {
 		t.Fatal("expected error for invalid key")
 	}
@@ -218,7 +218,7 @@ func TestAuthLogin_MissingKeyType(t *testing.T) {
 		Format:    output.FormatJSON,
 	}
 
-	err := runAuthLogin(t.Context(), opts, "", "", "mysecret", "", false)
+	err := runAuthLogin(t.Context(), opts, "", "", "mysecret", true, "", false)
 	if err == nil {
 		t.Fatal("expected error for missing key type")
 	}
@@ -236,7 +236,7 @@ func TestAuthLogin_MissingKeyID(t *testing.T) {
 		Format:    output.FormatJSON,
 	}
 
-	err := runAuthLogin(t.Context(), opts, "management", "", "mysecret", "", false)
+	err := runAuthLogin(t.Context(), opts, "management", "", "mysecret", true, "", false)
 	if err == nil {
 		t.Fatal("expected error for missing key ID")
 	}
@@ -259,7 +259,7 @@ func TestAuthLogin_OverwriteSilentNonInteractive(t *testing.T) {
 		Format:    output.FormatJSON,
 	}
 
-	err := runAuthLogin(t.Context(), opts, "config", "", "new-secret", "", false)
+	err := runAuthLogin(t.Context(), opts, "config", "", "new-secret", true, "", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -270,6 +270,47 @@ func TestAuthLogin_OverwriteSilentNonInteractive(t *testing.T) {
 	}
 	if stored != "new-secret" {
 		t.Errorf("stored key = %q, want %q", stored, "new-secret")
+	}
+}
+
+func TestAuthLogin_EmptyKeySecret(t *testing.T) {
+	ts := iostreams.Test(t)
+	opts := &options.RootOptions{
+		IOStreams: ts.IOStreams,
+		Config:    &config.Config{},
+		Format:    output.FormatJSON,
+	}
+
+	err := runAuthLogin(t.Context(), opts, "config", "", "", true, "", false)
+	if err == nil {
+		t.Fatal("expected error for explicitly empty key secret")
+	}
+	want := "key secret cannot be empty"
+	if err.Error() != want {
+		t.Errorf("got error %q, want %q", err.Error(), want)
+	}
+}
+
+func TestAuthLogin_VerifyMutuallyExclusive(t *testing.T) {
+	ts := iostreams.Test(t)
+	opts := &options.RootOptions{
+		IOStreams: ts.IOStreams,
+		Config:    &config.Config{},
+		Format:    output.FormatJSON,
+	}
+
+	cmd := NewLoginCmd(opts)
+	cmd.SetArgs([]string{"--verify", "--no-verify"})
+	cmd.SetOut(ts.OutBuf)
+	cmd.SetErr(ts.ErrBuf)
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error when both --verify and --no-verify are set")
+	}
+	want := "if any flags in the group [verify no-verify] are set none of the others can be; [no-verify verify] were all set"
+	if err.Error() != want {
+		t.Errorf("got error %q, want %q", err.Error(), want)
 	}
 }
 
@@ -285,7 +326,7 @@ func TestAuthLogin_StdinSecret(t *testing.T) {
 
 	t.Cleanup(func() { _ = config.DeleteKey("default", config.KeyConfig) })
 
-	err := runAuthLogin(t.Context(), opts, "config", "", "", "", false)
+	err := runAuthLogin(t.Context(), opts, "config", "", "", false, "", false)
 	if err != nil {
 		t.Fatal(err)
 	}
