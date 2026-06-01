@@ -10,7 +10,6 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/bendrucker/honeycomb-cli/internal/deref"
 	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/spf13/cobra"
@@ -51,10 +50,11 @@ func NewCreateCmd(opts *options.RootOptions, team *string) *cobra.Command {
   honeycomb key create --name "config" --key-type configuration \
     --environment env-abc --permission boards --permission triggers`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if err := opts.RequireTeam(team); err != nil {
+			client, err := opts.ClientFor(team, options.AuthManagement)
+			if err != nil {
 				return err
 			}
-			return runKeyCreate(cmd, opts, *team, file, name, keyType, environment, permissions, allPermissions)
+			return runKeyCreate(cmd, opts, client, *team, file, name, keyType, environment, permissions, allPermissions)
 		},
 	}
 
@@ -75,19 +75,14 @@ func NewCreateCmd(opts *options.RootOptions, team *string) *cobra.Command {
 	return cmd
 }
 
-func runKeyCreate(cmd *cobra.Command, opts *options.RootOptions, team, file, name, keyType, environment string, permissions []string, allPermissions bool) error {
+func runKeyCreate(cmd *cobra.Command, opts *options.RootOptions, client *api.ClientWithResponses, team, file, name, keyType, environment string, permissions []string, allPermissions bool) error {
 	if file != "" {
-		return runKeyCreateFromFile(cmd.Context(), opts, team, file)
+		return runKeyCreateFromFile(cmd.Context(), opts, client, team, file)
 	}
-	return runKeyCreateFromFlags(cmd, opts, team, name, keyType, environment, permissions, allPermissions)
+	return runKeyCreateFromFlags(cmd, opts, client, team, name, keyType, environment, permissions, allPermissions)
 }
 
-func runKeyCreateFromFile(ctx context.Context, opts *options.RootOptions, team, file string) error {
-	client, err := opts.Client(config.KeyManagement)
-	if err != nil {
-		return err
-	}
-
+func runKeyCreateFromFile(ctx context.Context, opts *options.RootOptions, client *api.ClientWithResponses, team, file string) error {
 	data, err := command.ReadDefinitionFile(opts.IOStreams, file)
 	if err != nil {
 		return err
@@ -101,7 +96,7 @@ func runKeyCreateFromFile(ctx context.Context, opts *options.RootOptions, team, 
 	return handleCreateResponse(opts, resp)
 }
 
-func runKeyCreateFromFlags(cmd *cobra.Command, opts *options.RootOptions, team, name, keyType, environment string, permissions []string, allPermissions bool) error {
+func runKeyCreateFromFlags(cmd *cobra.Command, opts *options.RootOptions, client *api.ClientWithResponses, team, name, keyType, environment string, permissions []string, allPermissions bool) error {
 	var err error
 
 	if name == "" {
@@ -150,11 +145,6 @@ func runKeyCreateFromFlags(cmd *cobra.Command, opts *options.RootOptions, team, 
 		if environment == "" {
 			return fmt.Errorf("environment ID is required")
 		}
-	}
-
-	client, err := opts.Client(config.KeyManagement)
-	if err != nil {
-		return err
 	}
 
 	body := api.ApiKeyCreateRequest{}

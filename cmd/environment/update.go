@@ -6,7 +6,6 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -22,13 +21,14 @@ func NewUpdateCmd(opts *options.RootOptions, team *string) *cobra.Command {
 		Short: "Update an environment",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := opts.RequireTeam(team); err != nil {
-				return err
-			}
 			if err := command.ValidateEnum("color", color, environmentColors); err != nil {
 				return err
 			}
-			return runEnvironmentUpdate(cmd, opts, *team, args[0], desc, color, deleteProtected)
+			client, err := opts.ClientFor(team, options.AuthManagement)
+			if err != nil {
+				return err
+			}
+			return runEnvironmentUpdate(cmd, opts, client, *team, args[0], desc, color, deleteProtected)
 		},
 	}
 
@@ -39,14 +39,9 @@ func NewUpdateCmd(opts *options.RootOptions, team *string) *cobra.Command {
 	return cmd
 }
 
-func runEnvironmentUpdate(cmd *cobra.Command, opts *options.RootOptions, team, envID, desc, color string, deleteProtected bool) error {
+func runEnvironmentUpdate(cmd *cobra.Command, opts *options.RootOptions, client *api.ClientWithResponses, team, envID, desc, color string, deleteProtected bool) error {
 	if !cmd.Flags().Changed("description") && !cmd.Flags().Changed("color") && !cmd.Flags().Changed("delete-protected") {
 		return fmt.Errorf("--description, --color, or --delete-protected is required")
-	}
-
-	client, err := opts.Client(config.KeyManagement)
-	if err != nil {
-		return err
 	}
 
 	body := api.UpdateEnvironmentRequest{}

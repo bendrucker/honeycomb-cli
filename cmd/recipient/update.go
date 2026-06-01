@@ -8,7 +8,6 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -48,7 +47,7 @@ func NewUpdateCmd(opts *options.RootOptions) *cobra.Command {
 }
 
 func runUpdate(cmd *cobra.Command, opts *options.RootOptions, recipientID, file, recipientType, target, channel, integrationKey, name, url string) error {
-	client, err := opts.Client(config.KeyConfig)
+	client, err := opts.ClientFor(nil, options.AuthConfig)
 	if err != nil {
 		return err
 	}

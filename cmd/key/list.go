@@ -7,7 +7,6 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -31,14 +30,15 @@ func NewListCmd(opts *options.RootOptions, team *string) *cobra.Command {
   # List only ingest keys
   honeycomb key list --key-type ingest`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if err := opts.RequireTeam(team); err != nil {
-				return err
-			}
 			filterType := keyType
 			if filterType == "" {
 				filterType = legacyType
 			}
-			return runKeyList(cmd.Context(), opts, *team, filterType)
+			client, err := opts.ClientFor(team, options.AuthManagement)
+			if err != nil {
+				return err
+			}
+			return runKeyList(cmd.Context(), opts, client, *team, filterType)
 		},
 	}
 
@@ -50,13 +50,8 @@ func NewListCmd(opts *options.RootOptions, team *string) *cobra.Command {
 	return cmd
 }
 
-func runKeyList(ctx context.Context, opts *options.RootOptions, team, filterType string) error {
+func runKeyList(ctx context.Context, opts *options.RootOptions, client *api.ClientWithResponses, team, filterType string) error {
 	if err := command.ValidateEnum("key-type", filterType, keyTypes); err != nil {
-		return err
-	}
-
-	client, err := opts.Client(config.KeyManagement)
-	if err != nil {
 		return err
 	}
 

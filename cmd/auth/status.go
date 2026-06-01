@@ -72,7 +72,8 @@ func runAuthStatus(ctx context.Context, opts *options.RootOptions, offline bool)
 	}
 
 	var keys []storedKey
-	for _, kt := range config.KeyTypes() {
+	for _, kind := range options.AuthKinds() {
+		kt := kind.KeyType()
 		val, err := config.GetKey(profile, kt)
 		if errors.Is(err, keyring.ErrNotFound) {
 			continue

@@ -7,7 +7,6 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -34,7 +33,7 @@ func NewViewDeleteCmd(opts *options.RootOptions, board *string) *cobra.Command {
 }
 
 func runViewDelete(ctx context.Context, opts *options.RootOptions, boardID, viewID string, yes bool) error {
-	client, err := opts.Client(config.KeyConfig)
+	client, err := opts.ClientFor(nil, options.AuthConfig)
 	if err != nil {
 		return err
 	}

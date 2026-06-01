@@ -9,7 +9,6 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -54,7 +53,7 @@ preset_filters array requires both "column" (the column name) and "alias"
 }
 
 func runBoardUpdate(cmd *cobra.Command, opts *options.RootOptions, boardID, file string, replace bool, name, desc string) error {
-	client, err := opts.Client(config.KeyConfig)
+	client, err := opts.ClientFor(nil, options.AuthConfig)
 	if err != nil {
 		return err
 	}

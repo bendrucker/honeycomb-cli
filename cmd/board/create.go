@@ -8,7 +8,6 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/spf13/cobra"
 )
@@ -51,7 +50,7 @@ characters) for each entry:
 }
 
 func runBoardCreate(cmd *cobra.Command, opts *options.RootOptions, file, name, desc string) error {
-	client, err := opts.Client(config.KeyConfig)
+	client, err := opts.ClientFor(nil, options.AuthConfig)
 	if err != nil {
 		return err
 	}

@@ -8,7 +8,6 @@ import (
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -27,7 +26,7 @@ func NewDefinitionGetCmd(opts *options.RootOptions) *cobra.Command {
 }
 
 func runDefinitionGet(ctx context.Context, opts *options.RootOptions, slug string) error {
-	client, err := opts.Client(config.KeyConfig)
+	client, err := opts.ClientFor(nil, options.AuthConfig)
 	if err != nil {
 		return err
 	}

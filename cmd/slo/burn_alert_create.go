@@ -9,7 +9,6 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -57,7 +56,7 @@ func NewBurnAlertCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Co
 }
 
 func runBurnAlertCreateFromFile(ctx context.Context, opts *options.RootOptions, dataset, file string) error {
-	client, err := opts.Client(config.KeyConfig)
+	client, err := opts.ClientFor(nil, options.AuthConfig)
 	if err != nil {
 		return err
 	}
@@ -136,7 +135,7 @@ func runBurnAlertCreateFromFlags(cmd *cobra.Command, opts *options.RootOptions, 
 		return fmt.Errorf("encoding burn alert: %w", err)
 	}
 
-	client, err := opts.Client(config.KeyConfig)
+	client, err := opts.ClientFor(nil, options.AuthConfig)
 	if err != nil {
 		return err
 	}

@@ -6,7 +6,6 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/spf13/cobra"
 )
@@ -23,14 +22,15 @@ func NewCreateCmd(opts *options.RootOptions, team *string) *cobra.Command {
 		Use:   "create",
 		Short: "Create an environment",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if err := opts.RequireTeam(team); err != nil {
-				return err
-			}
 			if err := command.ValidateEnum("color", color, environmentColors); err != nil {
 				return err
 			}
+			client, err := opts.ClientFor(team, options.AuthManagement)
+			if err != nil {
+				return err
+			}
 			clearProtection := cmd.Flags().Changed("delete-protected") && !deleteProtected
-			return runEnvironmentCreate(cmd, opts, *team, name, desc, color, clearProtection)
+			return runEnvironmentCreate(cmd, opts, client, *team, name, desc, color, clearProtection)
 		},
 	}
 
@@ -42,11 +42,8 @@ func NewCreateCmd(opts *options.RootOptions, team *string) *cobra.Command {
 	return cmd
 }
 
-func runEnvironmentCreate(cmd *cobra.Command, opts *options.RootOptions, team, name, desc, color string, clearProtection bool) error {
-	client, err := opts.Client(config.KeyManagement)
-	if err != nil {
-		return err
-	}
+func runEnvironmentCreate(cmd *cobra.Command, opts *options.RootOptions, client *api.ClientWithResponses, team, name, desc, color string, clearProtection bool) error {
+	var err error
 
 	if name == "" {
 		if !opts.IOStreams.CanPrompt() {

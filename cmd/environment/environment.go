@@ -37,7 +37,7 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 		Aliases: []string{"environments", "env"},
 	}
 
-	cmd.PersistentFlags().StringVar(&team, "team", "", "Team slug")
+	cmd.PersistentFlags().StringVar(&team, "team", "", "Team slug (defaults to the active profile's team when one is set)")
 
 	cmd.AddCommand(NewListCmd(opts, &team))
 	cmd.AddCommand(NewGetCmd(opts, &team))

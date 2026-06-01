@@ -8,7 +8,6 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/spf13/cobra"
 )
@@ -76,7 +75,7 @@ func NewCalculatedCreateCmd(opts *options.RootOptions, dataset *string) *cobra.C
 }
 
 func runCalculatedCreateFromFile(ctx context.Context, opts *options.RootOptions, dataset, file string) error {
-	client, err := opts.Client(config.KeyConfig)
+	client, err := opts.ClientFor(nil, options.AuthConfig)
 	if err != nil {
 		return err
 	}
@@ -100,7 +99,7 @@ func runCalculatedCreateFromFile(ctx context.Context, opts *options.RootOptions,
 }
 
 func runCalculatedCreate(ctx context.Context, opts *options.RootOptions, dataset string, body api.CreateCalculatedFieldJSONRequestBody) error {
-	client, err := opts.Client(config.KeyConfig)
+	client, err := opts.ClientFor(nil, options.AuthConfig)
 	if err != nil {
 		return err
 	}
