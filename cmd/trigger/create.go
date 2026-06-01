@@ -23,6 +23,12 @@ func NewCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a trigger",
+		Example: `  # Create a trigger from a file
+  honeycomb trigger create --dataset my-dataset --file trigger.json
+
+  # Create from a file, overriding the name
+  honeycomb trigger create --dataset my-dataset --file trigger.json \
+    --name "High latency"`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if !cmd.Flags().Changed("file") {
 				return fmt.Errorf("--file is required")

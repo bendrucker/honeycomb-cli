@@ -36,6 +36,15 @@ func NewLoginCmd(opts *options.RootOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "login",
 		Short: "Authenticate with Honeycomb",
+		Example: `  # Authenticate interactively
+  honeycomb auth login
+
+  # Store a configuration key non-interactively
+  honeycomb auth login --key-type config --key-secret "$HONEYCOMB_KEY"
+
+  # Store a management key with a team slug
+  honeycomb auth login --key-type management \
+    --key-id KEY_ID --key-secret KEY_SECRET --team my-team`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if cmd.Flags().Changed("no-verify") {
 				verify = false

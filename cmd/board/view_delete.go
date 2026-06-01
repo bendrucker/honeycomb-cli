@@ -17,7 +17,12 @@ func NewViewDeleteCmd(opts *options.RootOptions, board *string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delete <view-id>",
 		Short: "Delete a board view",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Delete a view, prompting for confirmation
+  honeycomb board view delete view123 --board abc123
+
+  # Delete without confirmation
+  honeycomb board view delete view123 --board abc123 --yes`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runViewDelete(cmd.Context(), opts, *board, args[0], yes)
 		},

@@ -88,6 +88,11 @@ func NewViewCmd(opts *options.RootOptions) *cobra.Command {
 		Use:     "view",
 		Short:   "Manage board views",
 		Aliases: []string{"views"},
+		Example: `  # List views on a board
+  honeycomb board view list --board abc123
+
+  # Get a view by ID
+  honeycomb board view get view123 --board abc123`,
 	}
 
 	cmd.PersistentFlags().StringVar(&board, "board", "", "Board ID (required)")

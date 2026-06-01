@@ -14,7 +14,9 @@ func NewGetCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "get <trigger-id>",
 		Short: "Get a trigger",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Get a trigger by ID
+  honeycomb trigger get abc123 --dataset my-dataset`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runGet(cmd.Context(), opts, *dataset, args[0])
 		},

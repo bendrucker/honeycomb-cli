@@ -17,7 +17,12 @@ func NewDeleteCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delete <trigger-id>",
 		Short: "Delete a trigger",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Delete a trigger, prompting for confirmation
+  honeycomb trigger delete abc123 --dataset my-dataset
+
+  # Delete without confirmation
+  honeycomb trigger delete abc123 --dataset my-dataset --yes`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runDelete(cmd.Context(), opts, *dataset, args[0], yes)
 		},

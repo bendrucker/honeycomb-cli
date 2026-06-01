@@ -45,6 +45,14 @@ func NewStatusCmd(opts *options.RootOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "status",
 		Short: "Show authentication status",
+		Example: `  # Show status, verifying keys against the API
+  honeycomb auth status
+
+  # Show status without contacting the API
+  honeycomb auth status --offline
+
+  # Output status as JSON
+  honeycomb auth status --format json`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runAuthStatus(cmd.Context(), opts, offline)
 		},

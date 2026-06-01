@@ -17,7 +17,12 @@ func NewDeleteCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delete <annotation-id>",
 		Short: "Delete a query annotation",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Delete an annotation, prompting for confirmation
+  honeycomb query annotation delete q-abc --dataset my-dataset
+
+  # Delete without confirmation
+  honeycomb query annotation delete q-abc --dataset my-dataset --yes`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runAnnotationDelete(cmd.Context(), opts, *dataset, args[0], yes)
 		},

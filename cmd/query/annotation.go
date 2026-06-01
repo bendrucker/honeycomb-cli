@@ -59,6 +59,11 @@ func NewAnnotationCmd(opts *options.RootOptions, dataset *string) *cobra.Command
 		Use:     "annotation",
 		Short:   "Manage query annotations (saved queries)",
 		Aliases: []string{"annotations"},
+		Example: `  # List saved query annotations
+  honeycomb query annotation list --dataset my-dataset
+
+  # View a single annotation
+  honeycomb query annotation view q-abc --dataset my-dataset`,
 	}
 
 	cmd.AddCommand(NewListCmd(opts, dataset))

@@ -23,7 +23,13 @@ func NewViewUpdateCmd(opts *options.RootOptions, board *string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "update <view-id>",
 		Short: "Update a board view",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Rename a view
+  honeycomb board view update view123 --board abc123 --name "Errors"
+
+  # Replace a view's filters
+  honeycomb board view update view123 --board abc123 \
+    --filter "status_code:>=:500"`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runViewUpdate(cmd, opts, *board, args[0], file, name, filterArgs)
 		},

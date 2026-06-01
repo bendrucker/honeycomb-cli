@@ -39,6 +39,8 @@ func NewProfileCmd(opts *options.RootOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "profile",
 		Short: "Manage authentication profiles",
+		Example: `  # List configured profiles
+  honeycomb auth profile list`,
 	}
 
 	cmd.AddCommand(newProfileListCmd(opts))
@@ -50,6 +52,8 @@ func newProfileListCmd(opts *options.RootOptions) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list",
 		Short: "List configured profiles",
+		Example: `  # List configured profiles
+  honeycomb auth profile list`,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			return runProfileList(opts)
 		},

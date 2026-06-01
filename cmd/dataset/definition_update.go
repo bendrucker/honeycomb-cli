@@ -18,7 +18,13 @@ func NewDefinitionUpdateCmd(opts *options.RootOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "update <dataset-slug>",
 		Short: "Update dataset definitions",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Update definitions from a file
+  honeycomb dataset definition update my-dataset --file definitions.json
+
+  # Pipe definitions from stdin
+  cat definitions.json | \
+    honeycomb dataset definition update my-dataset --file -`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runDefinitionUpdate(cmd.Context(), opts, args[0], file)
 		},

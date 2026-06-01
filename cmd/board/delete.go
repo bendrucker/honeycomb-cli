@@ -17,7 +17,12 @@ func NewDeleteCmd(opts *options.RootOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delete <board-id>",
 		Short: "Delete a board",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Delete a board, prompting for confirmation
+  honeycomb board delete abc123
+
+  # Delete without confirmation
+  honeycomb board delete abc123 --yes`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runBoardDelete(cmd.Context(), opts, args[0], yes)
 		},

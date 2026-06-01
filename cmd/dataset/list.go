@@ -44,6 +44,11 @@ func NewListCmd(opts *options.RootOptions) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list",
 		Short: "List datasets",
+		Example: `  # List datasets
+  honeycomb dataset list
+
+  # List datasets as JSON
+  honeycomb dataset list --format json`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runDatasetList(cmd.Context(), opts)
 		},

@@ -14,6 +14,8 @@ func NewViewListCmd(opts *options.RootOptions, board *string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list",
 		Short: "List board views",
+		Example: `  # List views on a board
+  honeycomb board view list --board abc123`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runViewList(cmd.Context(), opts, *board)
 		},

@@ -24,6 +24,11 @@ func NewUpdateCmd(opts *options.RootOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "update <board-id>",
 		Short: "Update a board",
+		Example: `  # Rename a board
+  honeycomb board update abc123 --name "Latency"
+
+  # Replace a board entirely from a file
+  honeycomb board update abc123 --file board.json --replace`,
 		Long: `Update a board.
 
 Use --file to provide a full or partial board definition as JSON. The

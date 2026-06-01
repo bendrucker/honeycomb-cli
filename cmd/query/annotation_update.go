@@ -22,7 +22,14 @@ func NewUpdateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "update <annotation-id>",
 		Short: "Update a query annotation",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Update an annotation's name
+  honeycomb query annotation update q-abc --dataset my-dataset \
+    --name "p99 latency"
+
+  # Update from a JSON file
+  honeycomb query annotation update q-abc --dataset my-dataset \
+    --file annotation.json`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runAnnotationUpdate(cmd, opts, *dataset, args[0], file, name, desc)
 		},

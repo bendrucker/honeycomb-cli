@@ -16,6 +16,12 @@ func NewListCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List query annotations",
+		Example: `  # List annotations for a dataset
+  honeycomb query annotation list --dataset my-dataset
+
+  # Include annotations created from boards
+  honeycomb query annotation list --dataset my-dataset \
+    --include-board-annotations`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runAnnotationList(cmd.Context(), opts, *dataset, includeBoardAnnotations)
 		},

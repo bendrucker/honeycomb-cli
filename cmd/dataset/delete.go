@@ -20,7 +20,12 @@ func NewDeleteCmd(opts *options.RootOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delete <slug>",
 		Short: "Delete a dataset",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Delete a dataset, prompting for confirmation
+  honeycomb dataset delete my-dataset
+
+  # Delete without confirmation
+  honeycomb dataset delete my-dataset --yes`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runDatasetDelete(cmd.Context(), opts, args[0], yes)
 		},

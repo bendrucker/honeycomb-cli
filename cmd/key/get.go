@@ -14,7 +14,9 @@ func NewGetCmd(opts *options.RootOptions, team *string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "get <id>",
 		Short: "Get an API key",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Get an API key by ID
+  honeycomb key get abc123`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := opts.RequireTeam(team); err != nil {
 				return err

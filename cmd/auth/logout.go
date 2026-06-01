@@ -21,6 +21,11 @@ func NewLogoutCmd(opts *options.RootOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "logout",
 		Short: "Remove stored authentication keys",
+		Example: `  # Remove all stored keys for the active profile
+  honeycomb auth logout
+
+  # Remove only the management key
+  honeycomb auth logout --key-type management`,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			return runAuthLogout(opts, keyType)
 		},

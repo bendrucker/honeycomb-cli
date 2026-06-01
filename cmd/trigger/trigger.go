@@ -19,6 +19,11 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 		Use:     "trigger",
 		Short:   "Manage triggers",
 		Aliases: []string{"triggers"},
+		Example: `  # List triggers for a dataset
+  honeycomb trigger list --dataset my-dataset
+
+  # Get a trigger by ID
+  honeycomb trigger get abc123 --dataset my-dataset`,
 	}
 
 	cmd.PersistentFlags().StringVar(&dataset, "dataset", "", "Dataset slug (required)")

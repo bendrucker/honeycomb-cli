@@ -11,6 +11,14 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 		Use:     "dataset",
 		Short:   "Manage datasets",
 		Aliases: []string{"datasets"},
+		Example: `  # List datasets
+  honeycomb dataset list
+
+  # Get a dataset by slug
+  honeycomb dataset get my-dataset
+
+  # Create a dataset
+  honeycomb dataset create --name "My Dataset"`,
 	}
 
 	cmd.AddCommand(NewListCmd(opts))

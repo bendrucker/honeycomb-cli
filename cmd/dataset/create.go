@@ -23,6 +23,12 @@ func NewCreateCmd(opts *options.RootOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a dataset",
+		Example: `  # Create a dataset
+  honeycomb dataset create --name "My Dataset"
+
+  # Create a dataset with a description and JSON unpacking
+  honeycomb dataset create --name "My Dataset" \
+    --description "Production traffic" --expand-json-depth 2`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			var ejd *int
 			if cmd.Flags().Changed("expand-json-depth") {

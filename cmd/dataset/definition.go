@@ -11,6 +11,11 @@ func NewDefinitionCmd(opts *options.RootOptions) *cobra.Command {
 		Use:     "definition",
 		Short:   "Manage dataset definitions",
 		Aliases: []string{"definitions"},
+		Example: `  # Get dataset definitions
+  honeycomb dataset definition get my-dataset
+
+  # Update dataset definitions from a file
+  honeycomb dataset definition update my-dataset --file definitions.json`,
 	}
 
 	cmd.AddCommand(NewDefinitionGetCmd(opts))
