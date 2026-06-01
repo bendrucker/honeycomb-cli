@@ -270,3 +270,42 @@ func TestAuthStatus_MultipleKeys(t *testing.T) {
 		t.Errorf("statuses[1].type = %q, want %q", statuses[1].Type, "management")
 	}
 }
+
+// TestAuthStatus_EnumeratesAuthKinds verifies status enumerates every auth kind
+// in options.AuthKinds() order (config, ingest, management) rather than a
+// hardcoded slice, so storing one key of each type reports all three offline.
+func TestAuthStatus_EnumeratesAuthKinds(t *testing.T) {
+	ts := iostreams.Test(t)
+	opts := &options.RootOptions{
+		IOStreams: ts.IOStreams,
+		Config:    &config.Config{},
+		Format:    output.FormatJSON,
+	}
+
+	for _, kind := range options.AuthKinds() {
+		kt := kind.KeyType()
+		if err := config.SetKey("default", kt, string(kt)+"-key"); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = config.DeleteKey("default", kt) })
+	}
+
+	if err := runAuthStatus(t.Context(), opts, true); err != nil {
+		t.Fatal(err)
+	}
+
+	var statuses []KeyStatus
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &statuses); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+
+	kinds := options.AuthKinds()
+	if len(statuses) != len(kinds) {
+		t.Fatalf("got %d statuses, want %d", len(statuses), len(kinds))
+	}
+	for i, kind := range kinds {
+		if statuses[i].Type != string(kind.KeyType()) {
+			t.Errorf("statuses[%d].type = %q, want %q", i, statuses[i].Type, kind.KeyType())
+		}
+	}
+}

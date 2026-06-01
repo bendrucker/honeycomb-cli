@@ -8,7 +8,6 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -30,13 +29,14 @@ func NewUpdateCmd(opts *options.RootOptions, team *string) *cobra.Command {
   honeycomb key update abc123 --disabled`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := opts.RequireTeam(team); err != nil {
+			client, err := opts.ClientFor(team, options.AuthManagement)
+			if err != nil {
 				return err
 			}
 			if file != "" {
-				return runKeyUpdateFromFile(cmd.Context(), opts, *team, args[0], file)
+				return runKeyUpdateFromFile(cmd.Context(), opts, client, *team, args[0], file)
 			}
-			return runKeyUpdateFromFlags(cmd, opts, *team, args[0], name)
+			return runKeyUpdateFromFlags(cmd, opts, client, *team, args[0], name)
 		},
 	}
 
@@ -53,12 +53,7 @@ func NewUpdateCmd(opts *options.RootOptions, team *string) *cobra.Command {
 	return cmd
 }
 
-func runKeyUpdateFromFile(ctx context.Context, opts *options.RootOptions, team, id, file string) error {
-	client, err := opts.Client(config.KeyManagement)
-	if err != nil {
-		return err
-	}
-
+func runKeyUpdateFromFile(ctx context.Context, opts *options.RootOptions, client *api.ClientWithResponses, team, id, file string) error {
 	data, err := command.ReadDefinitionFile(opts.IOStreams, file)
 	if err != nil {
 		return err
@@ -77,14 +72,9 @@ func runKeyUpdateFromFile(ctx context.Context, opts *options.RootOptions, team, 
 	return writeKeyDetail(opts, objectToDetail(updated.Data))
 }
 
-func runKeyUpdateFromFlags(cmd *cobra.Command, opts *options.RootOptions, team, id, name string) error {
+func runKeyUpdateFromFlags(cmd *cobra.Command, opts *options.RootOptions, client *api.ClientWithResponses, team, id, name string) error {
 	if !cmd.Flags().Changed("name") && !cmd.Flags().Changed("disabled") && !cmd.Flags().Changed("enabled") {
 		return fmt.Errorf("--file, --name, --disabled, or --enabled is required")
-	}
-
-	client, err := opts.Client(config.KeyManagement)
-	if err != nil {
-		return err
 	}
 
 	ctx := cmd.Context()

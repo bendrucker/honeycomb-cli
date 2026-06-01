@@ -22,8 +22,10 @@ import (
 const tokenEnvVar = "HONEYCOMB_MCP_TOKEN"
 
 // connectOptions carries everything the client factory needs to authenticate
-// and open an MCP session. It deliberately excludes the Honeycomb config API
-// key: that credential is not accepted by the OAuth-protected MCP server.
+// and open an MCP session. This is the OAuth path that options.AuthMCPOAuth
+// names: it deliberately excludes the Honeycomb config API key, which the
+// OAuth-protected MCP server does not accept, and reaches the server through the
+// OAuth transport below rather than opts.Client / opts.ClientFor.
 type connectOptions struct {
 	root   *options.RootOptions
 	mcpURL string

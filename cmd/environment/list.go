@@ -7,7 +7,6 @@ import (
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -19,20 +18,16 @@ func NewListCmd(opts *options.RootOptions, team *string) *cobra.Command {
 		Use:   "list",
 		Short: "List environments",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if err := opts.RequireTeam(team); err != nil {
+			client, err := opts.ClientFor(team, options.AuthManagement)
+			if err != nil {
 				return err
 			}
-			return runEnvironmentList(cmd.Context(), opts, *team)
+			return runEnvironmentList(cmd.Context(), opts, client, *team)
 		},
 	}
 }
 
-func runEnvironmentList(ctx context.Context, opts *options.RootOptions, team string) error {
-	client, err := opts.Client(config.KeyManagement)
-	if err != nil {
-		return err
-	}
-
+func runEnvironmentList(ctx context.Context, opts *options.RootOptions, client *api.ClientWithResponses, team string) error {
 	var items []environmentItem
 	params := &api.ListEnvironmentsParams{}
 	for {

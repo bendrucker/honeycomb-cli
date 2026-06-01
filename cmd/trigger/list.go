@@ -6,7 +6,6 @@ import (
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -29,7 +28,7 @@ func NewListCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 }
 
 func runList(ctx context.Context, opts *options.RootOptions, dataset string) error {
-	client, err := opts.Client(config.KeyConfig)
+	client, err := opts.ClientFor(nil, options.AuthConfig)
 	if err != nil {
 		return err
 	}

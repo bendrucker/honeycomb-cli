@@ -7,7 +7,6 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -19,10 +18,11 @@ func NewDeleteCmd(opts *options.RootOptions, team *string) *cobra.Command {
 		Short: "Delete an environment",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := opts.RequireTeam(team); err != nil {
+			client, err := opts.ClientFor(team, options.AuthManagement)
+			if err != nil {
 				return err
 			}
-			return runEnvironmentDelete(cmd.Context(), opts, *team, args[0], yes)
+			return runEnvironmentDelete(cmd.Context(), opts, client, *team, args[0], yes)
 		},
 	}
 
@@ -31,12 +31,7 @@ func NewDeleteCmd(opts *options.RootOptions, team *string) *cobra.Command {
 	return cmd
 }
 
-func runEnvironmentDelete(ctx context.Context, opts *options.RootOptions, team, envID string, yes bool) error {
-	client, err := opts.Client(config.KeyManagement)
-	if err != nil {
-		return err
-	}
-
+func runEnvironmentDelete(ctx context.Context, opts *options.RootOptions, client *api.ClientWithResponses, team, envID string, yes bool) error {
 	proceed, err := command.ConfirmDelete(opts.IOStreams, yes, "environment", envID, func() (string, error) {
 		getResp, err := client.GetEnvironmentWithResponse(ctx, team, envID)
 		if err != nil {

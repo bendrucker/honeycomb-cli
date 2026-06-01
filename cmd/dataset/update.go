@@ -8,7 +8,6 @@ import (
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -53,7 +52,7 @@ func NewUpdateCmd(opts *options.RootOptions) *cobra.Command {
 }
 
 func runDatasetUpdate(ctx context.Context, opts *options.RootOptions, slug string, description *string, expandJsonDepth *int, deleteProtected *bool) error {
-	client, err := opts.Client(config.KeyConfig)
+	client, err := opts.ClientFor(nil, options.AuthConfig)
 	if err != nil {
 		return err
 	}

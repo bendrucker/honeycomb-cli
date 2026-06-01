@@ -6,7 +6,6 @@ import (
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -42,7 +41,7 @@ func NewUpdateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 func runMarkerUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, markerID, markerType, message, url string, startTime, endTime int, color string) error {
 	ctx := cmd.Context()
 
-	client, err := opts.Client(config.KeyConfig)
+	client, err := opts.ClientFor(nil, options.AuthConfig)
 	if err != nil {
 		return err
 	}

@@ -8,7 +8,6 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/bendrucker/honeycomb-cli/internal/poll"
 	"github.com/bendrucker/honeycomb-cli/internal/prompt"
@@ -46,7 +45,7 @@ func NewRunCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 }
 
 func runQueryRun(ctx context.Context, opts *options.RootOptions, dataset, file, annotation string) error {
-	client, err := opts.Client(config.KeyConfig)
+	client, err := opts.ClientFor(nil, options.AuthConfig)
 	if err != nil {
 		return err
 	}

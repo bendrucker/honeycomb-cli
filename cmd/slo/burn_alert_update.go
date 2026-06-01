@@ -8,7 +8,6 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -48,7 +47,7 @@ func NewBurnAlertUpdateCmd(opts *options.RootOptions, dataset *string) *cobra.Co
 var burnAlertUpdateFlags = []string{"exhaustion-minutes", "budget-rate-window-minutes", "budget-rate-threshold", "recipient", "description"}
 
 func runBurnAlertUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, burnAlertID, file string, exhaustionMinutes, budgetRateWindow, budgetRateThreshold int, recipients []string, description string) error {
-	client, err := opts.Client(config.KeyConfig)
+	client, err := opts.ClientFor(nil, options.AuthConfig)
 	if err != nil {
 		return err
 	}

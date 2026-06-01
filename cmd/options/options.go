@@ -45,18 +45,38 @@ func (o *RootOptions) ResolveConfigPath() string {
 	return config.DefaultPath()
 }
 
+// RequireTeam resolves the team slug a management command operates on, writing
+// the result back into *flag. Precedence:
+//
+//  1. An explicit --team flag is used as-is.
+//  2. Otherwise the active profile's stored team is inferred, but only when
+//     exactly one team is known. A management key can span multiple teams, so
+//     inference is deliberately limited to the single-team case the profile
+//     records; with zero (or, in the future, more than one) known teams the
+//     required-flag error stands.
 func (o *RootOptions) RequireTeam(flag *string) error {
 	if *flag != "" {
 		return nil
 	}
-	if o.Config != nil {
-		profile := o.ActiveProfile()
-		if p, ok := o.Config.Profiles[profile]; ok && p.Team != "" {
-			*flag = p.Team
-			return nil
-		}
+	if team, ok := o.inferTeam(); ok {
+		*flag = team
+		return nil
 	}
-	return fmt.Errorf("--team is required (or set via honeycomb auth login --team)")
+	return fmt.Errorf("--team is required (or set a single team via honeycomb auth login --team)")
+}
+
+// inferTeam returns the team slug to use when --team is unset, reporting false
+// when no single team is known. The profile stores at most one team, so a
+// recorded team is unambiguous; a missing team leaves the choice to the caller.
+func (o *RootOptions) inferTeam() (string, bool) {
+	if o.Config == nil {
+		return "", false
+	}
+	profile := o.ActiveProfile()
+	if p, ok := o.Config.Profiles[profile]; ok && p.Team != "" {
+		return p.Team, true
+	}
+	return "", false
 }
 
 func (o *RootOptions) ResolveFormat() string {
