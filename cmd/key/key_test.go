@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 
@@ -210,6 +211,86 @@ func TestGet(t *testing.T) {
 	}
 }
 
+func TestGet_ConfigurationKey(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		_, _ = w.Write([]byte(`{
+			"data": {
+				"id": "hcxlk_02def",
+				"type": "api-keys",
+				"attributes": {
+					"name": "My Config Key",
+					"key_type": "configuration",
+					"disabled": false,
+					"permissions": {
+						"manage_boards": true,
+						"run_queries": true,
+						"send_events": false
+					}
+				},
+				"relationships": {
+					"environment": {"data": {"id": "production", "type": "environments"}}
+				}
+			}
+		}`))
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"--team", "my-team", "get", "hcxlk_02def"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	var detail keyDetail
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &detail); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+	if detail.Environment != "production" {
+		t.Errorf("Environment = %q, want %q", detail.Environment, "production")
+	}
+	wantPermissions := []string{"manage_boards", "run_queries"}
+	if !slices.Equal(detail.Permissions, wantPermissions) {
+		t.Errorf("Permissions = %v, want %v", detail.Permissions, wantPermissions)
+	}
+}
+
+func TestGet_IngestKeyNoPermissions(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		_, _ = w.Write([]byte(`{
+			"data": {
+				"id": "hcxik_01abc",
+				"type": "api-keys",
+				"attributes": {
+					"name": "My Ingest Key",
+					"key_type": "ingest",
+					"disabled": false
+				},
+				"relationships": {
+					"environment": {"data": {"id": "staging", "type": "environments"}}
+				}
+			}
+		}`))
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"--team", "my-team", "get", "hcxik_01abc"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	var detail keyDetail
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &detail); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+	if len(detail.Permissions) != 0 {
+		t.Errorf("Permissions = %v, want empty", detail.Permissions)
+	}
+	if detail.Environment != "staging" {
+		t.Errorf("Environment = %q, want %q", detail.Environment, "staging")
+	}
+}
+
 func TestCreate_File(t *testing.T) {
 	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -258,8 +339,8 @@ func TestCreate_File(t *testing.T) {
 	if detail.Secret != "hcxik_01new_secret_value" {
 		t.Errorf("Secret = %q, want %q", detail.Secret, "hcxik_01new_secret_value")
 	}
-	if detail.Key != "hcxik_01new_secret_value" {
-		t.Errorf("Key = %q, want %q", detail.Key, "hcxik_01new_secret_value")
+	if detail.Environment != "env1" {
+		t.Errorf("Environment = %q, want %q", detail.Environment, "env1")
 	}
 	if detail.Name != "New Key" {
 		t.Errorf("Name = %q, want %q", detail.Name, "New Key")
@@ -275,17 +356,14 @@ func TestCreate_Flags(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
 		keyType string
-		wantKey string
 	}{
 		{
 			name:    "ingest key",
 			keyType: "ingest",
-			wantKey: "secret123",
 		},
 		{
 			name:    "configuration key",
 			keyType: "configuration",
-			wantKey: "secret123",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -358,9 +436,6 @@ func TestCreate_Flags(t *testing.T) {
 			}
 			if detail.Secret != "secret123" {
 				t.Errorf("Secret = %q, want %q", detail.Secret, "secret123")
-			}
-			if detail.Key != tc.wantKey {
-				t.Errorf("Key = %q, want %q", detail.Key, tc.wantKey)
 			}
 		})
 	}
