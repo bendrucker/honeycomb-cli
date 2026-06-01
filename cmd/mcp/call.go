@@ -159,9 +159,7 @@ func writeCallResult(o *callOptions, result *mcp.CallToolResult) error {
 			return jq.Filter(bytes.NewReader(b), ios.Out, o.jqExpr)
 		}
 
-		return o.root.OutputWriter().WriteValue(out, func(w io.Writer) error {
-			return nil
-		})
+		return o.root.OutputWriter().WriteMessage(out, "")
 	}
 
 	for _, c := range result.Content {

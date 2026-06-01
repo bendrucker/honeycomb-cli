@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"strings"
 	"testing"
 )
@@ -105,12 +104,12 @@ func TestWrite_Table_NoColumns(t *testing.T) {
 	}
 }
 
-func TestWriteValue_JSON(t *testing.T) {
+func TestWriteMessage_JSON(t *testing.T) {
 	var buf bytes.Buffer
 	w := New(&buf, FormatJSON)
 
 	item := testItem{Name: "a", Count: 1}
-	if err := w.WriteValue(item, nil); err != nil {
+	if err := w.WriteMessage(item, "ignored in JSON mode"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -123,30 +122,37 @@ func TestWriteValue_JSON(t *testing.T) {
 	}
 }
 
-func TestWriteValue_Table(t *testing.T) {
+func TestWriteMessage_Table(t *testing.T) {
 	var buf bytes.Buffer
 	w := New(&buf, FormatTable)
 
-	item := testItem{Name: "a", Count: 1}
-	err := w.WriteValue(item, func(out io.Writer) error {
-		_, err := fmt.Fprintf(out, "Name:\t%s\nCount:\t%d\n", item.Name, item.Count)
-		return err
-	})
-	if err != nil {
+	if err := w.WriteMessage(testItem{Name: "a", Count: 1}, "Authenticated as acme"); err != nil {
 		t.Fatal(err)
 	}
 
-	out := buf.String()
-	if !strings.Contains(out, "Name:") || !strings.Contains(out, "a") {
-		t.Errorf("table output = %q", out)
+	if out := buf.String(); out != "Authenticated as acme\n" {
+		t.Errorf("table output = %q, want %q", out, "Authenticated as acme\n")
 	}
 }
 
-func TestWriteValue_UnsupportedFormat(t *testing.T) {
+func TestWriteMessage_TableEmptyLine(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(&buf, FormatTable)
+
+	if err := w.WriteMessage(testItem{Name: "a", Count: 1}, ""); err != nil {
+		t.Fatal(err)
+	}
+
+	if out := buf.String(); out != "" {
+		t.Errorf("table output = %q, want empty", out)
+	}
+}
+
+func TestWriteMessage_UnsupportedFormat(t *testing.T) {
 	var buf bytes.Buffer
 	w := New(&buf, "xml")
 
-	err := w.WriteValue(testItem{}, nil)
+	err := w.WriteMessage(testItem{}, "msg")
 	if err == nil || !strings.Contains(err.Error(), "unsupported format") {
 		t.Errorf("err = %v, want unsupported format", err)
 	}
