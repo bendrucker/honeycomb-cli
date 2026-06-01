@@ -20,6 +20,30 @@ var testTable = TableDef{
 	},
 }
 
+func TestValidateFormat(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		format  string
+		wantErr bool
+	}{
+		{name: "json", format: "json", wantErr: false},
+		{name: "table", format: "table", wantErr: false},
+		{name: "empty is unset default", format: "", wantErr: false},
+		{name: "unknown", format: "xml", wantErr: true},
+		{name: "case sensitive", format: "JSON", wantErr: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := ValidateFormat(tc.format)
+			if tc.wantErr && err == nil {
+				t.Errorf("ValidateFormat(%q) = nil, want error", tc.format)
+			}
+			if !tc.wantErr && err != nil {
+				t.Errorf("ValidateFormat(%q) = %v, want nil", tc.format, err)
+			}
+		})
+	}
+}
+
 func TestWrite_JSON(t *testing.T) {
 	var buf bytes.Buffer
 	w := New(&buf, FormatJSON)
