@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
+	"strings"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
@@ -15,6 +17,17 @@ import (
 )
 
 var recipientTypes = []string{"email", "slack", "pagerduty", "msteams", "msteams_workflow", "webhook"}
+
+// detailFlags lists every type-specific detail flag and the recipient types it
+// applies to. Flags set for a type not listed here are rejected before the body
+// is built, so they cannot be silently dropped.
+var detailFlags = map[string][]string{
+	"target":          {"email"},
+	"channel":         {"slack"},
+	"integration-key": {"pagerduty"},
+	"name":            {"pagerduty", "msteams", "msteams_workflow", "webhook"},
+	"url":             {"msteams", "msteams_workflow", "webhook"},
+}
 
 func NewCreateCmd(opts *options.RootOptions) *cobra.Command {
 	var (
@@ -34,6 +47,11 @@ func NewCreateCmd(opts *options.RootOptions) *cobra.Command {
 			if file != "" {
 				return createFromFile(cmd.Context(), opts, file)
 			}
+			if recipientType != "" {
+				if err := validateDetailFlags(cmd, recipientType); err != nil {
+					return err
+				}
+			}
 			return runCreate(cmd.Context(), opts, recipientType, target, channel, integrationKey, name, url)
 		},
 	}
@@ -51,6 +69,22 @@ func NewCreateCmd(opts *options.RootOptions) *cobra.Command {
 	}
 
 	return cmd
+}
+
+// validateDetailFlags rejects any explicitly-set detail flag that does not
+// apply to recipientType, so mismatched flags surface an error instead of being
+// silently dropped.
+func validateDetailFlags(cmd *cobra.Command, recipientType string) error {
+	for flag, types := range detailFlags {
+		if !cmd.Flags().Changed(flag) {
+			continue
+		}
+		if slices.Contains(types, recipientType) {
+			continue
+		}
+		return fmt.Errorf("--%s is not valid for %s recipients (valid for: %s)", flag, recipientType, strings.Join(types, ", "))
+	}
+	return nil
 }
 
 func runCreate(ctx context.Context, opts *options.RootOptions, recipientType, target, channel, integrationKey, name, url string) error {
