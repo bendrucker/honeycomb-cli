@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
@@ -247,6 +248,45 @@ func setPermissions(attrs *api.ConfigurationKeyAttributes, permissions []string)
 	}
 }
 
+func grantedPermissions(perms *struct {
+	CreateDatasets      *bool `json:"create_datasets,omitempty"`
+	ManageBoards        *bool `json:"manage_boards,omitempty"`
+	ManageColumns       *bool `json:"manage_columns,omitempty"`
+	ManageMarkers       *bool `json:"manage_markers,omitempty"`
+	ManagePrivateBoards *bool `json:"manage_privateBoards,omitempty"`
+	ManageRecipients    *bool `json:"manage_recipients,omitempty"`
+	ManageSlos          *bool `json:"manage_slos,omitempty"`
+	ManageTriggers      *bool `json:"manage_triggers,omitempty"`
+	ReadServiceMaps     *bool `json:"read_service_maps,omitempty"`
+	RunQueries          *bool `json:"run_queries,omitempty"`
+	SendEvents          *bool `json:"send_events,omitempty"`
+	VisibleTeamMembers  *bool `json:"visible_team_members,omitempty"`
+}) []string {
+	if perms == nil {
+		return nil
+	}
+	var granted []string
+	for name, flag := range map[string]*bool{
+		"create_datasets":       perms.CreateDatasets,
+		"manage_boards":         perms.ManageBoards,
+		"manage_columns":        perms.ManageColumns,
+		"manage_markers":        perms.ManageMarkers,
+		"manage_private_boards": perms.ManagePrivateBoards,
+		"manage_recipients":     perms.ManageRecipients,
+		"manage_slos":           perms.ManageSlos,
+		"manage_triggers":       perms.ManageTriggers,
+		"read_service_maps":     perms.ReadServiceMaps,
+		"run_queries":           perms.RunQueries,
+		"send_events":           perms.SendEvents,
+	} {
+		if deref.Bool(flag) {
+			granted = append(granted, name)
+		}
+	}
+	slices.Sort(granted)
+	return granted
+}
+
 func handleCreateResponse(opts *options.RootOptions, resp *api.CreateApiKeyResp) error {
 	created, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.ApplicationvndApiJSON201)
 	if err != nil {
@@ -264,8 +304,9 @@ func handleCreateResponse(opts *options.RootOptions, resp *api.CreateApiKeyResp)
 
 func createResponseToDetail(resp *api.ApiKeyCreateResponse) keyDetail {
 	detail := keyDetail{
-		ID:     deref.String(resp.Data.Id),
-		Secret: deref.String(resp.Data.Attributes.Secret),
+		ID:          deref.String(resp.Data.Id),
+		Secret:      deref.String(resp.Data.Attributes.Secret),
+		Environment: resp.Data.Relationships.Environment.Data.Id,
 	}
 
 	if ingest, err := resp.Data.Attributes.AsIngestKeyAttributes(); err == nil {
@@ -276,6 +317,7 @@ func createResponseToDetail(resp *api.ApiKeyCreateResponse) keyDetail {
 		detail.Name = cfg.Name
 		detail.KeyType = string(cfg.KeyType)
 		detail.Disabled = deref.Bool(cfg.Disabled)
+		detail.Permissions = grantedPermissions(cfg.Permissions)
 	} else {
 		var raw struct {
 			Name     string `json:"name"`
@@ -287,10 +329,6 @@ func createResponseToDetail(resp *api.ApiKeyCreateResponse) keyDetail {
 		detail.Name = raw.Name
 		detail.KeyType = raw.KeyType
 		detail.Disabled = raw.Disabled
-	}
-
-	if detail.Secret != "" {
-		detail.Key = detail.Secret
 	}
 
 	return detail

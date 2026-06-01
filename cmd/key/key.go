@@ -1,6 +1,8 @@
 package key
 
 import (
+	"strings"
+
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/deref"
@@ -36,23 +38,27 @@ type keyItem struct {
 }
 
 type keyDetail struct {
-	ID       string `json:"id" detail:"ID"`
-	Name     string `json:"name" detail:"Name"`
-	KeyType  string `json:"key_type" detail:"Key Type"`
-	Disabled bool   `json:"disabled" detail:"Disabled"`
-	Secret   string `json:"secret,omitempty"`
-	Key      string `json:"key,omitempty"`
+	ID          string   `json:"id" detail:"ID"`
+	Name        string   `json:"name" detail:"Name"`
+	KeyType     string   `json:"key_type" detail:"Key Type"`
+	Disabled    bool     `json:"disabled" detail:"Disabled"`
+	Environment string   `json:"environment,omitempty"`
+	Permissions []string `json:"permissions,omitempty"`
+	Secret      string   `json:"secret,omitempty"`
 }
 
 var keyListTable = output.TableFromTags[keyItem]()
 
 func writeKeyDetail(opts *options.RootOptions, detail keyDetail) error {
 	fields := output.FieldsFromTags(detail)
+	if detail.Environment != "" {
+		fields = append(fields, output.Field{Label: "Environment", Value: detail.Environment})
+	}
+	if len(detail.Permissions) > 0 {
+		fields = append(fields, output.Field{Label: "Permissions", Value: strings.Join(detail.Permissions, ", ")})
+	}
 	if detail.Secret != "" {
 		fields = append(fields, output.Field{Label: "Secret", Value: detail.Secret})
-	}
-	if detail.Key != "" {
-		fields = append(fields, output.Field{Label: "Key", Value: detail.Key})
 	}
 	return opts.OutputWriter().WriteFields(detail, fields)
 }
@@ -73,6 +79,12 @@ func objectToDetail(obj api.ApiKeyObject) keyDetail {
 	}
 	if obj.Attributes != nil {
 		fillFromAttributes(&detail.Name, &detail.KeyType, &detail.Disabled, *obj.Attributes)
+		if cfg, err := obj.Attributes.AsConfigurationKeyAttributes(); err == nil {
+			detail.Permissions = grantedPermissions(cfg.Permissions)
+		}
+	}
+	if obj.Relationships != nil {
+		detail.Environment = obj.Relationships.Environment.Data.Id
 	}
 	return detail
 }
