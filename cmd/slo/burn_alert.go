@@ -1,6 +1,7 @@
 package slo
 
 import (
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
@@ -40,5 +41,5 @@ func NewBurnAlertCmd(opts *options.RootOptions, dataset *string) *cobra.Command 
 	cmd.AddCommand(NewBurnAlertUpdateCmd(opts, dataset))
 	cmd.AddCommand(NewBurnAlertDeleteCmd(opts, dataset))
 
-	return cmd
+	return command.Group(cmd)
 }

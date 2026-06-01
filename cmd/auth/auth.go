@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/spf13/cobra"
 )
@@ -16,5 +17,5 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 	cmd.AddCommand(NewStatusCmd(opts))
 	cmd.AddCommand(NewProfileCmd(opts))
 
-	return cmd
+	return command.Group(cmd)
 }

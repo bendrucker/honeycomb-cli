@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/deref"
@@ -98,5 +99,5 @@ func NewViewCmd(opts *options.RootOptions) *cobra.Command {
 	cmd.AddCommand(NewViewUpdateCmd(opts, &board))
 	cmd.AddCommand(NewViewDeleteCmd(opts, &board))
 
-	return cmd
+	return command.Group(cmd)
 }
