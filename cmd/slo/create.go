@@ -60,7 +60,7 @@ func runSLOCreate(cmd *cobra.Command, opts *options.RootOptions, dataset, file, 
 			return err
 		}
 	} else {
-		if name == "" || sliAlias == "" || target == 0 || timePeriod == 0 {
+		if name == "" || sliAlias == "" || !cmd.Flags().Changed("target") || !cmd.Flags().Changed("time-period") {
 			return fmt.Errorf("--file or all of --name, --sli-alias, --target, --time-period are required")
 		}
 
