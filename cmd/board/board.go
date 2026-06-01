@@ -28,11 +28,10 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 }
 
 type boardListItem struct {
-	ID           string `json:"id"`
-	Name         string `json:"name"`
-	Description  string `json:"description,omitempty"`
-	ColumnLayout string `json:"column_layout,omitempty"`
-	URL          string `json:"url,omitempty"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	URL         string `json:"url,omitempty"`
 }
 
 type boardDetail struct {
@@ -40,7 +39,6 @@ type boardDetail struct {
 	Name          string          `json:"name" detail:"Name"`
 	Description   string          `json:"description,omitempty" detail:"Description"`
 	Type          string          `json:"type" detail:"Type"`
-	ColumnLayout  string          `json:"column_layout,omitempty" detail:"Column Layout"`
 	URL           string          `json:"url,omitempty" detail:"URL"`
 	PresetFilters json.RawMessage `json:"preset_filters,omitempty"`
 	Panels        json.RawMessage `json:"panels,omitempty"`
@@ -54,11 +52,10 @@ func writeBoardDetail(opts *options.RootOptions, detail boardDetail) error {
 
 func boardToDetail(b api.Board) boardDetail {
 	d := boardDetail{
-		ID:           deref.String(b.Id),
-		Name:         b.Name,
-		Type:         string(b.Type),
-		Description:  deref.String(b.Description),
-		ColumnLayout: deref.Enum(b.LayoutGeneration),
+		ID:          deref.String(b.Id),
+		Name:        b.Name,
+		Type:        string(b.Type),
+		Description: deref.String(b.Description),
 	}
 	if b.Links != nil {
 		d.URL = deref.String(b.Links.BoardUrl)
