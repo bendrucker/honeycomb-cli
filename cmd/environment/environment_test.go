@@ -107,6 +107,58 @@ func TestList(t *testing.T) {
 	}
 }
 
+func TestList_Paginated(t *testing.T) {
+	var srvURL string
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		env := func(id, name string) map[string]any {
+			return map[string]any{
+				"id":   id,
+				"type": "environments",
+				"attributes": map[string]any{
+					"name":     name,
+					"slug":     name,
+					"settings": map[string]any{"delete_protected": false},
+				},
+			}
+		}
+
+		switch r.URL.Query().Get("page[after]") {
+		case "":
+			jsonapiEnvelope(t, w, http.StatusOK, map[string]any{
+				"data":  []map[string]any{env("env-1", "one"), env("env-2", "two")},
+				"links": map[string]any{"next": srvURL + "/2/teams/my-team/environments?page%5Bafter%5D=cursor-2"},
+			})
+		case "cursor-2":
+			jsonapiEnvelope(t, w, http.StatusOK, map[string]any{
+				"data":  []map[string]any{env("env-3", "three")},
+				"links": map[string]any{"next": nil},
+			})
+		default:
+			t.Errorf("unexpected page[after] = %q", r.URL.Query().Get("page[after]"))
+		}
+	}))
+	srvURL = opts.APIUrl
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"list", "--team", "my-team"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	var items []environmentItem
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &items); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+	if len(items) != 3 {
+		t.Fatalf("got %d items, want 3", len(items))
+	}
+	for i, want := range []string{"env-1", "env-2", "env-3"} {
+		if items[i].ID != want {
+			t.Errorf("items[%d].ID = %q, want %q", i, items[i].ID, want)
+		}
+	}
+}
+
 func TestList_Empty(t *testing.T) {
 	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		jsonapiEnvelope(t, w, http.StatusOK, map[string]any{"data": []any{}})

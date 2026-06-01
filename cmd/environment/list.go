@@ -3,6 +3,7 @@ package environment
 import (
 	"context"
 	"fmt"
+	"net/url"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
@@ -32,20 +33,55 @@ func runEnvironmentList(ctx context.Context, opts *options.RootOptions, team str
 		return err
 	}
 
-	resp, err := client.ListEnvironmentsWithResponse(ctx, team, nil)
-	if err != nil {
-		return fmt.Errorf("listing environments: %w", err)
-	}
+	var items []environmentItem
+	params := &api.ListEnvironmentsParams{}
+	for {
+		resp, err := client.ListEnvironmentsWithResponse(ctx, team, params)
+		if err != nil {
+			return fmt.Errorf("listing environments: %w", err)
+		}
 
-	list, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.ApplicationvndApiJSON200)
-	if err != nil {
-		return err
-	}
+		list, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.ApplicationvndApiJSON200)
+		if err != nil {
+			return err
+		}
 
-	items := make([]environmentItem, len(list.Data))
-	for i, e := range list.Data {
-		items[i] = envToItem(e)
+		for _, e := range list.Data {
+			items = append(items, envToItem(e))
+		}
+
+		cursor, err := nextPageCursor(list.Links)
+		if err != nil {
+			return err
+		}
+		if cursor == "" {
+			break
+		}
+		params.PageAfter = &cursor
 	}
 
 	return opts.OutputWriterList().Write(items, environmentListTable)
+}
+
+// nextPageCursor extracts the page[after] cursor from a links.next URL.
+// It returns an empty string when there is no further page.
+func nextPageCursor(links *api.PaginationLinks) (string, error) {
+	if links == nil || !links.Next.IsSpecified() || links.Next.IsNull() {
+		return "", nil
+	}
+
+	next, err := links.Next.Get()
+	if err != nil {
+		return "", fmt.Errorf("reading next page link: %w", err)
+	}
+	if next == "" {
+		return "", nil
+	}
+
+	parsed, err := url.Parse(next)
+	if err != nil {
+		return "", fmt.Errorf("parsing next page link: %w", err)
+	}
+
+	return parsed.Query().Get("page[after]"), nil
 }
