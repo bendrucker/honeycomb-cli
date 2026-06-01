@@ -412,8 +412,8 @@ func TestCreate_Flags(t *testing.T) {
 				if body.Data.Type != api.ApiKeyCreateRequestDataTypeApiKeys {
 					t.Errorf("data.type = %q, want %q", body.Data.Type, api.ApiKeyCreateRequestDataTypeApiKeys)
 				}
-				if body.Data.Relationships.Environment.Data.Id != "env1" {
-					t.Errorf("environment ID = %q, want %q", body.Data.Relationships.Environment.Data.Id, "env1")
+				if body.Data.Relationships.Environment.Data.Id != "hcaen_01env1" {
+					t.Errorf("environment ID = %q, want %q", body.Data.Relationships.Environment.Data.Id, "hcaen_01env1")
 				}
 
 				var attrs struct {
@@ -446,7 +446,7 @@ func TestCreate_Flags(t *testing.T) {
 			}))
 
 			cmd := NewCmd(opts)
-			cmd.SetArgs([]string{"--team", "my-team", "create", "--name", "My Key", "--key-type", tc.keyType, "--environment", "env1"})
+			cmd.SetArgs([]string{"--team", "my-team", "create", "--name", "My Key", "--key-type", tc.keyType, "--environment", "hcaen_01env1"})
 			if err := cmd.Execute(); err != nil {
 				t.Fatal(err)
 			}
@@ -546,7 +546,7 @@ func TestCreate_WithPermissions(t *testing.T) {
 				}`))
 			}))
 
-			args := []string{"--team", "my-team", "create", "--name", "My Key", "--key-type", "configuration", "--environment", "env1"}
+			args := []string{"--team", "my-team", "create", "--name", "My Key", "--key-type", "configuration", "--environment", "hcaen_01env1"}
 			args = append(args, tc.args...)
 			cmd := NewCmd(opts)
 			cmd.SetArgs(args)

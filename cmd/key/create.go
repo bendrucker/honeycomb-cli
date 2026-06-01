@@ -61,7 +61,7 @@ func NewCreateCmd(opts *options.RootOptions, team *string) *cobra.Command {
 	cmd.Flags().StringVarP(&file, "file", "f", "", "Path to JSON:API request body (- for stdin)")
 	cmd.Flags().StringVar(&name, "name", "", "Key name")
 	cmd.Flags().StringVar(&keyType, "key-type", "", "Key type (ingest or configuration)")
-	cmd.Flags().StringVar(&environment, "environment", "", "Environment ID")
+	cmd.Flags().StringVar(&environment, "environment", "", "Environment ID or name")
 	cmd.Flags().StringSliceVar(&permissions, "permission", nil, "Permission to grant (repeatable)")
 	cmd.Flags().BoolVar(&allPermissions, "all-permissions", false, "Grant all permissions")
 
@@ -138,13 +138,18 @@ func runKeyCreateFromFlags(cmd *cobra.Command, opts *options.RootOptions, client
 		if !opts.IOStreams.CanPrompt() {
 			return fmt.Errorf("--environment is required in non-interactive mode")
 		}
-		environment, err = prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, "Environment ID: ")
+		environment, err = prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, "Environment ID or name: ")
 		if err != nil {
 			return err
 		}
 		if environment == "" {
 			return fmt.Errorf("environment ID is required")
 		}
+	}
+
+	environmentID, err := resolveEnvironment(cmd.Context(), client, team, environment)
+	if err != nil {
+		return err
 	}
 
 	body := api.ApiKeyCreateRequest{}
@@ -154,7 +159,7 @@ func runKeyCreateFromFlags(cmd *cobra.Command, opts *options.RootOptions, client
 			Id   string                              `json:"id"`
 			Type api.EnvironmentRelationshipDataType `json:"type"`
 		}{
-			Id:   environment,
+			Id:   environmentID,
 			Type: api.EnvironmentRelationshipDataTypeEnvironments,
 		},
 	}
