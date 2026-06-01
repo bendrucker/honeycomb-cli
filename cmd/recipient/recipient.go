@@ -26,12 +26,6 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 	return cmd
 }
 
-type recipientItem struct {
-	ID     string `json:"id" col:"ID"`
-	Type   string `json:"type" col:"Type"`
-	Target string `json:"target,omitempty" col:"Target"`
-}
-
 type recipientDetail struct {
 	ID        string         `json:"id" detail:"ID"`
 	Type      string         `json:"type" detail:"Type"`
@@ -94,15 +88,6 @@ func mapToDetail(raw map[string]any) recipientDetail {
 	}
 
 	return d
-}
-
-func detailToItem(d recipientDetail) recipientItem {
-	item := recipientItem{
-		ID:   d.ID,
-		Type: d.Type,
-	}
-	item.Target = extractTarget(d)
-	return item
 }
 
 func extractTarget(d recipientDetail) string {

@@ -2,6 +2,8 @@ package board
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
@@ -43,7 +45,39 @@ func viewResponseToDetail(v api.BoardViewResponse) viewDetail {
 }
 
 func writeViewDetail(opts *options.RootOptions, detail viewDetail) error {
-	return opts.OutputWriter().WriteFields(detail, output.FieldsFromTags(detail))
+	fields := output.FieldsFromTags(detail)
+	fields = append(fields, output.Field{Label: "Filters", Value: formatFilters(detail.Filters)})
+	return opts.OutputWriter().WriteFields(detail, fields)
+}
+
+// formatFilters renders a view's filters as one "column operation value" line
+// per filter. An empty raw message (no filters) renders as an em-dash.
+func formatFilters(raw json.RawMessage) string {
+	if len(raw) == 0 {
+		return "—"
+	}
+
+	var filters []struct {
+		Column    string `json:"column"`
+		Operation string `json:"operation"`
+		Value     any    `json:"value,omitempty"`
+	}
+	if err := json.Unmarshal(raw, &filters); err != nil {
+		return string(raw)
+	}
+	if len(filters) == 0 {
+		return "—"
+	}
+
+	lines := make([]string, len(filters))
+	for i, f := range filters {
+		if f.Value != nil {
+			lines[i] = fmt.Sprintf("%s %s %v", f.Column, f.Operation, f.Value)
+		} else {
+			lines[i] = fmt.Sprintf("%s %s", f.Column, f.Operation)
+		}
+	}
+	return strings.Join(lines, "\n")
 }
 
 func NewViewCmd(opts *options.RootOptions) *cobra.Command {

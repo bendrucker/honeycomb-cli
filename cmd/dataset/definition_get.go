@@ -50,17 +50,20 @@ func writeDefinitions(opts *options.RootOptions, defs *api.DatasetDefinitions) e
 	var rows [][]string
 	for i := range rt.NumField() {
 		field := rv.Field(i)
-		if field.IsNil() {
-			continue
-		}
-		def := field.Interface().(*api.DatasetDefinition)
 		jsonTag := rt.Field(i).Tag.Get("json")
 		name, _, _ := strings.Cut(jsonTag, ",")
-		colType := ""
-		if def.ColumnType != nil {
-			colType = string(*def.ColumnType)
+
+		column, colType := "—", "—"
+		if !field.IsNil() {
+			def := field.Interface().(*api.DatasetDefinition)
+			if def.Name != "" {
+				column = def.Name
+			}
+			if def.ColumnType != nil {
+				colType = string(*def.ColumnType)
+			}
 		}
-		rows = append(rows, []string{name, def.Name, colType})
+		rows = append(rows, []string{name, column, colType})
 	}
 
 	return opts.OutputWriter().WriteDynamic(defs, output.DynamicTableDef{

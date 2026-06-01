@@ -59,6 +59,56 @@ func TestDefinitionGet(t *testing.T) {
 	}
 }
 
+func TestDefinitionGet_TableAllFields(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"duration_ms": map[string]any{
+				"name":        "duration_ms",
+				"column_type": "column",
+			},
+		})
+	}))
+	opts.Format = "table"
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"definition", "get", "my-dataset"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	out := ts.OutBuf.String()
+	// The set field renders its column and type.
+	if !strings.Contains(out, "duration_ms") {
+		t.Errorf("table output missing set field:\n%s", out)
+	}
+	// Every other definition field renders a row with an em-dash for unset.
+	for _, want := range []string{"trace_id", "service_name", "error", "—"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("table output missing unset field %q:\n%s", want, out)
+		}
+	}
+}
+
+func TestDefinitionGet_TableEmpty(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	opts.Format = "table"
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"definition", "get", "my-dataset"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	out := ts.OutBuf.String()
+	if !strings.Contains(out, "duration_ms") || !strings.Contains(out, "—") {
+		t.Errorf("all-unset definition should still list every field with em-dashes:\n%s", out)
+	}
+}
+
 func TestDefinitionGet_NoKey(t *testing.T) {
 	ts := iostreams.Test(t)
 	opts := &options.RootOptions{

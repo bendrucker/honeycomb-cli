@@ -43,6 +43,56 @@ func TestViewGet(t *testing.T) {
 	}
 }
 
+func TestViewGet_TableFilters(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id":   "v1",
+			"name": "View One",
+			"filters": []map[string]any{
+				{"column": "env", "operation": "=", "value": "prod"},
+				{"column": "duration_ms", "operation": ">", "value": 100},
+			},
+		})
+	}))
+	opts.Format = "table"
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"view", "get", "v1", "--board", "board-1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	out := ts.OutBuf.String()
+	for _, want := range []string{"Filters", "env = prod", "duration_ms > 100"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("table output missing %q:\n%s", want, out)
+		}
+	}
+}
+
+func TestViewGet_TableNoFilters(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id":   "v1",
+			"name": "View One",
+		})
+	}))
+	opts.Format = "table"
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"view", "get", "v1", "--board", "board-1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	out := ts.OutBuf.String()
+	if !strings.Contains(out, "Filters") || !strings.Contains(out, "—") {
+		t.Errorf("table output should show Filters row with em-dash:\n%s", out)
+	}
+}
+
 func TestViewGet_NotFound(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

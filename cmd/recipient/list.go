@@ -11,7 +11,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var recipientListTable = output.TableFromTags[recipientItem]()
+var recipientListTable = output.TableDef{Columns: []output.Column{
+	{Header: "ID", Value: func(v any) string { return v.(recipientDetail).ID }},
+	{Header: "Type", Value: func(v any) string { return v.(recipientDetail).Type }},
+	{Header: "Target", Value: func(v any) string { return extractTarget(v.(recipientDetail)) }},
+}}
 
 func NewListCmd(opts *options.RootOptions) *cobra.Command {
 	return &cobra.Command{
@@ -43,10 +47,5 @@ func runList(ctx context.Context, opts *options.RootOptions) error {
 		return err
 	}
 
-	items := make([]recipientItem, len(details))
-	for i, d := range details {
-		items[i] = detailToItem(d)
-	}
-
-	return opts.OutputWriterList().Write(items, recipientListTable)
+	return opts.OutputWriterList().Write(details, recipientListTable)
 }
