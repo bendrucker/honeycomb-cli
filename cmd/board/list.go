@@ -24,7 +24,6 @@ var boardListTable = output.TableDef{
 		{Header: "ID", Value: func(v any) string { return v.(boardListItem).ID }},
 		{Header: "Name", Value: func(v any) string { return v.(boardListItem).Name }},
 		{Header: "Description", Value: func(v any) string { return truncate(v.(boardListItem).Description, 40) }},
-		{Header: "Column Layout", Value: func(v any) string { return v.(boardListItem).ColumnLayout }},
 		{Header: "URL", Value: func(v any) string { return v.(boardListItem).URL }},
 	},
 }
@@ -58,10 +57,9 @@ func runBoardList(ctx context.Context, opts *options.RootOptions) error {
 	items := make([]boardListItem, len(*boards))
 	for i, b := range *boards {
 		item := boardListItem{
-			ID:           deref.String(b.Id),
-			Name:         b.Name,
-			Description:  deref.String(b.Description),
-			ColumnLayout: deref.Enum(b.LayoutGeneration),
+			ID:          deref.String(b.Id),
+			Name:        b.Name,
+			Description: deref.String(b.Description),
 		}
 		if b.Links != nil {
 			item.URL = deref.String(b.Links.BoardUrl)

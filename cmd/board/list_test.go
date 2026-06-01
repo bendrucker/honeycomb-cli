@@ -88,6 +88,28 @@ func TestList(t *testing.T) {
 	}
 }
 
+func TestList_OmitsColumnLayoutColumn(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]map[string]any{
+			{"id": "abc123", "name": "My Board", "type": "flexible"},
+		})
+	}))
+	opts.Format = "table"
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"list"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	// layout_generation is write-only, so reads never populate it; the column
+	// was always blank and mislabeled "Column Layout".
+	if out := ts.OutBuf.String(); strings.Contains(out, "LAYOUT") {
+		t.Errorf("table output still renders a layout column:\n%s", out)
+	}
+}
+
 func TestList_Empty(t *testing.T) {
 	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
