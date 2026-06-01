@@ -20,7 +20,7 @@ func init() {
 }
 
 func testFactory(srv *server.MCPServer) clientFactory {
-	return func(ctx context.Context, _, _ string) (*mcpclient.Client, error) {
+	return func(ctx context.Context, _ connectOptions) (*mcpclient.Client, error) {
 		c, err := mcpclient.NewInProcessClient(srv)
 		if err != nil {
 			return nil, err
@@ -53,11 +53,6 @@ func setupMCPTest(t *testing.T) (*server.MCPServer, *options.RootOptions, *iostr
 		Format:    "json",
 	}
 
-	if err := config.SetKey("default", config.KeyConfig, "test-key"); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = config.DeleteKey("default", config.KeyConfig) })
-
 	return srv, opts, ts
 }
 
@@ -66,7 +61,7 @@ func TestTools(t *testing.T) {
 	srv.AddTool(mcp.NewTool("run_query", mcp.WithDescription("Run a query")), nil)
 	srv.AddTool(mcp.NewTool("get_columns", mcp.WithDescription("Get dataset columns")), nil)
 
-	cmd := newToolsCmd(opts, testFactory(srv))
+	cmd := newToolsCmd(opts, nil, testFactory(srv))
 	cmd.SetArgs([]string{})
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)

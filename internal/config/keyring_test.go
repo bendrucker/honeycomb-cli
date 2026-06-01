@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"net/http"
 	"testing"
 
@@ -66,6 +67,49 @@ func TestSetManagementKey(t *testing.T) {
 	}
 	if got != "id-123:secret-456" {
 		t.Errorf("stored value = %q, want %q", got, "id-123:secret-456")
+	}
+}
+
+func TestMCPToken(t *testing.T) {
+	keyring.MockInit()
+
+	type tokenSet struct {
+		AccessToken  string `json:"access_token"`
+		RefreshToken string `json:"refresh_token"`
+	}
+
+	const profile = "mcp-test"
+	t.Cleanup(func() { _ = DeleteMCPToken(profile) })
+
+	var empty tokenSet
+	if err := GetMCPToken(profile, &empty); !errors.Is(err, keyring.ErrNotFound) {
+		t.Fatalf("GetMCPToken on empty = %v, want ErrNotFound", err)
+	}
+
+	want := tokenSet{AccessToken: "a-tok", RefreshToken: "r-tok"}
+	if err := SetMCPToken(profile, want); err != nil {
+		t.Fatalf("SetMCPToken() error = %v", err)
+	}
+
+	var got tokenSet
+	if err := GetMCPToken(profile, &got); err != nil {
+		t.Fatalf("GetMCPToken() error = %v", err)
+	}
+	if got != want {
+		t.Errorf("GetMCPToken() = %+v, want %+v", got, want)
+	}
+
+	if err := DeleteMCPToken(profile); err != nil {
+		t.Fatalf("DeleteMCPToken() error = %v", err)
+	}
+	if err := GetMCPToken(profile, &got); !errors.Is(err, keyring.ErrNotFound) {
+		t.Errorf("GetMCPToken after delete = %v, want ErrNotFound", err)
+	}
+}
+
+func TestMCPTokenKey(t *testing.T) {
+	if got := mcpTokenKey("alice"); got != "alice:mcp" {
+		t.Errorf("mcpTokenKey() = %q, want %q", got, "alice:mcp")
 	}
 }
 
