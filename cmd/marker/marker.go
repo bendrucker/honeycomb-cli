@@ -3,6 +3,7 @@ package marker
 import (
 	"fmt"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/deref"
@@ -96,5 +97,5 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 	cmd.AddCommand(NewDeleteCmd(opts, &dataset))
 	cmd.AddCommand(NewSettingCmd(opts, &dataset))
 
-	return cmd
+	return command.Group(cmd)
 }

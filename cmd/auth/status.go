@@ -14,6 +14,11 @@ import (
 	"github.com/zalando/go-keyring"
 )
 
+// errInvalidKey reports that at least one stored key failed verification. The
+// per-key statuses are still written before this is returned, so the exit code
+// is non-zero while JSON/table output remains intact for inspection.
+var errInvalidKey = errors.New("one or more stored keys are invalid")
+
 type KeyStatus struct {
 	Type        string `json:"type"`
 	Status      string `json:"status"`
@@ -97,7 +102,17 @@ func runAuthStatus(ctx context.Context, opts *options.RootOptions, offline bool)
 		}
 	}
 
-	return opts.OutputWriter().Write(statuses, statusTable)
+	if err := opts.OutputWriter().Write(statuses, statusTable); err != nil {
+		return err
+	}
+
+	for _, ks := range statuses {
+		if ks.Status == "invalid" || ks.Status == "error" {
+			return errInvalidKey
+		}
+	}
+
+	return nil
 }
 
 func verifyKey(ctx context.Context, client *api.ClientWithResponses, kt config.KeyType, value string) (KeyStatus, error) {

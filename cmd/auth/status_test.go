@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -81,6 +82,7 @@ func TestAuthStatus_Verify(t *testing.T) {
 		key     string
 		handler http.Handler
 		want    KeyStatus
+		wantErr bool
 	}{
 		{
 			name:    "config key valid",
@@ -125,6 +127,7 @@ func TestAuthStatus_Verify(t *testing.T) {
 				Type:   "ingest",
 				Status: "invalid",
 			},
+			wantErr: true,
 		},
 		{
 			name:    "management key valid",
@@ -178,7 +181,12 @@ func TestAuthStatus_Verify(t *testing.T) {
 			}
 			t.Cleanup(func() { _ = config.DeleteKey("default", tt.keyType) })
 
-			if err := runAuthStatus(t.Context(), opts, false); err != nil {
+			err := runAuthStatus(t.Context(), opts, false)
+			if tt.wantErr {
+				if !errors.Is(err, errInvalidKey) {
+					t.Fatalf("got error %v, want errInvalidKey", err)
+				}
+			} else if err != nil {
 				t.Fatal(err)
 			}
 

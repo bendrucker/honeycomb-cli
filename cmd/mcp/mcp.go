@@ -12,6 +12,7 @@ import (
 	"github.com/mark3labs/mcp-go/client/transport"
 	"github.com/mark3labs/mcp-go/mcp"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/spf13/cobra"
 )
@@ -226,5 +227,5 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 	cmd.AddCommand(newToolsCmd(opts, &token, nil))
 	cmd.AddCommand(newCallCmd(opts, &token, nil))
 
-	return cmd
+	return command.Group(cmd)
 }

@@ -1,6 +1,7 @@
 package marker
 
 import (
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/deref"
@@ -47,5 +48,5 @@ func NewSettingCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	cmd.AddCommand(NewSettingUpdateCmd(opts, dataset))
 	cmd.AddCommand(NewSettingDeleteCmd(opts, dataset))
 
-	return cmd
+	return command.Group(cmd)
 }

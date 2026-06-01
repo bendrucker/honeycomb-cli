@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/bendrucker/honeycomb-cli/internal/output"
@@ -42,7 +43,7 @@ func NewProfileCmd(opts *options.RootOptions) *cobra.Command {
 
 	cmd.AddCommand(newProfileListCmd(opts))
 
-	return cmd
+	return command.Group(cmd)
 }
 
 func newProfileListCmd(opts *options.RootOptions) *cobra.Command {

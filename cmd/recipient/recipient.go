@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
@@ -23,7 +24,7 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 	cmd.AddCommand(NewDeleteCmd(opts))
 	cmd.AddCommand(NewTriggersCmd(opts))
 
-	return cmd
+	return command.Group(cmd)
 }
 
 type recipientDetail struct {

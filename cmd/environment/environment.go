@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/output"
@@ -44,7 +45,7 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 	cmd.AddCommand(NewUpdateCmd(opts, &team))
 	cmd.AddCommand(NewDeleteCmd(opts, &team))
 
-	return cmd
+	return command.Group(cmd)
 }
 
 type environmentItem struct {

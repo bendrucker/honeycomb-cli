@@ -1,6 +1,7 @@
 package dataset
 
 import (
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/spf13/cobra"
 )
@@ -15,5 +16,5 @@ func NewDefinitionCmd(opts *options.RootOptions) *cobra.Command {
 	cmd.AddCommand(NewDefinitionGetCmd(opts))
 	cmd.AddCommand(NewDefinitionUpdateCmd(opts))
 
-	return cmd
+	return command.Group(cmd)
 }

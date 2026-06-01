@@ -1,6 +1,7 @@
 package query
 
 import (
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/deref"
@@ -66,5 +67,5 @@ func NewAnnotationCmd(opts *options.RootOptions, dataset *string) *cobra.Command
 	cmd.AddCommand(NewUpdateCmd(opts, dataset))
 	cmd.AddCommand(NewDeleteCmd(opts, dataset))
 
-	return cmd
+	return command.Group(cmd)
 }
