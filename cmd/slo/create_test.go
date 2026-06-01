@@ -144,6 +144,39 @@ func TestCreate_FlagsWithDescription(t *testing.T) {
 	}
 }
 
+func TestCreate_ExplicitZeroTarget(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode request body: %v", err)
+		}
+		if body["target_per_million"] != float64(0) {
+			t.Errorf("target_per_million = %v, want 0", body["target_per_million"])
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id":                 "slo-new",
+			"name":               "Availability",
+			"target_per_million": 0,
+			"time_period_days":   30,
+			"sli":                map[string]any{"alias": "sli.availability"},
+		})
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"create", "--dataset", "test-dataset",
+		"--name", "Availability",
+		"--sli-alias", "sli.availability",
+		"--target", "0",
+		"--time-period", "30",
+	})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestCreate_MissingRequiredFlags(t *testing.T) {
 	for _, tc := range []struct {
 		name string

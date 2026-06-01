@@ -65,6 +65,19 @@ func TestUpdate(t *testing.T) {
 	}
 }
 
+func TestUpdate_NoFlags(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		t.Error("unexpected API call")
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"update", "--dataset", "my-dataset", "abc123"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error when no update flags provided")
+	}
+}
+
 func TestUpdate_NotFound(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

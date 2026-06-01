@@ -21,6 +21,9 @@ func NewUpdateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 		Short: "Update a column",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if !cmd.Flags().Changed("description") && !cmd.Flags().Changed("hidden") {
+				return fmt.Errorf("provide at least one of --description, --hidden")
+			}
 			return runColumnUpdate(cmd, opts, *dataset, args[0], description, hidden)
 		},
 	}

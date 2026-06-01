@@ -32,7 +32,7 @@ func NewBurnAlertCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Co
 			if file != "" {
 				return runBurnAlertCreateFromFile(cmd.Context(), opts, *dataset, file)
 			}
-			return runBurnAlertCreateFromFlags(cmd.Context(), opts, *dataset, sloID, alertType, exhaustionMinutes, budgetRateWindowMin, budgetRateThreshold, recipients, description)
+			return runBurnAlertCreateFromFlags(cmd, opts, *dataset, sloID, alertType, exhaustionMinutes, budgetRateWindowMin, budgetRateThreshold, recipients, description)
 		},
 	}
 
@@ -84,7 +84,9 @@ func runBurnAlertCreateFromFile(ctx context.Context, opts *options.RootOptions, 
 	return writeBurnAlertDetail(opts, detail)
 }
 
-func runBurnAlertCreateFromFlags(ctx context.Context, opts *options.RootOptions, dataset, sloID, alertType string, exhaustionMinutes, budgetRateWindowMin, budgetRateThreshold int, recipients []string, description string) error {
+func runBurnAlertCreateFromFlags(cmd *cobra.Command, opts *options.RootOptions, dataset, sloID, alertType string, exhaustionMinutes, budgetRateWindowMin, budgetRateThreshold int, recipients []string, description string) error {
+	ctx := cmd.Context()
+
 	if sloID == "" {
 		return fmt.Errorf("--slo-id is required")
 	}
@@ -108,15 +110,15 @@ func runBurnAlertCreateFromFlags(ctx context.Context, opts *options.RootOptions,
 
 	switch alertType {
 	case "exhaustion_time":
-		if exhaustionMinutes == 0 {
+		if !cmd.Flags().Changed("exhaustion-minutes") {
 			return fmt.Errorf("--exhaustion-minutes is required when --alert-type=exhaustion_time")
 		}
 		body["exhaustion_minutes"] = exhaustionMinutes
 	case "budget_rate":
-		if budgetRateWindowMin == 0 {
+		if !cmd.Flags().Changed("budget-rate-window-minutes") {
 			return fmt.Errorf("--budget-rate-window-minutes is required when --alert-type=budget_rate")
 		}
-		if budgetRateThreshold == 0 {
+		if !cmd.Flags().Changed("budget-rate-threshold") {
 			return fmt.Errorf("--budget-rate-threshold is required when --alert-type=budget_rate")
 		}
 		body["budget_rate_window_minutes"] = budgetRateWindowMin

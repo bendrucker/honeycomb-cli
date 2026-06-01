@@ -261,6 +261,37 @@ func TestBurnAlertCreate_BudgetRate(t *testing.T) {
 	}
 }
 
+func TestBurnAlertCreate_ExplicitZeroExhaustionMinutes(t *testing.T) {
+	opts, _ := setupBurnAlertTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		if body["exhaustion_minutes"] != float64(0) {
+			t.Errorf("exhaustion_minutes = %v, want 0", body["exhaustion_minutes"])
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id":                 "ba-new",
+			"alert_type":         "exhaustion_time",
+			"exhaustion_minutes": 0,
+			"slo_id":             "slo-1",
+		})
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{
+		"burn-alert", "create", "--dataset", "my-dataset",
+		"--slo-id", "slo-1",
+		"--alert-type", "exhaustion_time",
+		"--exhaustion-minutes", "0",
+		"--recipient", "r-1",
+	})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestBurnAlertCreate_Validation(t *testing.T) {
 	for _, tc := range []struct {
 		name    string

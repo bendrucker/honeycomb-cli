@@ -1,7 +1,9 @@
 package dataset
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
@@ -51,22 +53,23 @@ func runDatasetUpdate(ctx context.Context, opts *options.RootOptions, slug strin
 		return err
 	}
 
-	body := api.DatasetUpdatePayload{}
+	body := map[string]any{}
 	if description != nil {
-		body.Description = *description
+		body["description"] = *description
 	}
 	if expandJsonDepth != nil {
-		body.ExpandJsonDepth = *expandJsonDepth
+		body["expand_json_depth"] = *expandJsonDepth
 	}
 	if deleteProtected != nil {
-		body.Settings = &struct {
-			DeleteProtected *bool `json:"delete_protected,omitempty"`
-		}{
-			DeleteProtected: deleteProtected,
-		}
+		body["settings"] = map[string]any{"delete_protected": *deleteProtected}
 	}
 
-	resp, err := client.UpdateDatasetWithResponse(ctx, slug, body)
+	data, err := json.Marshal(body)
+	if err != nil {
+		return fmt.Errorf("encoding dataset: %w", err)
+	}
+
+	resp, err := client.UpdateDatasetWithBodyWithResponse(ctx, slug, "application/json", bytes.NewReader(data))
 	if err != nil {
 		return fmt.Errorf("updating dataset: %w", err)
 	}

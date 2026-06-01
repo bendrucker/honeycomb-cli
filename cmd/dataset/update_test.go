@@ -72,6 +72,40 @@ func TestUpdate(t *testing.T) {
 	}
 }
 
+func TestUpdate_PartialOmitsUnsetFields(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		var raw map[string]any
+		if err := json.Unmarshal(body, &raw); err != nil {
+			t.Fatalf("unmarshal request body: %v", err)
+		}
+		if raw["description"] != "Updated description" {
+			t.Errorf("description = %v, want %q", raw["description"], "Updated description")
+		}
+		if _, ok := raw["expand_json_depth"]; ok {
+			t.Errorf("expand_json_depth present in body, want omitted: %v", raw)
+		}
+		if _, ok := raw["settings"]; ok {
+			t.Errorf("settings present in body, want omitted: %v", raw)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"name":              "my-dataset",
+			"slug":              "my-dataset",
+			"description":       "Updated description",
+			"expand_json_depth": 5,
+			"created_at":        "2025-01-15T10:30:00Z",
+		})
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"update", "my-dataset", "--description", "Updated description"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestUpdate_NoKey(t *testing.T) {
 	ts := iostreams.Test(t)
 	opts := &options.RootOptions{
