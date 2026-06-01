@@ -12,6 +12,7 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/bendrucker/honeycomb-cli/internal/iostreams"
+	"github.com/spf13/cobra"
 	"github.com/zalando/go-keyring"
 )
 
@@ -160,8 +161,11 @@ func TestRun_NonSuccess(t *testing.T) {
 	if !strings.Contains(err.Error(), "GET /1/boards/missing") {
 		t.Errorf("error = %q, want method and path", err.Error())
 	}
-	if !strings.Contains(ts.OutBuf.String(), "not found") {
-		t.Errorf("output = %q, want body written despite error", ts.OutBuf.String())
+	if ts.OutBuf.Len() != 0 {
+		t.Errorf("stdout = %q, want empty on error", ts.OutBuf.String())
+	}
+	if !strings.Contains(ts.ErrBuf.String(), "not found") {
+		t.Errorf("stderr = %q, want error body written", ts.ErrBuf.String())
 	}
 }
 
@@ -373,9 +377,11 @@ func TestRun_JQ_NonSuccess(t *testing.T) {
 		t.Errorf("error = %q, want HTTP 400", err.Error())
 	}
 
-	got := strings.TrimSpace(ts.OutBuf.String())
-	if got != "bad request" {
-		t.Errorf("jq output = %q, want %q", got, "bad request")
+	if ts.OutBuf.Len() != 0 {
+		t.Errorf("stdout = %q, want empty (jq skipped on error)", ts.OutBuf.String())
+	}
+	if !strings.Contains(ts.ErrBuf.String(), "missing field") {
+		t.Errorf("stderr = %q, want raw error body", ts.ErrBuf.String())
 	}
 }
 
@@ -613,9 +619,11 @@ func TestRun_V2_ErrorResponse(t *testing.T) {
 	if !strings.Contains(err.Error(), "HTTP 422") {
 		t.Errorf("error = %q, want HTTP 422", err.Error())
 	}
-	// Error body should be written to output even on failure
-	if !strings.Contains(ts.OutBuf.String(), "name is required") {
-		t.Errorf("output = %q, want error body written", ts.OutBuf.String())
+	if ts.OutBuf.Len() != 0 {
+		t.Errorf("stdout = %q, want empty on error", ts.OutBuf.String())
+	}
+	if !strings.Contains(ts.ErrBuf.String(), "name is required") {
+		t.Errorf("stderr = %q, want error body written", ts.ErrBuf.String())
 	}
 }
 
@@ -634,6 +642,67 @@ func TestRun_V2_JQ_Unwrap(t *testing.T) {
 	got := strings.TrimSpace(ts.OutBuf.String())
 	if got != "prod" {
 		t.Errorf("jq output = %q, want %q (should operate on unwrapped data)", got, "prod")
+	}
+}
+
+func TestRun_V2_TrailingNewline(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		_, _ = w.Write([]byte(`{"data":{"id":"abc","type":"environments","attributes":{"name":"prod"}}}`))
+	}), config.KeyManagement, "mgmt-key")
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"/2/teams/my-team/environments/abc"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	out := ts.OutBuf.String()
+	if !strings.HasSuffix(out, "\n") {
+		t.Errorf("output = %q, want trailing newline on re-marshaled body", out)
+	}
+	if strings.HasSuffix(out, "\n\n") {
+		t.Errorf("output = %q, want exactly one trailing newline", out)
+	}
+}
+
+func TestRun_V1_NewlinePreserved(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte("{\"status\":\"ok\"}\n"))
+	}), config.KeyConfig, "test-key")
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"/1/auth"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	if out := ts.OutBuf.String(); out != "{\"status\":\"ok\"}\n" {
+		t.Errorf("output = %q, want server body unchanged with single newline", out)
+	}
+}
+
+func TestNewCmd_FormatFlagHidden(t *testing.T) {
+	opts := &options.RootOptions{
+		IOStreams: iostreams.Test(t).IOStreams,
+		Config:    &config.Config{},
+	}
+
+	root := &cobra.Command{Use: "honeycomb"}
+	root.PersistentFlags().String("format", "", "Output format: json, table")
+
+	apiCmd := NewCmd(opts)
+	root.AddCommand(apiCmd)
+
+	apiCmd.HelpFunc()(apiCmd, nil)
+
+	flag := apiCmd.InheritedFlags().Lookup("format")
+	if flag == nil {
+		t.Fatal("format flag not inherited")
+	}
+	if !flag.Hidden {
+		t.Error("format flag should be hidden for the api command")
 	}
 }
 

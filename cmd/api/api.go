@@ -54,7 +54,27 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 	cmd.Flags().StringVar(&o.input, "input", "", "Read body from file (- for stdin)")
 	cmd.Flags().BoolVar(&o.raw, "raw", false, "Output the full JSON:API envelope instead of flattened attributes")
 
+	hideFormatFlag(cmd)
+
 	return cmd
+}
+
+// hideFormatFlag hides the inherited persistent --format flag for the api
+// command, which streams responses verbatim and never applies output
+// formatting. The flag is registered on the root command, so it can only be
+// resolved from the inherited flag set, which cobra populates lazily. Hiding it
+// in the help function keeps it out of `api --help` without disabling the flag
+// for parsing.
+func hideFormatFlag(cmd *cobra.Command) {
+	help := cmd.HelpFunc()
+	cmd.SetHelpFunc(func(c *cobra.Command, args []string) {
+		if c == cmd {
+			if flag := c.InheritedFlags().Lookup("format"); flag != nil {
+				flag.Hidden = true
+			}
+		}
+		help(c, args)
+	})
 }
 
 func run(cmd *cobra.Command, o *apiOptions, path string) error {
@@ -122,6 +142,11 @@ func run(cmd *cobra.Command, o *apiOptions, path string) error {
 			return fmt.Errorf("reading response: %w", err)
 		}
 
+		if err := clientapi.CheckResponse(resp.StatusCode, respBody); err != nil {
+			writeBody(ios.Err, respBody)
+			return fmt.Errorf("%s %s: %w", method, path, err)
+		}
+
 		if !o.raw && isV2Path(path) {
 			respBody, err = unwrapJSONAPI(respBody)
 			if err != nil {
@@ -134,11 +159,7 @@ func run(cmd *cobra.Command, o *apiOptions, path string) error {
 				return err
 			}
 		} else {
-			_, _ = ios.Out.Write(respBody)
-		}
-
-		if err := clientapi.CheckResponse(resp.StatusCode, respBody); err != nil {
-			return fmt.Errorf("%s %s: %w", method, path, err)
+			writeBody(ios.Out, respBody)
 		}
 
 		if !o.paginate {
@@ -156,6 +177,17 @@ func run(cmd *cobra.Command, o *apiOptions, path string) error {
 	}
 
 	return nil
+}
+
+// writeBody writes the response body to w, appending a trailing newline when
+// the body lacks one. Re-marshaled JSON:API output has no newline, so this
+// keeps it from running into the next shell prompt; bodies that already end in
+// a newline (v1 responses, --raw passthrough) are written unchanged.
+func writeBody(w io.Writer, body []byte) {
+	_, _ = w.Write(body)
+	if len(body) > 0 && body[len(body)-1] != '\n' {
+		_, _ = w.Write([]byte{'\n'})
+	}
 }
 
 func resolveMethod(o *apiOptions, hasBody bool) string {
