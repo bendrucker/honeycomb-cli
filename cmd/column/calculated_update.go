@@ -119,7 +119,16 @@ func runCalculatedUpdate(ctx context.Context, opts *options.RootOptions, dataset
 		return fmt.Errorf("updating calculated column: %w", err)
 	}
 
-	updated, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON200)
+	if _, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON200); err != nil {
+		return err
+	}
+
+	updatedResp, err := client.GetCalculatedFieldWithResponse(ctx, dataset, id)
+	if err != nil {
+		return fmt.Errorf("getting calculated column: %w", err)
+	}
+
+	updated, err := api.Decode(updatedResp.StatusCode(), updatedResp.Status(), updatedResp.Body, updatedResp.JSON200)
 	if err != nil {
 		return err
 	}
