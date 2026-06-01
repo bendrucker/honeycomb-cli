@@ -528,6 +528,30 @@ func TestTriggers(t *testing.T) {
 	}
 }
 
+func TestTriggers_DefaultsToTable(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]map[string]any{
+			{"id": "t1", "name": "High Latency", "disabled": false, "triggered": true},
+		})
+	}))
+	opts.Format = ""
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"triggers", "r1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	out := ts.OutBuf.String()
+	if !strings.Contains(out, "High Latency") {
+		t.Errorf("output = %q, want trigger name", out)
+	}
+	if strings.HasPrefix(strings.TrimSpace(out), "[") {
+		t.Errorf("output = %q, want table not JSON", out)
+	}
+}
+
 func TestTriggers_MissingArg(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 
