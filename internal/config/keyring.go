@@ -21,6 +21,13 @@ const (
 	KeyManagement KeyType = "management"
 )
 
+// KeyTypes returns every key type, in storage order. Callers that act on all
+// key types (logout, status, profile listing) range over this rather than
+// hand-listing the constants, so adding a key type updates them all.
+func KeyTypes() []KeyType {
+	return []KeyType{KeyConfig, KeyIngest, KeyManagement}
+}
+
 func ParseKeyType(s string) (KeyType, error) {
 	switch s {
 	case "config":
@@ -51,6 +58,19 @@ func SetKey(profile string, kt KeyType, value string) error {
 	return withTimeout(func() error {
 		return keyring.Set(keyringService, keyringKey(profile, kt), value)
 	})
+}
+
+// ManagementKey encodes a management key's ID and secret into the single
+// credential string the keyring stores and ApplyAuth sends as the bearer
+// token. The id:secret wire format lives only here.
+func ManagementKey(id, secret string) string {
+	return id + ":" + secret
+}
+
+// SetManagementKey stores a management key, encoding its ID and secret so
+// callers never assemble the id:secret wire format themselves.
+func SetManagementKey(profile, id, secret string) error {
+	return SetKey(profile, KeyManagement, ManagementKey(id, secret))
 }
 
 func GetKey(profile string, kt KeyType) (string, error) {

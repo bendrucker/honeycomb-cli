@@ -50,8 +50,6 @@ func NewStatusCmd(opts *options.RootOptions) *cobra.Command {
 	return cmd
 }
 
-var keyTypes = []config.KeyType{config.KeyConfig, config.KeyIngest, config.KeyManagement}
-
 func runAuthStatus(ctx context.Context, opts *options.RootOptions, offline bool) error {
 	profile := opts.ActiveProfile()
 
@@ -61,7 +59,7 @@ func runAuthStatus(ctx context.Context, opts *options.RootOptions, offline bool)
 	}
 
 	var keys []storedKey
-	for _, kt := range keyTypes {
+	for _, kt := range config.KeyTypes() {
 		val, err := config.GetKey(profile, kt)
 		if errors.Is(err, keyring.ErrNotFound) {
 			continue
