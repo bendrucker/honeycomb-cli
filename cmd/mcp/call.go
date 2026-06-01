@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -14,6 +15,7 @@ import (
 	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/bendrucker/honeycomb-cli/internal/fields"
 	"github.com/bendrucker/honeycomb-cli/internal/jq"
+	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -130,42 +132,82 @@ func readInputArgs(path string, stdin io.Reader) (map[string]any, error) {
 	return args, nil
 }
 
+type callResult struct {
+	Content []mcp.Content `json:"content"`
+	IsError bool          `json:"is_error"`
+}
+
 func writeCallResult(o *callOptions, result *mcp.CallToolResult) error {
 	ios := o.root.IOStreams
-	format := o.root.ResolveFormat()
 
-	if format == "json" || o.jqExpr != "" {
-		type contentItem struct {
-			Type string `json:"type"`
-			Text string `json:"text,omitempty"`
-		}
-		type callResult struct {
-			Content []contentItem `json:"content"`
-			IsError bool          `json:"isError"`
-		}
+	out := callResult{Content: result.Content, IsError: result.IsError}
 
-		out := callResult{IsError: result.IsError}
-		for _, c := range result.Content {
-			if tc, ok := mcp.AsTextContent(c); ok {
-				out.Content = append(out.Content, contentItem{Type: "text", Text: tc.Text})
-			}
+	if o.jqExpr != "" {
+		b, err := json.Marshal(out)
+		if err != nil {
+			return fmt.Errorf("encoding result: %w", err)
 		}
-
-		if o.jqExpr != "" {
-			b, err := json.Marshal(out)
-			if err != nil {
-				return fmt.Errorf("encoding result: %w", err)
-			}
-			return jq.Filter(bytes.NewReader(b), ios.Out, o.jqExpr)
-		}
-
-		return o.root.OutputWriter().WriteMessage(out, "")
+		return jq.Filter(bytes.NewReader(b), ios.Out, o.jqExpr)
 	}
 
-	for _, c := range result.Content {
-		if tc, ok := mcp.AsTextContent(c); ok {
-			_, _ = fmt.Fprintln(ios.Out, tc.Text)
-		}
+	td := output.DynamicTableDef{
+		Headers: []string{"Index", "Type", "Content"},
+		Rows:    make([][]string, len(out.Content)),
 	}
-	return nil
+	for i, c := range out.Content {
+		td.Rows[i] = []string{strconv.Itoa(i), contentType(c), contentSummary(c)}
+	}
+
+	return o.root.OutputWriter().WriteDynamic(out, td)
+}
+
+// contentType returns the MCP content type discriminator for a content item,
+// falling back to the Go type name for content that carries no type field.
+func contentType(c mcp.Content) string {
+	switch v := c.(type) {
+	case mcp.TextContent:
+		return v.Type
+	case mcp.ImageContent:
+		return v.Type
+	case mcp.AudioContent:
+		return v.Type
+	case mcp.ResourceLink:
+		return v.Type
+	case mcp.EmbeddedResource:
+		return v.Type
+	default:
+		return fmt.Sprintf("%T", c)
+	}
+}
+
+// contentSummary renders a single-line summary of a content item for table
+// output. Text content shows its text; binary and resource content show a
+// bracketed descriptor (e.g. "[image image/png]") so non-text results are
+// visible instead of silently dropped.
+func contentSummary(c mcp.Content) string {
+	switch v := c.(type) {
+	case mcp.TextContent:
+		return v.Text
+	case mcp.ImageContent:
+		return fmt.Sprintf("[image %s]", v.MIMEType)
+	case mcp.AudioContent:
+		return fmt.Sprintf("[audio %s]", v.MIMEType)
+	case mcp.ResourceLink:
+		return fmt.Sprintf("[resource_link %s]", v.URI)
+	case mcp.EmbeddedResource:
+		return fmt.Sprintf("[resource %s]", embeddedResourceURI(v))
+	default:
+		return fmt.Sprintf("[%s]", contentType(c))
+	}
+}
+
+func embeddedResourceURI(r mcp.EmbeddedResource) string {
+	switch res := r.Resource.(type) {
+	case mcp.TextResourceContents:
+		return res.URI
+	case mcp.BlobResourceContents:
+		return res.URI
+	default:
+		return ""
+	}
 }
