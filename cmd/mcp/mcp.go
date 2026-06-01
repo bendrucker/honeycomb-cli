@@ -105,7 +105,7 @@ func connectWithOAuth(ctx context.Context, conn connectOptions) (*mcpclient.Clie
 		return nil, errNonInteractiveAuth
 	}
 
-	if authErr := authorizeInteractive(ctx, conn.root.IOStreams, err, listener); authErr != nil {
+	if authErr := authorizeInteractive(ctx, conn.root.IOStreams, conn.root.ActiveProfile(), err, listener); authErr != nil {
 		_ = c.Close()
 		return nil, authErr
 	}
@@ -198,17 +198,30 @@ func remediateAuthError(err error) error {
 		return err
 	}
 
-	msg := err.Error()
-	if mcpclient.IsOAuthAuthorizationRequiredError(err) ||
-		strings.Contains(msg, "401") || strings.Contains(msg, "403") ||
-		strings.Contains(strings.ToLower(msg), "unauthorized") ||
-		strings.Contains(strings.ToLower(msg), "forbidden") {
+	if isAuthRejection(err) {
 		return fmt.Errorf("%w (the MCP server rejected the request as unauthenticated; "+
 			"the CLI authenticates to MCP via OAuth, not your API key: re-run interactively to "+
 			"authorize in a browser, set %s for CI, or run 'honeycomb auth logout' to clear stale "+
 			"tokens; see 'honeycomb mcp --help')", err, tokenEnvVar)
 	}
 	return err
+}
+
+// isAuthRejection reports whether err represents the MCP server rejecting the
+// request for authentication or authorization reasons. The typed library
+// errors are the primary signal; the string fallback is tightened to specific
+// phrases so an unrelated error whose text merely contains "401"/"403" digits
+// (e.g. a byte count) does not misfire.
+func isAuthRejection(err error) bool {
+	if mcpclient.IsOAuthAuthorizationRequiredError(err) ||
+		mcpclient.IsAuthorizationRequiredError(err) {
+		return true
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "unauthorized") ||
+		strings.Contains(msg, "forbidden") ||
+		strings.Contains(msg, "status 401") ||
+		strings.Contains(msg, "status 403")
 }
 
 func NewCmd(opts *options.RootOptions) *cobra.Command {

@@ -2,12 +2,18 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/zalando/go-keyring"
 )
+
+// ErrMCPTokenCorrupt indicates a stored MCP token entry exists but could not be
+// decoded. Callers treat this like a missing token: the entry is unusable, so
+// re-authorizing is the only recovery.
+var ErrMCPTokenCorrupt = errors.New("stored MCP token is corrupt")
 
 const (
 	keyringService = "honeycomb-cli"
@@ -77,7 +83,8 @@ func SetMCPToken(profile string, v any) error {
 }
 
 // GetMCPToken decodes the stored OAuth token set for a profile into v. It
-// returns keyring.ErrNotFound when no token has been stored.
+// returns keyring.ErrNotFound when no token has been stored and
+// ErrMCPTokenCorrupt when the stored entry cannot be decoded.
 func GetMCPToken(profile string, v any) error {
 	var raw string
 	err := withTimeout(func() error {
@@ -89,7 +96,7 @@ func GetMCPToken(profile string, v any) error {
 		return err
 	}
 	if err := json.Unmarshal([]byte(raw), v); err != nil {
-		return fmt.Errorf("decoding MCP token: %w", err)
+		return fmt.Errorf("%w: %w", ErrMCPTokenCorrupt, err)
 	}
 	return nil
 }
@@ -98,6 +105,42 @@ func GetMCPToken(profile string, v any) error {
 func DeleteMCPToken(profile string) error {
 	return withTimeout(func() error {
 		return keyring.Delete(keyringService, mcpTokenKey(profile))
+	})
+}
+
+// mcpClientIDSuffix is the keyring sub-key under which the Dynamic Client
+// Registration client ID is stored. Persisting it lets the refresh-token grant
+// send a stable client_id across CLI invocations instead of re-registering and
+// forcing a fresh browser flow on every token expiry.
+const mcpClientIDSuffix = "mcp-client"
+
+func mcpClientIDKey(profile string) string {
+	return fmt.Sprintf("%s:%s", profile, mcpClientIDSuffix)
+}
+
+// SetMCPClientID stores the DCR-registered OAuth client ID for a profile.
+func SetMCPClientID(profile, clientID string) error {
+	return withTimeout(func() error {
+		return keyring.Set(keyringService, mcpClientIDKey(profile), clientID)
+	})
+}
+
+// GetMCPClientID returns the stored OAuth client ID for a profile, or
+// keyring.ErrNotFound when none has been registered.
+func GetMCPClientID(profile string) (string, error) {
+	var val string
+	err := withTimeout(func() error {
+		var e error
+		val, e = keyring.Get(keyringService, mcpClientIDKey(profile))
+		return e
+	})
+	return val, err
+}
+
+// DeleteMCPClientID removes the stored OAuth client ID for a profile.
+func DeleteMCPClientID(profile string) error {
+	return withTimeout(func() error {
+		return keyring.Delete(keyringService, mcpClientIDKey(profile))
 	})
 }
 

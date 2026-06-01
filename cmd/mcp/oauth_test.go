@@ -3,6 +3,7 @@ package mcp
 import (
 	"context"
 	"errors"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -95,10 +96,12 @@ func TestRemediateAuthError(t *testing.T) {
 		wantSameErr bool
 	}{
 		{name: "nil", err: nil, wantRemedy: false},
-		{name: "401", err: errors.New("request failed with status 401"), wantRemedy: true},
-		{name: "403", err: errors.New("got 403 from server"), wantRemedy: true},
+		{name: "status 401", err: errors.New("request failed with status 401"), wantRemedy: true},
+		{name: "status 403", err: errors.New("request failed with status 403"), wantRemedy: true},
 		{name: "unauthorized text", err: errors.New("Unauthorized"), wantRemedy: true},
 		{name: "forbidden text", err: errors.New("Forbidden"), wantRemedy: true},
+		{name: "benign 401 digits", err: errors.New("read 401 bytes from response"), wantRemedy: false, wantSameErr: true},
+		{name: "benign 403 digits", err: errors.New("payload was 403 bytes"), wantRemedy: false, wantSameErr: true},
 		{name: "unrelated", err: errors.New("connection refused"), wantRemedy: false, wantSameErr: true},
 		{name: "non-interactive passthrough", err: errNonInteractiveAuth, wantRemedy: false, wantSameErr: true},
 	} {
@@ -144,25 +147,91 @@ func TestNewLoopbackListener(t *testing.T) {
 }
 
 func TestCallbackHandler(t *testing.T) {
-	ch := make(chan callbackParams, 1)
-	srv := httptestServer(t, callbackHandler(ch))
+	for _, tc := range []struct {
+		name       string
+		path       string
+		wantStatus int
+		wantSend   bool
+		wantParams callbackParams
+		wantBody   string
+	}{
+		{
+			name:       "valid code renders success and delivers",
+			path:       "/callback?code=abc&state=xyz",
+			wantStatus: http.StatusOK,
+			wantSend:   true,
+			wantParams: callbackParams{code: "abc", state: "xyz"},
+			wantBody:   "Authorization complete",
+		},
+		{
+			name:       "error param renders failure and delivers",
+			path:       "/callback?error=access_denied&state=xyz",
+			wantStatus: http.StatusOK,
+			wantSend:   true,
+			wantParams: callbackParams{errCode: "access_denied", state: "xyz"},
+			wantBody:   "Authorization failed",
+		},
+		{
+			name:       "favicon probe is ignored",
+			path:       "/favicon.ico",
+			wantStatus: http.StatusNotFound,
+			wantSend:   false,
+		},
+		{
+			name:       "bare callback without params is ignored",
+			path:       "/callback",
+			wantStatus: http.StatusNoContent,
+			wantSend:   false,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ch := make(chan callbackParams, 1)
+			srv := httptestServer(t, callbackHandler(ch))
 
-	resp, err := http.Get(srv + "/callback?code=abc&state=xyz")
-	if err != nil {
-		t.Fatalf("GET callback: %v", err)
+			resp, err := http.Get(srv + tc.path)
+			if err != nil {
+				t.Fatalf("GET %s: %v", tc.path, err)
+			}
+			body, _ := io.ReadAll(resp.Body)
+			_ = resp.Body.Close()
+
+			if resp.StatusCode != tc.wantStatus {
+				t.Errorf("status = %d, want %d", resp.StatusCode, tc.wantStatus)
+			}
+			if tc.wantBody != "" && !strings.Contains(string(body), tc.wantBody) {
+				t.Errorf("body = %q, want it to contain %q", string(body), tc.wantBody)
+			}
+
+			select {
+			case params := <-ch:
+				if !tc.wantSend {
+					t.Fatalf("unexpected channel delivery: %+v", params)
+				}
+				if params != tc.wantParams {
+					t.Errorf("params = %+v, want %+v", params, tc.wantParams)
+				}
+			case <-time.After(200 * time.Millisecond):
+				if tc.wantSend {
+					t.Fatal("callback params not received")
+				}
+			}
+		})
 	}
-	_ = resp.Body.Close()
+}
 
-	select {
-	case params := <-ch:
-		if params.code != "abc" {
-			t.Errorf("code = %q, want abc", params.code)
-		}
-		if params.state != "xyz" {
-			t.Errorf("state = %q, want xyz", params.state)
-		}
-	case <-time.After(time.Second):
-		t.Fatal("callback params not received")
+func TestKeyringTokenStore_CorruptJSON(t *testing.T) {
+	const profile = "corrupt-token-test"
+	t.Cleanup(func() { _ = config.DeleteMCPToken(profile) })
+
+	// Store an entry whose JSON is valid but cannot decode into a Token: a
+	// non-RFC3339 string for the time-typed expires_at field.
+	if err := config.SetMCPToken(profile, map[string]any{"expires_at": "not-a-time"}); err != nil {
+		t.Fatalf("SetMCPToken: %v", err)
+	}
+
+	store := newKeyringTokenStore(profile)
+	if _, err := store.GetToken(context.Background()); !errors.Is(err, transport.ErrNoToken) {
+		t.Fatalf("GetToken on corrupt entry = %v, want ErrNoToken", err)
 	}
 }
 
