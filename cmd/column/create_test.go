@@ -54,6 +54,23 @@ func TestCreate(t *testing.T) {
 	}
 }
 
+func TestCreate_InvalidType(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		t.Error("API should not be called for invalid type")
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"create", "--dataset", "my-dataset", "--key-name", "duration_ms", "--type", "bogus"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for invalid type")
+	}
+	want := `invalid --type "bogus": must be one of string, float, integer, boolean, histogram`
+	if err.Error() != want {
+		t.Errorf("error = %q, want %q", err.Error(), want)
+	}
+}
+
 func TestCreate_MissingKeyName_NonInteractive(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	opts.IOStreams.SetNeverPrompt(true)

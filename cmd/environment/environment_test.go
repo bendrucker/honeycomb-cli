@@ -377,6 +377,40 @@ func TestDelete_MissingArg(t *testing.T) {
 	}
 }
 
+func TestCreate_InvalidColor(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		t.Error("API should not be called for invalid color")
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"create", "--team", "my-team", "--name", "prod", "--color", "magenta"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for invalid color")
+	}
+	want := `invalid --color "magenta": must be one of blue, gold, green, lightBlue, lightGold, lightGreen, lightPurple, lightRed, purple, red`
+	if err.Error() != want {
+		t.Errorf("error = %q, want %q", err.Error(), want)
+	}
+}
+
+func TestUpdate_InvalidColor(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		t.Error("API should not be called for invalid color")
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"update", "env-1", "--team", "my-team", "--color", "magenta"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for invalid color")
+	}
+	want := `invalid --color "magenta": must be one of blue, gold, green, lightBlue, lightGold, lightGreen, lightPurple, lightRed, purple, red`
+	if err.Error() != want {
+		t.Errorf("error = %q, want %q", err.Error(), want)
+	}
+}
+
 func TestCreate(t *testing.T) {
 	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/2/teams/my-team/environments" {

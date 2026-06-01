@@ -3,6 +3,7 @@ package environment
 import (
 	"fmt"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
@@ -25,6 +26,9 @@ func NewCreateCmd(opts *options.RootOptions, team *string) *cobra.Command {
 			if err := opts.RequireTeam(team); err != nil {
 				return err
 			}
+			if err := command.ValidateEnum("color", color, environmentColors); err != nil {
+				return err
+			}
 			clearProtection := cmd.Flags().Changed("delete-protected") && !deleteProtected
 			return runEnvironmentCreate(cmd, opts, *team, name, desc, color, clearProtection)
 		},
@@ -32,7 +36,7 @@ func NewCreateCmd(opts *options.RootOptions, team *string) *cobra.Command {
 
 	cmd.Flags().StringVar(&name, "name", "", "Environment name")
 	cmd.Flags().StringVar(&desc, "description", "", "Environment description")
-	cmd.Flags().StringVar(&color, "color", "", "Environment color")
+	cmd.Flags().StringVar(&color, "color", "", colorFlagUsage())
 	cmd.Flags().BoolVar(&deleteProtected, "delete-protected", true, "Protect environment from deletion")
 
 	return cmd

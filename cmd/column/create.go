@@ -3,12 +3,21 @@ package column
 import (
 	"fmt"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/spf13/cobra"
 )
+
+var columnTypes = []string{
+	string(api.String),
+	string(api.Float),
+	string(api.Integer),
+	string(api.Boolean),
+	string(api.Histogram),
+}
 
 func NewCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	var (
@@ -46,7 +55,7 @@ func NewCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&keyName, "key-name", "", "Column key name (required)")
-	cmd.Flags().StringVar(&colType, "type", "", "Column type: string, float, integer, boolean")
+	cmd.Flags().StringVar(&colType, "type", "", "Column type: string, float, integer, boolean, histogram")
 	cmd.Flags().StringVar(&description, "description", "", "Column description")
 	cmd.Flags().BoolVar(&hidden, "hidden", false, "Hide column from autocomplete")
 
@@ -56,6 +65,10 @@ func NewCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 func runColumnCreate(cmd *cobra.Command, opts *options.RootOptions, dataset, keyName, colType, description string, hidden bool) error {
 	client, err := opts.Client(config.KeyConfig)
 	if err != nil {
+		return err
+	}
+
+	if err := command.ValidateEnum("type", colType, columnTypes); err != nil {
 		return err
 	}
 

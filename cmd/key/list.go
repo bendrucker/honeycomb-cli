@@ -4,11 +4,17 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/spf13/cobra"
 )
+
+var keyTypes = []string{
+	string(api.Ingest),
+	string(api.Configuration),
+}
 
 func NewListCmd(opts *options.RootOptions, team *string) *cobra.Command {
 	var (
@@ -40,6 +46,10 @@ func NewListCmd(opts *options.RootOptions, team *string) *cobra.Command {
 }
 
 func runKeyList(ctx context.Context, opts *options.RootOptions, team, filterType string) error {
+	if err := command.ValidateEnum("key-type", filterType, keyTypes); err != nil {
+		return err
+	}
+
 	client, err := opts.Client(config.KeyManagement)
 	if err != nil {
 		return err
