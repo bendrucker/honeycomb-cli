@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
@@ -106,7 +105,7 @@ func runKeyUpdateFromFlags(cmd *cobra.Command, opts *options.RootOptions, team, 
 		current.Disabled = false
 	}
 
-	body, err := buildKeyUpdateRequest(id, current.Name, current.Disabled)
+	body, err := buildKeyUpdateRequest(id, current.KeyType, current.Name, current.Disabled)
 	if err != nil {
 		return err
 	}
@@ -124,10 +123,11 @@ func runKeyUpdateFromFlags(cmd *cobra.Command, opts *options.RootOptions, team, 
 	return writeKeyDetail(opts, objectToDetail(updated.Data))
 }
 
-func buildKeyUpdateRequest(id, name string, disabled bool) (api.ApiKeyUpdateRequest, error) {
+func buildKeyUpdateRequest(id, keyType, name string, disabled bool) (api.ApiKeyUpdateRequest, error) {
 	var body api.ApiKeyUpdateRequest
 
-	if strings.HasPrefix(id, "hcxik_") {
+	switch keyType {
+	case string(api.IngestKeyAttributesKeyTypeIngest):
 		req := api.IngestKeyRequest{
 			Id:   id,
 			Type: api.IngestKeyRequestTypeApiKeys,
@@ -137,7 +137,7 @@ func buildKeyUpdateRequest(id, name string, disabled bool) (api.ApiKeyUpdateRequ
 		if err := body.Data.FromIngestKeyRequest(req); err != nil {
 			return body, fmt.Errorf("building request: %w", err)
 		}
-	} else if strings.HasPrefix(id, "hcxlk_") {
+	case string(api.ConfigurationKeyAttributesKeyTypeConfiguration):
 		req := api.ConfigurationKeyRequest{
 			Id:   id,
 			Type: api.ConfigurationKeyRequestTypeApiKeys,
@@ -147,8 +147,8 @@ func buildKeyUpdateRequest(id, name string, disabled bool) (api.ApiKeyUpdateRequ
 		if err := body.Data.FromConfigurationKeyRequest(req); err != nil {
 			return body, fmt.Errorf("building request: %w", err)
 		}
-	} else {
-		return body, fmt.Errorf("unrecognized key ID prefix: %s (expected hcxik_ or hcxlk_)", id)
+	default:
+		return body, fmt.Errorf("unrecognized key type: %q", keyType)
 	}
 
 	return body, nil
