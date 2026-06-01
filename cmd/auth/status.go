@@ -31,11 +31,11 @@ type KeyStatus struct {
 
 var statusTable = output.TableDef{
 	Columns: []output.Column{
-		{Header: "Type", Value: func(v any) string { return v.(KeyStatus).Type }},
-		{Header: "Status", Value: func(v any) string { return v.(KeyStatus).Status }},
-		{Header: "Team", Value: func(v any) string { return v.(KeyStatus).Team }},
-		{Header: "Environment", Value: func(v any) string { return v.(KeyStatus).Environment }},
-		{Header: "Key ID", Value: func(v any) string { return v.(KeyStatus).KeyID }},
+		output.Col("Type", func(k KeyStatus) string { return k.Type }),
+		output.Col("Status", func(k KeyStatus) string { return k.Status }),
+		output.Col("Team", func(k KeyStatus) string { return k.Team }),
+		output.Col("Environment", func(k KeyStatus) string { return k.Environment }),
+		output.Col("Key ID", func(k KeyStatus) string { return k.KeyID }),
 	},
 }
 

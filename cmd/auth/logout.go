@@ -78,7 +78,7 @@ func runAuthLogout(opts *options.RootOptions, keyType string) error {
 
 	return opts.OutputWriter().Write(deleted, output.TableDef{
 		Columns: []output.Column{
-			{Header: "TYPE", Value: func(v any) string { return v.(logoutResult).Type }},
+			output.Col("TYPE", func(r logoutResult) string { return r.Type }),
 		},
 	})
 }

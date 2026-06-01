@@ -23,15 +23,15 @@ type profileEntry struct {
 
 var profileTable = output.TableDef{
 	Columns: []output.Column{
-		{Header: "Name", Value: func(v any) string { return v.(profileEntry).Name }},
-		{Header: "Active", Value: func(v any) string {
-			if v.(profileEntry).Active {
+		output.Col("Name", func(p profileEntry) string { return p.Name }),
+		output.Col("Active", func(p profileEntry) string {
+			if p.Active {
 				return "*"
 			}
 			return ""
-		}},
-		{Header: "Keys", Value: func(v any) string { return strings.Join(v.(profileEntry).Keys, ", ") }},
-		{Header: "Team", Value: func(v any) string { return v.(profileEntry).Team }},
+		}),
+		output.Col("Keys", func(p profileEntry) string { return strings.Join(p.Keys, ", ") }),
+		output.Col("Team", func(p profileEntry) string { return p.Team }),
 	},
 }
 

@@ -14,10 +14,10 @@ import (
 
 var boardListTable = output.TableDef{
 	Columns: []output.Column{
-		{Header: "ID", Value: func(v any) string { return v.(boardListItem).ID }},
-		{Header: "Name", Value: func(v any) string { return v.(boardListItem).Name }},
-		{Header: "Description", Value: func(v any) string { return output.Truncate(v.(boardListItem).Description, 40) }},
-		{Header: "URL", Value: func(v any) string { return v.(boardListItem).URL }},
+		output.Col("ID", func(b boardListItem) string { return b.ID }),
+		output.Col("Name", func(b boardListItem) string { return b.Name }),
+		output.Col("Description", func(b boardListItem) string { return output.Truncate(b.Description, 40) }),
+		output.Col("URL", func(b boardListItem) string { return b.URL }),
 	},
 }
 

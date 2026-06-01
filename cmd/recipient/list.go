@@ -12,9 +12,9 @@ import (
 )
 
 var recipientListTable = output.TableDef{Columns: []output.Column{
-	{Header: "ID", Value: func(v any) string { return v.(recipientDetail).ID }},
-	{Header: "Type", Value: func(v any) string { return v.(recipientDetail).Type }},
-	{Header: "Target", Value: func(v any) string { return extractTarget(v.(recipientDetail)) }},
+	output.Col("ID", func(r recipientDetail) string { return r.ID }),
+	output.Col("Type", func(r recipientDetail) string { return r.Type }),
+	output.Col("Target", func(r recipientDetail) string { return extractTarget(r) }),
 }}
 
 func NewListCmd(opts *options.RootOptions) *cobra.Command {
