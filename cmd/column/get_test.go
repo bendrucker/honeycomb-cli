@@ -64,6 +64,59 @@ func TestGet_NotFound(t *testing.T) {
 	}
 }
 
+func TestGet_ByKeyName(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/1/columns/my-dataset" {
+			t.Errorf("path = %q, want /1/columns/my-dataset", r.URL.Path)
+		}
+		if got := r.URL.Query().Get("key_name"); got != "qa162_test_col" {
+			t.Errorf("key_name = %q, want %q", got, "qa162_test_col")
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]map[string]any{
+			{
+				"id":       "abc123",
+				"key_name": "qa162_test_col",
+				"type":     "string",
+			},
+		})
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"get", "--dataset", "my-dataset", "qa162_test_col"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	var detail columnDetail
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &detail); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+	if detail.ID != "abc123" {
+		t.Errorf("ID = %q, want %q", detail.ID, "abc123")
+	}
+	if detail.KeyName != "qa162_test_col" {
+		t.Errorf("KeyName = %q, want %q", detail.KeyName, "qa162_test_col")
+	}
+}
+
+func TestGet_ByKeyNameNotFound(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`[]`))
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"get", "--dataset", "my-dataset", "missing_col"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for unknown key name")
+	}
+	if !strings.Contains(err.Error(), "no column found with key name") {
+		t.Errorf("error = %q, want not-found message", err.Error())
+	}
+}
+
 func TestGet_MissingArg(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 

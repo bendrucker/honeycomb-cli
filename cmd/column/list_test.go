@@ -89,6 +89,55 @@ func TestList(t *testing.T) {
 	}
 }
 
+func TestList_KeyNameFilter(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got := r.URL.Query().Get("key_name"); got != "duration_ms" {
+			t.Errorf("key_name = %q, want %q", got, "duration_ms")
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]map[string]any{
+			{
+				"id":       "abc123",
+				"key_name": "duration_ms",
+				"type":     "float",
+			},
+		})
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"list", "--dataset", "my-dataset", "--key-name", "duration_ms"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	var items []columnItem
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &items); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("got %d items, want 1", len(items))
+	}
+	if items[0].KeyName != "duration_ms" {
+		t.Errorf("items[0].KeyName = %q, want %q", items[0].KeyName, "duration_ms")
+	}
+}
+
+func TestList_NoKeyNameFilter(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.RawQuery != "" {
+			t.Errorf("query = %q, want empty (no key_name filter)", r.URL.RawQuery)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`[]`))
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"list", "--dataset", "my-dataset"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestList_Empty(t *testing.T) {
 	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
