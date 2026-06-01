@@ -98,6 +98,55 @@ func TestWrite_Table_Empty(t *testing.T) {
 	}
 }
 
+func TestWriteList_Table_Empty(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(&buf, FormatTable)
+
+	var items []testItem
+	if err := w.WriteList(items, testTable, "No items found."); err != nil {
+		t.Fatal(err)
+	}
+
+	if out := buf.String(); out != "No items found.\n" {
+		t.Errorf("table output = %q, want %q", out, "No items found.\n")
+	}
+	if strings.Contains(buf.String(), "NAME") {
+		t.Errorf("expected no header table for empty list:\n%s", buf.String())
+	}
+}
+
+func TestWriteList_Table_NonEmpty(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(&buf, FormatTable)
+
+	items := []testItem{{Name: "a", Count: 1}}
+	if err := w.WriteList(items, testTable, "No items found."); err != nil {
+		t.Fatal(err)
+	}
+
+	out := buf.String()
+	if !strings.Contains(out, "NAME") || !strings.Contains(out, "a") {
+		t.Errorf("expected header table for non-empty list:\n%s", out)
+	}
+	if strings.Contains(out, "No items found.") {
+		t.Errorf("unexpected empty message for non-empty list:\n%s", out)
+	}
+}
+
+func TestWriteList_JSON_Empty(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(&buf, FormatJSON)
+
+	items := []testItem{}
+	if err := w.WriteList(items, testTable, "No items found."); err != nil {
+		t.Fatal(err)
+	}
+
+	if out := strings.TrimSpace(buf.String()); out != "[]" {
+		t.Errorf("JSON output = %q, want %q", out, "[]")
+	}
+}
+
 func TestWrite_UnsupportedFormat(t *testing.T) {
 	var buf bytes.Buffer
 	w := New(&buf, "xml")

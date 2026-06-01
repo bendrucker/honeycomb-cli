@@ -44,5 +44,5 @@ func runList(ctx context.Context, opts *options.RootOptions, dataset string) err
 		items[i] = toItem(t)
 	}
 
-	return opts.OutputWriterList().Write(items, triggerListTable)
+	return opts.OutputWriterList().WriteList(items, triggerListTable, "No triggers found.")
 }

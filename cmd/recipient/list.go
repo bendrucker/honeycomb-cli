@@ -47,5 +47,5 @@ func runList(ctx context.Context, opts *options.RootOptions) error {
 		return err
 	}
 
-	return opts.OutputWriterList().Write(details, recipientListTable)
+	return opts.OutputWriterList().WriteList(details, recipientListTable, "No recipients found.")
 }

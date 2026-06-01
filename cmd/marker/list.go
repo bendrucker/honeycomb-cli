@@ -41,5 +41,5 @@ func runMarkerList(ctx context.Context, opts *options.RootOptions, dataset strin
 		items[i] = markerToItem(m)
 	}
 
-	return opts.OutputWriterList().Write(items, markerListTable)
+	return opts.OutputWriterList().WriteList(items, markerListTable, "No markers found.")
 }

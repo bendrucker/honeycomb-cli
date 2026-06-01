@@ -76,5 +76,5 @@ func runKeyList(ctx context.Context, opts *options.RootOptions, team, filterType
 		items[i] = objectToItem(obj)
 	}
 
-	return opts.OutputWriterList().Write(items, keyListTable)
+	return opts.OutputWriterList().WriteList(items, keyListTable, "No keys found.")
 }

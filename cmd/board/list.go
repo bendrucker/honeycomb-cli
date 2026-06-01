@@ -60,5 +60,5 @@ func runBoardList(ctx context.Context, opts *options.RootOptions) error {
 		items[i] = item
 	}
 
-	return opts.OutputWriterList().Write(items, boardListTable)
+	return opts.OutputWriterList().WriteList(items, boardListTable, "No boards found.")
 }

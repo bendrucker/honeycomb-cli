@@ -41,5 +41,5 @@ func runSettingList(ctx context.Context, opts *options.RootOptions, dataset stri
 		items[i] = toSettingItem(s)
 	}
 
-	return opts.OutputWriterList().Write(items, settingListTable)
+	return opts.OutputWriterList().WriteList(items, settingListTable, "No marker settings found.")
 }

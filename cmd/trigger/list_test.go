@@ -117,6 +117,28 @@ func TestList_Empty(t *testing.T) {
 	}
 }
 
+func TestList_EmptyTable(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`[]`))
+	}))
+	opts.Format = output.FormatTable
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"list", "--dataset", "test-dataset"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	out := ts.OutBuf.String()
+	if out != "No triggers found.\n" {
+		t.Errorf("output = %q, want %q", out, "No triggers found.\n")
+	}
+	if strings.Contains(out, "NAME") {
+		t.Errorf("expected no header table for empty list:\n%s", out)
+	}
+}
+
 func TestList_NoKey(t *testing.T) {
 	ts := iostreams.Test(t)
 	opts := &options.RootOptions{
