@@ -20,22 +20,41 @@ func NewHistoryCmd(opts *options.RootOptions, _ *string) *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "history",
+		Use:   "history [slo-id...]",
 		Short: "Get SLO historical compliance and budget data",
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runHistory(cmd.Context(), opts, sloIDs, startTime, endTime)
+		Long: "Get SLO historical compliance and budget data.\n\n" +
+			"SLO IDs may be passed as positional arguments, via --slo-id (repeatable), or both. " +
+			"At least one SLO ID is required; the two sources are merged and de-duplicated.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ids := mergeSLOIDs(args, sloIDs)
+			if len(ids) == 0 {
+				return fmt.Errorf("at least one SLO ID is required (positional argument or --slo-id)")
+			}
+			return runHistory(cmd.Context(), opts, ids, startTime, endTime)
 		},
 	}
 
-	cmd.Flags().StringSliceVar(&sloIDs, "slo-id", nil, "SLO IDs to retrieve history for (required, repeatable)")
+	cmd.Flags().StringSliceVar(&sloIDs, "slo-id", nil, "SLO IDs to retrieve history for (repeatable; may also be passed as positional arguments)")
 	cmd.Flags().IntVar(&startTime, "start-time", 0, "Start time as Unix timestamp (required)")
 	cmd.Flags().IntVar(&endTime, "end-time", 0, "End time as Unix timestamp (required)")
 
-	_ = cmd.MarkFlagRequired("slo-id")
 	_ = cmd.MarkFlagRequired("start-time")
 	_ = cmd.MarkFlagRequired("end-time")
 
 	return cmd
+}
+
+func mergeSLOIDs(args, flagIDs []string) []string {
+	seen := make(map[string]bool, len(args)+len(flagIDs))
+	var ids []string
+	for _, id := range append(append([]string{}, args...), flagIDs...) {
+		if id == "" || seen[id] {
+			continue
+		}
+		seen[id] = true
+		ids = append(ids, id)
+	}
+	return ids
 }
 
 func runHistory(ctx context.Context, opts *options.RootOptions, sloIDs []string, startTime, endTime int) error {

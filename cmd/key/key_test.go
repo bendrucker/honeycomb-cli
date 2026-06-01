@@ -104,18 +104,28 @@ func TestList(t *testing.T) {
 }
 
 func TestList_WithTypeFilter(t *testing.T) {
-	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if got := r.URL.Query().Get("filter[type]"); got != "ingest" {
-			t.Errorf("filter[type] = %q, want %q", got, "ingest")
-		}
-		w.Header().Set("Content-Type", "application/vnd.api+json")
-		_, _ = w.Write([]byte(`{"data": []}`))
-	}))
+	for _, tc := range []struct {
+		name string
+		flag string
+	}{
+		{name: "key type flag", flag: "--key-type"},
+		{name: "deprecated type alias", flag: "--type"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if got := r.URL.Query().Get("filter[type]"); got != "ingest" {
+					t.Errorf("filter[type] = %q, want %q", got, "ingest")
+				}
+				w.Header().Set("Content-Type", "application/vnd.api+json")
+				_, _ = w.Write([]byte(`{"data": []}`))
+			}))
 
-	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"--team", "my-team", "list", "--type", "ingest"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatal(err)
+			cmd := NewCmd(opts)
+			cmd.SetArgs([]string{"--team", "my-team", "list", tc.flag, "ingest"})
+			if err := cmd.Execute(); err != nil {
+				t.Fatal(err)
+			}
+		})
 	}
 }
 
