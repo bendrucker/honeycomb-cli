@@ -528,6 +528,61 @@ func TestCreate_MissingDetailNonInteractive(t *testing.T) {
 	}
 }
 
+func TestCreate_MismatchedFlags(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		args    []string
+		wantErr string
+	}{
+		{
+			name:    "email with channel",
+			args:    []string{"create", "--type", "email", "--target", "test@example.com", "--channel", "#foo"},
+			wantErr: "--channel is not valid for email recipients",
+		},
+		{
+			name:    "email with url",
+			args:    []string{"create", "--type", "email", "--target", "test@example.com", "--url", "https://example.com"},
+			wantErr: "--url is not valid for email recipients",
+		},
+		{
+			name:    "slack with target",
+			args:    []string{"create", "--type", "slack", "--channel", "#alerts", "--target", "test@example.com"},
+			wantErr: "--target is not valid for slack recipients",
+		},
+		{
+			name:    "pagerduty with channel",
+			args:    []string{"create", "--type", "pagerduty", "--integration-key", "abc123", "--channel", "#foo"},
+			wantErr: "--channel is not valid for pagerduty recipients",
+		},
+		{
+			name:    "webhook with integration-key",
+			args:    []string{"create", "--type", "webhook", "--url", "https://example.com", "--name", "hook", "--integration-key", "abc123"},
+			wantErr: "--integration-key is not valid for webhook recipients",
+		},
+		{
+			name:    "error names valid types",
+			args:    []string{"create", "--type", "email", "--target", "test@example.com", "--url", "https://example.com"},
+			wantErr: "valid for: msteams, msteams_workflow, webhook",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+				t.Error("request should not be sent for mismatched flags")
+			}))
+
+			cmd := NewCmd(opts)
+			cmd.SetArgs(tc.args)
+			err := cmd.Execute()
+			if err == nil {
+				t.Fatal("expected error for mismatched flags")
+			}
+			if !strings.Contains(err.Error(), tc.wantErr) {
+				t.Errorf("error = %q, want %q", err.Error(), tc.wantErr)
+			}
+		})
+	}
+}
+
 func TestCreate_FileMutuallyExclusive(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 
