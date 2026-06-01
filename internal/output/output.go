@@ -135,10 +135,12 @@ func (w *Writer) writeTable(data any, td TableDef) error {
 }
 
 func (w *Writer) writeFieldsTable(fields []Field) error {
+	// This table sets no Headers, so the default BorderHeader has no separator
+	// to draw. Leaving it enabled is also what makes lipgloss render the closing
+	// bottom rule; BorderHeader(false) suppresses the bottom border entirely.
 	t := table.New().
 		Border(lipgloss.RoundedBorder()).
-		StyleFunc(fieldsStyleFunc).
-		BorderHeader(false)
+		StyleFunc(fieldsStyleFunc)
 
 	for _, f := range fields {
 		t.Row(f.Label, f.Value)

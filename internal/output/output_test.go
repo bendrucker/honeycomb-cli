@@ -204,6 +204,42 @@ func TestWriteFields_Table(t *testing.T) {
 	}
 }
 
+func TestWriteFields_TableClosingBorder(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		fields []Field
+	}{
+		{
+			name:   "single row",
+			fields: []Field{{"Name", "a"}},
+		},
+		{
+			name:   "multiple rows",
+			fields: []Field{{"Name", "a"}, {"Count", "1"}},
+		},
+		{
+			name:   "multi line value",
+			fields: []Field{{"Name", "a"}, {"Body", "line one\nline two"}},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			w := New(&buf, FormatTable)
+			if err := w.WriteFields(testItem{}, tc.fields); err != nil {
+				t.Fatal(err)
+			}
+
+			out := strings.TrimRight(buf.String(), "\n")
+			if !strings.HasPrefix(out, "╭") {
+				t.Errorf("expected top border, got:\n%s", out)
+			}
+			if !strings.HasSuffix(out, "╯") {
+				t.Errorf("expected closing bottom border, got:\n%s", out)
+			}
+		})
+	}
+}
+
 func TestWriteFields_UnsupportedFormat(t *testing.T) {
 	var buf bytes.Buffer
 	w := New(&buf, "xml")
