@@ -38,6 +38,72 @@ func setupTest(t *testing.T, handler http.Handler) (*options.RootOptions, *iostr
 	return opts, ts
 }
 
+func TestExtractTarget(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		details map[string]any
+		want    string
+	}{
+		{
+			name:    "nil details",
+			details: nil,
+			want:    "",
+		},
+		{
+			name:    "email",
+			details: map[string]any{"email_address": "test@example.com"},
+			want:    "test@example.com",
+		},
+		{
+			name:    "slack channel",
+			details: map[string]any{"slack_channel": "#alerts"},
+			want:    "#alerts",
+		},
+		{
+			name: "pagerduty name over key",
+			details: map[string]any{
+				"pagerduty_integration_key":  "abc123",
+				"pagerduty_integration_name": "My PD",
+			},
+			want: "My PD",
+		},
+		{
+			name: "pagerduty key only",
+			details: map[string]any{
+				"pagerduty_integration_key": "abc123",
+			},
+			want: "abc123",
+		},
+		{
+			name: "webhook name over url",
+			details: map[string]any{
+				"webhook_url":  "https://example.com/hook",
+				"webhook_name": "my-hook",
+			},
+			want: "my-hook",
+		},
+		{
+			name: "webhook url only",
+			details: map[string]any{
+				"webhook_url": "https://example.com/hook",
+			},
+			want: "https://example.com/hook",
+		},
+		{
+			name:    "unknown key",
+			details: map[string]any{"something_else": "value"},
+			want:    "",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := extractTarget(recipientDetail{Details: tc.details})
+			if got != tc.want {
+				t.Errorf("extractTarget() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestList(t *testing.T) {
 	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/1/recipients" {
@@ -48,14 +114,14 @@ func TestList(t *testing.T) {
 			{
 				"id": "r1",
 				"type": "email",
-				"details": {"address": "test@example.com"},
+				"details": {"email_address": "test@example.com"},
 				"created_at": "2025-01-01T00:00:00Z",
 				"updated_at": "2025-01-01T00:00:00Z"
 			},
 			{
 				"id": "r2",
 				"type": "slack",
-				"details": {"channel": "#alerts"},
+				"details": {"slack_channel": "#alerts"},
 				"created_at": "2025-01-02T00:00:00Z",
 				"updated_at": "2025-01-02T00:00:00Z"
 			}
@@ -163,7 +229,7 @@ func TestGet(t *testing.T) {
 		_, _ = w.Write([]byte(`{
 			"id": "r1",
 			"type": "email",
-			"details": {"address": "test@example.com"},
+			"details": {"email_address": "test@example.com"},
 			"created_at": "2025-01-01T00:00:00Z",
 			"updated_at": "2025-01-01T00:00:00Z"
 		}`))

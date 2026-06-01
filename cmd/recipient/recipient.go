@@ -109,7 +109,7 @@ func extractTarget(d recipientDetail) string {
 	if d.Details == nil {
 		return ""
 	}
-	for _, field := range []string{"name", "url", "channel", "address", "email_address", "integration_key", "webhook_url"} {
+	for _, field := range []string{"email_address", "slack_channel", "webhook_name", "webhook_url", "pagerduty_integration_name", "pagerduty_integration_key"} {
 		if v, ok := d.Details[field].(string); ok && v != "" {
 			return v
 		}
