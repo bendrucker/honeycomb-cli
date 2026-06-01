@@ -2,9 +2,11 @@ package marker
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
@@ -14,6 +16,7 @@ import (
 
 func NewCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	var (
+		file       string
 		markerType string
 		message    string
 		url        string
@@ -26,6 +29,10 @@ func NewCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 		Use:   "create",
 		Short: "Create a marker",
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if file != "" {
+				return runMarkerCreateFromFile(cmd.Context(), opts, *dataset, file)
+			}
+
 			if markerType == "" && opts.IOStreams.CanPrompt() {
 				v, err := prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, "Type: ")
 				if err != nil {
@@ -74,6 +81,7 @@ func NewCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 		},
 	}
 
+	cmd.Flags().StringVarP(&file, "file", "f", "", "Path to JSON file (- for stdin)")
 	cmd.Flags().StringVar(&markerType, "type", "", "Marker type (e.g., deploy)")
 	cmd.Flags().StringVar(&message, "message", "", "Marker message")
 	cmd.Flags().StringVar(&url, "url", "", "URL associated with the marker")
@@ -81,7 +89,25 @@ func NewCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	cmd.Flags().IntVar(&endTime, "end-time", 0, "End time as Unix timestamp")
 	cmd.Flags().StringVar(&color, "color", "", "Marker color")
 
+	for _, name := range []string{"type", "message", "url", "start-time", "end-time", "color"} {
+		cmd.MarkFlagsMutuallyExclusive("file", name)
+	}
+
 	return cmd
+}
+
+func runMarkerCreateFromFile(ctx context.Context, opts *options.RootOptions, dataset, file string) error {
+	data, err := command.ReadDefinitionFile(opts.IOStreams, file)
+	if err != nil {
+		return err
+	}
+
+	var body api.CreateMarkerJSONRequestBody
+	if err := json.Unmarshal(data, &body); err != nil {
+		return fmt.Errorf("parsing marker JSON: %w", err)
+	}
+
+	return runMarkerCreate(ctx, opts, dataset, body)
 }
 
 func runMarkerCreate(ctx context.Context, opts *options.RootOptions, dataset string, body api.CreateMarkerJSONRequestBody) error {

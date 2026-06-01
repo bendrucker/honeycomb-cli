@@ -41,9 +41,9 @@ func newCallCmd(opts *options.RootOptions, token *string, factory clientFactory)
 		},
 	}
 
-	cmd.Flags().StringArrayVarP(&o.fieldFlags, "field", "f", nil, "String field: key=value")
+	cmd.Flags().StringArrayVarP(&o.fieldFlags, "field", "f", nil, "String field: key=value (repeatable; not a file)")
 	cmd.Flags().StringArrayVarP(&o.typedFlags, "typed-field", "F", nil, "Typed field: bool/number/null coercion, @file")
-	cmd.Flags().StringVar(&o.input, "input", "", "Read arguments from file (- for stdin)")
+	cmd.Flags().StringVar(&o.input, "input", "", "Read full arguments JSON from a file (- for stdin)")
 	cmd.Flags().StringVarP(&o.jqExpr, "jq", "q", "", "Filter output with jq expression")
 
 	return cmd
