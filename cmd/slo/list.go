@@ -19,7 +19,7 @@ var sloListTable = output.TableDef{
 		{Header: "Target", Value: func(v any) string { return formatTarget(v.(sloItem).TargetPerMillion) }},
 		{Header: "Time Period", Value: func(v any) string { return formatTimePeriod(v.(sloItem).TimePeriodDays) }},
 		{Header: "SLI Alias", Value: func(v any) string { return v.(sloItem).SLIAlias }},
-		{Header: "Description", Value: func(v any) string { return truncate(v.(sloItem).Description, 40) }},
+		{Header: "Description", Value: func(v any) string { return output.Truncate(v.(sloItem).Description, 40) }},
 	},
 }
 

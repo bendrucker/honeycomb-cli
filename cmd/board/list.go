@@ -12,18 +12,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func truncate(s string, max int) string {
-	if len(s) <= max {
-		return s
-	}
-	return s[:max-1] + "…"
-}
-
 var boardListTable = output.TableDef{
 	Columns: []output.Column{
 		{Header: "ID", Value: func(v any) string { return v.(boardListItem).ID }},
 		{Header: "Name", Value: func(v any) string { return v.(boardListItem).Name }},
-		{Header: "Description", Value: func(v any) string { return truncate(v.(boardListItem).Description, 40) }},
+		{Header: "Description", Value: func(v any) string { return output.Truncate(v.(boardListItem).Description, 40) }},
 		{Header: "URL", Value: func(v any) string { return v.(boardListItem).URL }},
 	},
 }
