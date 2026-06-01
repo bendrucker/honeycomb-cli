@@ -114,6 +114,54 @@ func TestUpdate_WithFile(t *testing.T) {
 	}
 }
 
+func TestUpdate_WithStdin(t *testing.T) {
+	var getCount int
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.Method {
+		case http.MethodGet:
+			getCount++
+		case http.MethodPut:
+			body, _ := io.ReadAll(r.Body)
+			var parsed map[string]any
+			_ = json.Unmarshal(body, &parsed)
+			if parsed["name"] != "From Stdin" {
+				t.Errorf("name = %v, want %q", parsed["name"], "From Stdin")
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"id":         "trigger-1",
+				"name":       "From Stdin",
+				"disabled":   false,
+				"triggered":  false,
+				"alert_type": "on_change",
+				"frequency":  600,
+				"threshold":  map[string]any{"op": ">=", "value": 50},
+				"updated_at": "2025-06-02T12:00:00Z",
+			})
+		}
+	}))
+
+	ts.InBuf.WriteString(`{"name":"From Stdin","frequency":600,"threshold":{"op":">=","value":50}}`)
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"update", "--dataset", "test-dataset", "trigger-1", "--file", "-"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	if getCount != 0 {
+		t.Errorf("GET count = %d, want 0 (file mode should skip GET)", getCount)
+	}
+
+	var detail triggerDetail
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &detail); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+	if detail.Name != "From Stdin" {
+		t.Errorf("Name = %q, want %q", detail.Name, "From Stdin")
+	}
+}
+
 func TestUpdate_DisabledFlag(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

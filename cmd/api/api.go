@@ -49,14 +49,14 @@ func NewCmd(opts *options.RootOptions) *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&o.method, "method", "X", "", "HTTP method (default: auto-detected)")
-	cmd.Flags().StringArrayVarP(&o.fields, "field", "f", nil, "String field: key=value")
+	cmd.Flags().StringArrayVarP(&o.fields, "field", "f", nil, "String field: key=value (repeatable; not a file)")
 	cmd.Flags().StringArrayVarP(&o.typed, "typed-field", "F", nil, "Typed field: bool/number/null coercion, @file")
 	cmd.Flags().StringArrayVarP(&o.headers, "header", "H", nil, "Request header: key:value")
 	cmd.Flags().StringVarP(&o.jqExpr, "jq", "q", "", "Filter response with jq expression")
 	cmd.Flags().BoolVarP(&o.include, "include", "i", false, "Show response status line and headers")
 	cmd.Flags().BoolVar(&o.paginate, "paginate", false, "Follow Link rel=\"next\" pagination")
 	cmd.Flags().StringVar(&o.keyType, "key-type", "", "Override auth key type: config, ingest, management")
-	cmd.Flags().StringVar(&o.input, "input", "", "Read body from file (- for stdin)")
+	cmd.Flags().StringVar(&o.input, "input", "", "Read the request body from a file (- for stdin)")
 	cmd.Flags().BoolVar(&o.raw, "raw", false, "Output the full JSON:API envelope instead of flattened attributes")
 
 	hideFormatFlag(cmd)

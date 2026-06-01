@@ -3,6 +3,8 @@ package marker
 import (
 	"encoding/json"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -119,6 +121,101 @@ func TestSettingCreate(t *testing.T) {
 	}
 	if item.Type != "deploys" {
 		t.Errorf("Type = %q, want %q", item.Type, "deploys")
+	}
+}
+
+func TestSettingCreate_WithFile(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode body: %v", err)
+		}
+		if body["type"] != "deploys" {
+			t.Errorf("body type = %q, want %q", body["type"], "deploys")
+		}
+		if body["color"] != "#ABCDEF" {
+			t.Errorf("body color = %q, want %q", body["color"], "#ABCDEF")
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id":    "ms-file",
+			"type":  "deploys",
+			"color": "#ABCDEF",
+		})
+	}))
+
+	dir := t.TempDir()
+	file := filepath.Join(dir, "setting.json")
+	if err := os.WriteFile(file, []byte(`{"type":"deploys","color":"#ABCDEF"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"--dataset", "test", "setting", "create", "--file", file})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	var item settingItem
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &item); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+	if item.ID != "ms-file" {
+		t.Errorf("ID = %q, want %q", item.ID, "ms-file")
+	}
+}
+
+func TestSettingCreate_WithStdin(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode body: %v", err)
+		}
+		if body["color"] != "#123456" {
+			t.Errorf("body color = %q, want %q", body["color"], "#123456")
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id":    "ms-stdin",
+			"type":  "deploys",
+			"color": "#123456",
+		})
+	}))
+
+	ts.InBuf.WriteString(`{"type":"deploys","color":"#123456"}`)
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"--dataset", "test", "setting", "create", "--file", "-"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	var item settingItem
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &item); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+	if item.ID != "ms-stdin" {
+		t.Errorf("ID = %q, want %q", item.ID, "ms-stdin")
+	}
+}
+
+func TestSettingCreate_FileAndFlagsMutuallyExclusive(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		t.Error("API should not be called when flags conflict")
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"--dataset", "test", "setting", "create", "--file", "-", "--type", "deploys"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for mutually exclusive flags")
+	}
+	if !strings.Contains(err.Error(), "if any flags in the group") {
+		t.Errorf("error = %q, want mutual exclusion message", err.Error())
 	}
 }
 

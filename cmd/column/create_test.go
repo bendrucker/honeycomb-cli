@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -68,6 +71,99 @@ func TestCreate_InvalidType(t *testing.T) {
 	want := `invalid --type "bogus": must be one of string, float, integer, boolean, histogram`
 	if err.Error() != want {
 		t.Errorf("error = %q, want %q", err.Error(), want)
+	}
+}
+
+func TestCreate_WithFile(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("method = %q, want POST", r.Method)
+		}
+		body, _ := io.ReadAll(r.Body)
+		var req map[string]any
+		_ = json.Unmarshal(body, &req)
+		if req["key_name"] != "from_file" {
+			t.Errorf("key_name = %v, want from_file", req["key_name"])
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id":       "file-id",
+			"key_name": "from_file",
+			"type":     "string",
+		})
+	}))
+
+	dir := t.TempDir()
+	file := filepath.Join(dir, "column.json")
+	if err := os.WriteFile(file, []byte(`{"key_name":"from_file","type":"string"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"create", "--dataset", "my-dataset", "--file", file})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	var detail columnDetail
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &detail); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+	if detail.ID != "file-id" {
+		t.Errorf("ID = %q, want %q", detail.ID, "file-id")
+	}
+}
+
+func TestCreate_WithStdin(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		var req map[string]any
+		_ = json.Unmarshal(body, &req)
+		if req["key_name"] != "from_stdin" {
+			t.Errorf("key_name = %v, want from_stdin", req["key_name"])
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id":       "stdin-id",
+			"key_name": "from_stdin",
+			"type":     "string",
+		})
+	}))
+
+	ts.InBuf.WriteString(`{"key_name":"from_stdin","type":"string"}`)
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"create", "--dataset", "my-dataset", "--file", "-"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	var detail columnDetail
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &detail); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+	if detail.ID != "stdin-id" {
+		t.Errorf("ID = %q, want %q", detail.ID, "stdin-id")
+	}
+}
+
+func TestCreate_FileAndFlagsMutuallyExclusive(t *testing.T) {
+	opts, _ := setupTest(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		t.Error("API should not be called when flags conflict")
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"create", "--dataset", "my-dataset", "--file", "-", "--key-name", "x"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for mutually exclusive flags")
+	}
+	if !strings.Contains(err.Error(), "if any flags in the group") {
+		t.Errorf("error = %q, want mutual exclusion message", err.Error())
 	}
 }
 

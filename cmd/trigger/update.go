@@ -5,8 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
@@ -52,7 +52,7 @@ func NewUpdateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&file, "file", "", "Path to JSON file with full trigger definition")
+	cmd.Flags().StringVarP(&file, "file", "f", "", "Path to JSON file with full trigger definition (- for stdin)")
 	cmd.Flags().StringVar(&name, "name", "", "Trigger name")
 	cmd.Flags().StringVar(&description, "description", "", "Trigger description")
 	cmd.Flags().BoolVar(&disabled, "disabled", false, "Disable the trigger")
@@ -89,9 +89,9 @@ func runUpdate(ctx context.Context, opts *options.RootOptions, dataset, triggerI
 	var body api.TriggerResponse
 
 	if flags.hasFile {
-		data, err := os.ReadFile(flags.file)
+		data, err := command.ReadDefinitionFile(opts.IOStreams, flags.file)
 		if err != nil {
-			return fmt.Errorf("reading file: %w", err)
+			return err
 		}
 		if err := json.Unmarshal(data, &body); err != nil {
 			return fmt.Errorf("parsing trigger JSON: %w", err)

@@ -1,6 +1,8 @@
 package column
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/command"
@@ -21,6 +23,7 @@ var columnTypes = []string{
 
 func NewCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	var (
+		file        string
 		keyName     string
 		colType     string
 		description string
@@ -31,6 +34,10 @@ func NewCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 		Use:   "create",
 		Short: "Create a column",
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if file != "" {
+				return runColumnCreateFromFile(cmd.Context(), opts, *dataset, file)
+			}
+
 			if keyName == "" {
 				if !opts.IOStreams.CanPrompt() {
 					return fmt.Errorf("--key-name is required in non-interactive mode")
@@ -54,12 +61,42 @@ func NewCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 		},
 	}
 
+	cmd.Flags().StringVarP(&file, "file", "f", "", "Path to JSON file (- for stdin)")
 	cmd.Flags().StringVar(&keyName, "key-name", "", "Column key name (required)")
 	cmd.Flags().StringVar(&colType, "type", "", "Column type: string, float, integer, boolean, histogram")
 	cmd.Flags().StringVar(&description, "description", "", "Column description")
 	cmd.Flags().BoolVar(&hidden, "hidden", false, "Hide column from autocomplete")
 
+	cmd.MarkFlagsMutuallyExclusive("file", "key-name")
+	cmd.MarkFlagsMutuallyExclusive("file", "type")
+	cmd.MarkFlagsMutuallyExclusive("file", "description")
+	cmd.MarkFlagsMutuallyExclusive("file", "hidden")
+
 	return cmd
+}
+
+func runColumnCreateFromFile(ctx context.Context, opts *options.RootOptions, dataset, file string) error {
+	client, err := opts.Client(config.KeyConfig)
+	if err != nil {
+		return err
+	}
+
+	data, err := command.ReadDefinitionFile(opts.IOStreams, file)
+	if err != nil {
+		return err
+	}
+
+	resp, err := client.CreateColumnWithBodyWithResponse(ctx, dataset, "application/json", bytes.NewReader(data))
+	if err != nil {
+		return fmt.Errorf("creating column: %w", err)
+	}
+
+	col, err := api.Decode(resp.StatusCode(), resp.Status(), resp.Body, resp.JSON201)
+	if err != nil {
+		return err
+	}
+
+	return writeColumnDetail(opts, *col)
 }
 
 func runColumnCreate(cmd *cobra.Command, opts *options.RootOptions, dataset, keyName, colType, description string, hidden bool) error {
