@@ -25,22 +25,22 @@ type markerItem struct {
 
 var markerListTable = output.TableDef{
 	Columns: []output.Column{
-		{Header: "ID", Value: func(v any) string { return v.(markerItem).ID }},
-		{Header: "Type", Value: func(v any) string { return v.(markerItem).Type }},
-		{Header: "Message", Value: func(v any) string { return v.(markerItem).Message }},
-		{Header: "Start Time", Value: func(v any) string {
-			if st := v.(markerItem).StartTime; st != nil {
+		output.Col("ID", func(m markerItem) string { return m.ID }),
+		output.Col("Type", func(m markerItem) string { return m.Type }),
+		output.Col("Message", func(m markerItem) string { return m.Message }),
+		output.Col("Start Time", func(m markerItem) string {
+			if st := m.StartTime; st != nil {
 				return fmt.Sprintf("%d", *st)
 			}
 			return ""
-		}},
-		{Header: "End Time", Value: func(v any) string {
-			if et := v.(markerItem).EndTime; et != nil {
+		}),
+		output.Col("End Time", func(m markerItem) string {
+			if et := m.EndTime; et != nil {
 				return fmt.Sprintf("%d", *et)
 			}
 			return ""
-		}},
-		{Header: "Color", Value: func(v any) string { return v.(markerItem).Color }},
+		}),
+		output.Col("Color", func(m markerItem) string { return m.Color }),
 	},
 }
 

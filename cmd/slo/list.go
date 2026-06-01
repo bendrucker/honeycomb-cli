@@ -14,12 +14,12 @@ import (
 
 var sloListTable = output.TableDef{
 	Columns: []output.Column{
-		{Header: "ID", Value: func(v any) string { return v.(sloItem).ID }},
-		{Header: "Name", Value: func(v any) string { return v.(sloItem).Name }},
-		{Header: "Target", Value: func(v any) string { return formatTarget(v.(sloItem).TargetPerMillion) }},
-		{Header: "Time Period", Value: func(v any) string { return formatTimePeriod(v.(sloItem).TimePeriodDays) }},
-		{Header: "SLI Alias", Value: func(v any) string { return v.(sloItem).SLIAlias }},
-		{Header: "Description", Value: func(v any) string { return output.Truncate(v.(sloItem).Description, 40) }},
+		output.Col("ID", func(s sloItem) string { return s.ID }),
+		output.Col("Name", func(s sloItem) string { return s.Name }),
+		output.Col("Target", func(s sloItem) string { return formatTarget(s.TargetPerMillion) }),
+		output.Col("Time Period", func(s sloItem) string { return formatTimePeriod(s.TimePeriodDays) }),
+		output.Col("SLI Alias", func(s sloItem) string { return s.SLIAlias }),
+		output.Col("Description", func(s sloItem) string { return output.Truncate(s.Description, 40) }),
 	},
 }
 

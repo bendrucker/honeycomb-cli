@@ -51,6 +51,13 @@ type Column struct {
 	Value  func(any) string
 }
 
+// Col builds a Column from a typed accessor, removing the per-call-site v.(T)
+// assertion. Value is still stored as func(any) string, so Col-built columns
+// mix freely with TableFromTags-derived ones.
+func Col[T any](header string, value func(T) string) Column {
+	return Column{Header: header, Value: func(v any) string { return value(v.(T)) }}
+}
+
 type TableDef struct {
 	Columns []Column
 }

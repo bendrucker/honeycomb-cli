@@ -24,18 +24,18 @@ type datasetItem struct {
 var datasetListTable = func() output.TableDef {
 	table := output.TableFromTags[datasetItem]()
 	table.Columns = append(table.Columns,
-		output.Column{Header: "Columns", Value: func(v any) string {
-			if c := v.(datasetItem).Columns; c != nil {
+		output.Col("Columns", func(d datasetItem) string {
+			if c := d.Columns; c != nil {
 				return fmt.Sprintf("%d", *c)
 			}
 			return "—"
-		}},
-		output.Column{Header: "Last Written", Value: func(v any) string {
-			if lw := v.(datasetItem).LastWritten; lw != nil {
+		}),
+		output.Col("Last Written", func(d datasetItem) string {
+			if lw := d.LastWritten; lw != nil {
 				return *lw
 			}
 			return "—"
-		}},
+		}),
 	)
 	return table
 }()

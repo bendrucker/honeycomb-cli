@@ -13,8 +13,8 @@ import (
 
 var toolsTable = output.TableDef{
 	Columns: []output.Column{
-		{Header: "Name", Value: func(v any) string { return v.(mcp.Tool).Name }},
-		{Header: "Description", Value: func(v any) string { return v.(mcp.Tool).Description }},
+		output.Col("Name", func(t mcp.Tool) string { return t.Name }),
+		output.Col("Description", func(t mcp.Tool) string { return t.Description }),
 	},
 }
 

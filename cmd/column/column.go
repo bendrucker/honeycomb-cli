@@ -31,17 +31,17 @@ type columnDetail struct {
 
 var columnListTable = output.TableDef{
 	Columns: []output.Column{
-		{Header: "ID", Value: func(v any) string { return v.(columnItem).ID }},
-		{Header: "Key Name", Value: func(v any) string { return v.(columnItem).KeyName }},
-		{Header: "Type", Value: func(v any) string { return v.(columnItem).Type }},
-		{Header: "Description", Value: func(v any) string { return v.(columnItem).Description }},
-		{Header: "Hidden", Value: func(v any) string {
-			if v.(columnItem).Hidden {
+		output.Col("ID", func(c columnItem) string { return c.ID }),
+		output.Col("Key Name", func(c columnItem) string { return c.KeyName }),
+		output.Col("Type", func(c columnItem) string { return c.Type }),
+		output.Col("Description", func(c columnItem) string { return c.Description }),
+		output.Col("Hidden", func(c columnItem) string {
+			if c.Hidden {
 				return "yes"
 			}
 			return "no"
-		}},
-		{Header: "Last Written", Value: func(v any) string { return v.(columnItem).LastWritten }},
+		}),
+		output.Col("Last Written", func(c columnItem) string { return c.LastWritten }),
 	},
 }
 
