@@ -679,6 +679,15 @@ func TestUpdate_Flags(t *testing.T) {
 			wantName:     "New Name",
 			wantDisabled: true,
 		},
+		{
+			// Real key IDs do not carry the hcxik_/hcxlk_ prefixes the old code
+			// keyed on; the key type must come from the GET response instead.
+			name:         "rename key with no recognizable prefix",
+			id:           "01J8XYZABCDEF",
+			args:         []string{"--name", "Renamed Realistic Key"},
+			wantName:     "Renamed Realistic Key",
+			wantDisabled: false,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			keyType := "ingest"
@@ -784,20 +793,20 @@ func TestUpdate_MutuallyExclusive(t *testing.T) {
 	}
 }
 
-func TestUpdate_UnrecognizedKeyPrefix(t *testing.T) {
+func TestUpdate_UnrecognizedKeyType(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/vnd.api+json")
-		_, _ = fmt.Fprintf(w, `{"data":{"id":"unknown_01abc","type":"api-keys","attributes":{"name":"Test","key_type":"ingest","disabled":false}}}`)
+		_, _ = fmt.Fprintf(w, `{"data":{"id":"hcaik_01abc","type":"api-keys","attributes":{"name":"Test","key_type":"mystery","disabled":false}}}`)
 	}))
 
 	cmd := NewCmd(opts)
-	cmd.SetArgs([]string{"--team", "my-team", "update", "unknown_01abc", "--name", "New Name"})
+	cmd.SetArgs([]string{"--team", "my-team", "update", "hcaik_01abc", "--name", "New Name"})
 	err := cmd.Execute()
 	if err == nil {
-		t.Fatal("expected error for unrecognized key prefix")
+		t.Fatal("expected error for unrecognized key type")
 	}
-	if !strings.Contains(err.Error(), "unrecognized key ID prefix") {
-		t.Errorf("error = %q, want unrecognized prefix message", err.Error())
+	if !strings.Contains(err.Error(), "unrecognized key type") {
+		t.Errorf("error = %q, want unrecognized key type message", err.Error())
 	}
 }
 
