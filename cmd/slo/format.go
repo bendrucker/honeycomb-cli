@@ -19,14 +19,6 @@ func formatTimePeriod(days int) string {
 	return fmt.Sprintf("%dd", days)
 }
 
-func truncate(s string, max int) string {
-	r := []rune(s)
-	if len(r) <= max {
-		return s
-	}
-	return string(r[:max-3]) + "..."
-}
-
 type sloItem struct {
 	ID               string `json:"id"`
 	Name             string `json:"name"`
