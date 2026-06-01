@@ -18,6 +18,7 @@ import (
 	"github.com/bendrucker/honeycomb-cli/internal/agent"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
 	"github.com/bendrucker/honeycomb-cli/internal/iostreams"
+	"github.com/bendrucker/honeycomb-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -31,6 +32,10 @@ func NewRootCmd(ios *iostreams.IOStreams) *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
+			if err := output.ValidateFormat(opts.Format); err != nil {
+				return err
+			}
+
 			opts.ConfigPath = config.DefaultPath()
 			cfg, err := config.Load(opts.ConfigPath)
 			if err != nil {

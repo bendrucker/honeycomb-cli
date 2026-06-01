@@ -16,6 +16,21 @@ const (
 	FormatTable = "table"
 )
 
+// ValidFormats lists the output formats accepted by the --format flag.
+var ValidFormats = []string{FormatJSON, FormatTable}
+
+// ValidateFormat reports whether format is an accepted --format value. The
+// empty string is allowed: it represents the unset flag, which callers resolve
+// to a concrete format based on TTY detection and command type.
+func ValidateFormat(format string) error {
+	switch format {
+	case "", FormatJSON, FormatTable:
+		return nil
+	default:
+		return fmt.Errorf("invalid --format %q: must be one of %s", format, strings.Join(ValidFormats, ", "))
+	}
+}
+
 var cellStyle = lipgloss.NewStyle().Padding(0, 1)
 
 var styleFunc = func(row, col int) lipgloss.Style {
