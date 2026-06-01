@@ -40,7 +40,8 @@ func NewLoginCmd(opts *options.RootOptions) *cobra.Command {
 			if cmd.Flags().Changed("no-verify") {
 				verify = false
 			}
-			return runAuthLogin(cmd.Context(), opts, keyType, keyID, keySecret, team, verify)
+			keySecretSet := cmd.Flags().Changed("key-secret")
+			return runAuthLogin(cmd.Context(), opts, keyType, keyID, keySecret, keySecretSet, team, verify)
 		},
 	}
 
@@ -51,11 +52,12 @@ func NewLoginCmd(opts *options.RootOptions) *cobra.Command {
 	cmd.Flags().BoolVar(&verify, "verify", true, "Verify key against the API before storing")
 	cmd.Flags().BoolVar(&noVerify, "no-verify", false, "Skip API verification")
 	cmd.Flags().Lookup("no-verify").Hidden = true
+	cmd.MarkFlagsMutuallyExclusive("verify", "no-verify")
 
 	return cmd
 }
 
-func runAuthLogin(ctx context.Context, opts *options.RootOptions, keyType, keyID, keySecret, team string, verify bool) error {
+func runAuthLogin(ctx context.Context, opts *options.RootOptions, keyType, keyID, keySecret string, keySecretSet bool, team string, verify bool) error {
 	ios := opts.IOStreams
 
 	if ios.CanPrompt() {
@@ -117,7 +119,10 @@ func runAuthLogin(ctx context.Context, opts *options.RootOptions, keyType, keyID
 		if keyType == "management" && keyID == "" {
 			return fmt.Errorf("--key-id is required for management keys")
 		}
-		if keySecret == "" {
+		if keySecretSet && keySecret == "" {
+			return fmt.Errorf("key secret cannot be empty")
+		}
+		if !keySecretSet {
 			line, err := prompt.ReadLine(ios.In)
 			if err != nil {
 				return fmt.Errorf("reading key secret from stdin: %w", err)
