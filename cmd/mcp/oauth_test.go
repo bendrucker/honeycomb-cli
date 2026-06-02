@@ -21,7 +21,7 @@ import (
 
 func TestKeyringTokenStore(t *testing.T) {
 	const profile = "tokenstore-test"
-	t.Cleanup(func() { _ = config.DeleteMCPToken(profile) })
+	t.Cleanup(func() { _ = config.NewMCPStore(profile).DeleteToken() })
 
 	store := newKeyringTokenStore(profile)
 	ctx := context.Background()
@@ -221,12 +221,12 @@ func TestCallbackHandler(t *testing.T) {
 
 func TestKeyringTokenStore_CorruptJSON(t *testing.T) {
 	const profile = "corrupt-token-test"
-	t.Cleanup(func() { _ = config.DeleteMCPToken(profile) })
+	t.Cleanup(func() { _ = config.NewMCPStore(profile).DeleteToken() })
 
 	// Store an entry whose JSON is valid but cannot decode into a Token: a
 	// non-RFC3339 string for the time-typed expires_at field.
-	if err := config.SetMCPToken(profile, map[string]any{"expires_at": "not-a-time"}); err != nil {
-		t.Fatalf("SetMCPToken: %v", err)
+	if err := config.NewMCPStore(profile).SetToken(map[string]any{"expires_at": "not-a-time"}); err != nil {
+		t.Fatalf("SetToken: %v", err)
 	}
 
 	store := newKeyringTokenStore(profile)
