@@ -8,7 +8,6 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/spf13/cobra"
 )
 
@@ -35,20 +34,18 @@ func NewSettingCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Comm
 				return runSettingCreate(cmd.Context(), opts, *dataset, body)
 			}
 
-			if settingType == "" && opts.IOStreams.CanPrompt() {
-				v, err := prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, "Type: ")
-				if err != nil {
-					return err
-				}
-				settingType = v
+			settingType, err := command.Resolve(opts.IOStreams, settingType, command.Field{
+				Prompt: "Type: ",
+			})
+			if err != nil {
+				return err
 			}
 
-			if color == "" && opts.IOStreams.CanPrompt() {
-				v, err := prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, "Color: ")
-				if err != nil {
-					return err
-				}
-				color = v
+			color, err := command.Resolve(opts.IOStreams, color, command.Field{
+				Prompt: "Color: ",
+			})
+			if err != nil {
+				return err
 			}
 
 			body := api.MarkerSetting{

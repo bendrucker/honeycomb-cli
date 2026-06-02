@@ -8,7 +8,6 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/spf13/cobra"
 )
 
@@ -91,15 +90,14 @@ func runAnnotationCreate(cmd *cobra.Command, opts *options.RootOptions, dataset,
 			return fmt.Errorf("encoding query annotation: %w", err)
 		}
 	} else {
-		if !opts.IOStreams.CanPrompt() {
-			return fmt.Errorf("--file is required in non-interactive mode")
-		}
-		file, err = prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, "Path to query annotation JSON file: ")
+		file, err = command.Resolve(opts.IOStreams, file, command.Field{
+			Prompt:            "Path to query annotation JSON file: ",
+			Required:          true,
+			NonInteractiveErr: fmt.Errorf("--file is required in non-interactive mode"),
+			EmptyErr:          fmt.Errorf("file path is required"),
+		})
 		if err != nil {
 			return err
-		}
-		if file == "" {
-			return fmt.Errorf("file path is required")
 		}
 		data, err = command.ReadDefinitionFile(opts.IOStreams, file)
 		if err != nil {

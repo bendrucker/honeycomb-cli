@@ -11,7 +11,6 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/deref"
-	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/spf13/cobra"
 )
 
@@ -97,29 +96,24 @@ func runKeyCreateFromFile(ctx context.Context, opts *options.RootOptions, client
 }
 
 func runKeyCreateFromFlags(cmd *cobra.Command, opts *options.RootOptions, client *api.ClientWithResponses, team, name, keyType, environment string, permissions []string, allPermissions bool) error {
-	var err error
-
-	if name == "" {
-		if !opts.IOStreams.CanPrompt() {
-			return fmt.Errorf("--name is required in non-interactive mode")
-		}
-		name, err = prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, "Key name: ")
-		if err != nil {
-			return err
-		}
-		if name == "" {
-			return fmt.Errorf("key name is required")
-		}
+	name, err := command.Resolve(opts.IOStreams, name, command.Field{
+		Prompt:            "Key name: ",
+		Required:          true,
+		NonInteractiveErr: fmt.Errorf("--name is required in non-interactive mode"),
+		EmptyErr:          fmt.Errorf("key name is required"),
+	})
+	if err != nil {
+		return err
 	}
 
-	if keyType == "" {
-		if !opts.IOStreams.CanPrompt() {
-			return fmt.Errorf("--key-type is required in non-interactive mode")
-		}
-		keyType, err = prompt.Choice(opts.IOStreams.Err, opts.IOStreams.In, "Key type (ingest, configuration): ", []string{"ingest", "configuration"})
-		if err != nil {
-			return err
-		}
+	keyType, err = command.Resolve(opts.IOStreams, keyType, command.Field{
+		Prompt:            "Key type (ingest, configuration): ",
+		Required:          true,
+		Choices:           []string{"ingest", "configuration"},
+		NonInteractiveErr: fmt.Errorf("--key-type is required in non-interactive mode"),
+	})
+	if err != nil {
+		return err
 	}
 
 	if keyType != "ingest" && keyType != "configuration" {
@@ -134,17 +128,14 @@ func runKeyCreateFromFlags(cmd *cobra.Command, opts *options.RootOptions, client
 		return err
 	}
 
-	if environment == "" {
-		if !opts.IOStreams.CanPrompt() {
-			return fmt.Errorf("--environment is required in non-interactive mode")
-		}
-		environment, err = prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, "Environment ID or name: ")
-		if err != nil {
-			return err
-		}
-		if environment == "" {
-			return fmt.Errorf("environment ID is required")
-		}
+	environment, err = command.Resolve(opts.IOStreams, environment, command.Field{
+		Prompt:            "Environment ID or name: ",
+		Required:          true,
+		NonInteractiveErr: fmt.Errorf("--environment is required in non-interactive mode"),
+		EmptyErr:          fmt.Errorf("environment ID is required"),
+	})
+	if err != nil {
+		return err
 	}
 
 	environmentID, err := resolveEnvironment(cmd.Context(), client, team, environment)

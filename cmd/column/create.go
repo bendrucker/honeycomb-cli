@@ -8,7 +8,6 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/spf13/cobra"
 )
 
@@ -37,23 +36,21 @@ func NewCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 				return runColumnCreateFromFile(cmd.Context(), opts, *dataset, file)
 			}
 
-			if keyName == "" {
-				if !opts.IOStreams.CanPrompt() {
-					return fmt.Errorf("--key-name is required in non-interactive mode")
-				}
-				var err error
-				keyName, err = prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, "Key name: ")
-				if err != nil {
-					return err
-				}
+			keyName, err := command.Resolve(opts.IOStreams, keyName, command.Field{
+				Prompt:            "Key name: ",
+				Required:          true,
+				NonInteractiveErr: fmt.Errorf("--key-name is required in non-interactive mode"),
+			})
+			if err != nil {
+				return err
 			}
 
-			if colType == "" && opts.IOStreams.CanPrompt() {
-				var err error
-				colType, err = prompt.Choice(opts.IOStreams.Err, opts.IOStreams.In, "Type (string/float/integer/boolean): ", []string{"string", "float", "integer", "boolean"})
-				if err != nil {
-					return err
-				}
+			colType, err := command.Resolve(opts.IOStreams, colType, command.Field{
+				Prompt:  "Type (string/float/integer/boolean): ",
+				Choices: []string{"string", "float", "integer", "boolean"},
+			})
+			if err != nil {
+				return err
 			}
 
 			return runColumnCreate(cmd, opts, *dataset, keyName, colType, description, hidden)
