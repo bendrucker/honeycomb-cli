@@ -56,7 +56,7 @@ func runSLOUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, sloID,
 		return updateFromFile(ctx, client, opts, dataset, sloID, file)
 	}
 
-	if !cmd.Flags().Changed("name") && !cmd.Flags().Changed("description") && !cmd.Flags().Changed("target") && !cmd.Flags().Changed("time-period") {
+	if !command.AnyChanged(cmd, "name", "description", "target", "time-period") {
 		return fmt.Errorf("--file, --name, --description, --target, or --time-period is required")
 	}
 

@@ -2,7 +2,6 @@ package column
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 
@@ -24,22 +23,11 @@ func NewUpdateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 		Short: "Update a column",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			hasFile := cmd.Flags().Changed("file")
-			hasDesc := cmd.Flags().Changed("description")
-			hasHidden := cmd.Flags().Changed("hidden")
-
-			if !hasFile && !hasDesc && !hasHidden {
+			if !command.AnyChanged(cmd, "file", "description", "hidden") {
 				return fmt.Errorf("provide --file or at least one of --description, --hidden")
 			}
 
-			return runColumnUpdate(cmd.Context(), opts, *dataset, args[0], columnUpdateFlags{
-				file:        file,
-				hasFile:     hasFile,
-				description: description,
-				hasDesc:     hasDesc,
-				hidden:      hidden,
-				hasHidden:   hasHidden,
-			})
+			return runColumnUpdate(cmd, opts, *dataset, args[0], file, description, hidden)
 		},
 	}
 
@@ -53,25 +41,18 @@ func NewUpdateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	return cmd
 }
 
-type columnUpdateFlags struct {
-	file        string
-	hasFile     bool
-	description string
-	hasDesc     bool
-	hidden      bool
-	hasHidden   bool
-}
-
-func runColumnUpdate(ctx context.Context, opts *options.RootOptions, dataset, columnID string, flags columnUpdateFlags) error {
+func runColumnUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, columnID, file, description string, hidden bool) error {
 	client, err := opts.ClientFor(nil, options.AuthConfig)
 	if err != nil {
 		return err
 	}
 
+	ctx := cmd.Context()
+
 	var col api.Column
 
-	if flags.hasFile {
-		data, err := command.ReadDefinitionFile(opts.IOStreams, flags.file)
+	if cmd.Flags().Changed("file") {
+		data, err := command.ReadDefinitionFile(opts.IOStreams, file)
 		if err != nil {
 			return err
 		}
@@ -89,11 +70,11 @@ func runColumnUpdate(ctx context.Context, opts *options.RootOptions, dataset, co
 		}
 		col = *current
 
-		if flags.hasDesc {
-			col.Description = &flags.description
+		if cmd.Flags().Changed("description") {
+			col.Description = &description
 		}
-		if flags.hasHidden {
-			col.Hidden = &flags.hidden
+		if cmd.Flags().Changed("hidden") {
+			col.Hidden = &hidden
 		}
 	}
 

@@ -56,7 +56,7 @@ func runAnnotationUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset,
 		return updateAnnotationFromFile(ctx, client, opts, dataset, annotationID, file)
 	}
 
-	if !cmd.Flags().Changed("name") && !cmd.Flags().Changed("description") {
+	if !command.AnyChanged(cmd, "name", "description") {
 		return fmt.Errorf("--file, --name, or --description is required")
 	}
 

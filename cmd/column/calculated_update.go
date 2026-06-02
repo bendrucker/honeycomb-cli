@@ -2,7 +2,6 @@ package column
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 
@@ -25,25 +24,11 @@ func NewCalculatedUpdateCmd(opts *options.RootOptions, dataset *string) *cobra.C
 		Short: "Update a calculated column",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			hasFile := cmd.Flags().Changed("file")
-			hasAlias := cmd.Flags().Changed("alias")
-			hasExpr := cmd.Flags().Changed("expression")
-			hasDesc := cmd.Flags().Changed("description")
-
-			if !hasFile && !hasAlias && !hasExpr && !hasDesc {
+			if !command.AnyChanged(cmd, "file", "alias", "expression", "description") {
 				return fmt.Errorf("provide --file or at least one of --alias, --expression, --description")
 			}
 
-			return runCalculatedUpdate(cmd.Context(), opts, *dataset, args[0], calculatedUpdateFlags{
-				file:        file,
-				hasFile:     hasFile,
-				alias:       alias,
-				hasAlias:    hasAlias,
-				expression:  expression,
-				hasExpr:     hasExpr,
-				description: description,
-				hasDesc:     hasDesc,
-			})
+			return runCalculatedUpdate(cmd, opts, *dataset, args[0], file, alias, expression, description)
 		},
 	}
 
@@ -59,27 +44,18 @@ func NewCalculatedUpdateCmd(opts *options.RootOptions, dataset *string) *cobra.C
 	return cmd
 }
 
-type calculatedUpdateFlags struct {
-	file        string
-	hasFile     bool
-	alias       string
-	hasAlias    bool
-	expression  string
-	hasExpr     bool
-	description string
-	hasDesc     bool
-}
-
-func runCalculatedUpdate(ctx context.Context, opts *options.RootOptions, dataset, id string, flags calculatedUpdateFlags) error {
+func runCalculatedUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, id, file, alias, expression, description string) error {
 	client, err := opts.ClientFor(nil, options.AuthConfig)
 	if err != nil {
 		return err
 	}
 
+	ctx := cmd.Context()
+
 	var body api.CalculatedField
 
-	if flags.hasFile {
-		data, err := command.ReadDefinitionFile(opts.IOStreams, flags.file)
+	if cmd.Flags().Changed("file") {
+		data, err := command.ReadDefinitionFile(opts.IOStreams, file)
 		if err != nil {
 			return err
 		}
@@ -97,14 +73,14 @@ func runCalculatedUpdate(ctx context.Context, opts *options.RootOptions, dataset
 		}
 		body = *current
 
-		if flags.hasAlias {
-			body.Alias = flags.alias
+		if cmd.Flags().Changed("alias") {
+			body.Alias = alias
 		}
-		if flags.hasExpr {
-			body.Expression = flags.expression
+		if cmd.Flags().Changed("expression") {
+			body.Expression = expression
 		}
-		if flags.hasDesc {
-			body.Description = &flags.description
+		if cmd.Flags().Changed("description") {
+			body.Description = &description
 		}
 	}
 

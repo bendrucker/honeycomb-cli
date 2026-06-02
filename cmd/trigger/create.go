@@ -33,17 +33,7 @@ func NewCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 				return fmt.Errorf("--file is required")
 			}
 
-			return runCreate(cmd, opts, *dataset, createFlags{
-				file:        file,
-				name:        name,
-				hasName:     cmd.Flags().Changed("name"),
-				description: description,
-				hasDesc:     cmd.Flags().Changed("description"),
-				disabled:    disabled,
-				hasDisabled: cmd.Flags().Changed("disabled"),
-				enabled:     enabled,
-				hasEnabled:  cmd.Flags().Changed("enabled"),
-			})
+			return runCreate(cmd, opts, *dataset, file, name, description, disabled)
 		},
 	}
 
@@ -58,40 +48,28 @@ func NewCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	return cmd
 }
 
-type createFlags struct {
-	file        string
-	name        string
-	hasName     bool
-	description string
-	hasDesc     bool
-	disabled    bool
-	hasDisabled bool
-	enabled     bool
-	hasEnabled  bool
-}
-
-func runCreate(cmd *cobra.Command, opts *options.RootOptions, dataset string, flags createFlags) error {
+func runCreate(cmd *cobra.Command, opts *options.RootOptions, dataset, file, name, description string, disabled bool) error {
 	client, err := opts.ClientFor(nil, options.AuthConfig)
 	if err != nil {
 		return err
 	}
 
-	data, err := command.ReadDefinitionFile(opts.IOStreams, flags.file)
+	data, err := command.ReadDefinitionFile(opts.IOStreams, file)
 	if err != nil {
 		return err
 	}
 
 	overrides := map[string]any{}
-	if flags.hasName {
-		overrides["name"] = flags.name
+	if cmd.Flags().Changed("name") {
+		overrides["name"] = name
 	}
-	if flags.hasDesc {
-		overrides["description"] = flags.description
+	if cmd.Flags().Changed("description") {
+		overrides["description"] = description
 	}
-	if flags.hasDisabled {
-		overrides["disabled"] = flags.disabled
+	if cmd.Flags().Changed("disabled") {
+		overrides["disabled"] = disabled
 	}
-	if flags.hasEnabled {
+	if cmd.Flags().Changed("enabled") {
 		overrides["disabled"] = false
 	}
 
