@@ -3,6 +3,8 @@ package mcp
 import (
 	"context"
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -86,6 +88,88 @@ func TestCall_TypedJSONObjectArgument(t *testing.T) {
 	calc, ok := calcs[0].(map[string]any)
 	if !ok || calc["op"] != "SUM" || calc["column"] != "gen_ai.usage.cost" {
 		t.Errorf("query_json.calculations[0] = %#v, want SUM(gen_ai.usage.cost)", calcs[0])
+	}
+}
+
+func TestCall_SchemaCoercesRawField(t *testing.T) {
+	srv, opts, _ := setupMCPTest(t)
+
+	var got map[string]any
+	srv.AddTool(
+		mcp.NewTool("run_query",
+			mcp.WithString("dataset"),
+			mcp.WithObject("query_json"),
+		),
+		func(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			got = req.GetArguments()
+			return mcp.NewToolResultText("ok"), nil
+		},
+	)
+
+	cmd := newCallCmd(opts, nil, testFactory(srv))
+	cmd.SetArgs([]string{"run_query",
+		"-f", "dataset=api",
+		"-f", `query_json={"calculations":[{"op":"SUM","column":"gen_ai.usage.cost"}],"time_range":604800}`,
+	})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	query, ok := got["query_json"].(map[string]any)
+	if !ok {
+		t.Fatalf("query_json = %#v, want a parsed object (-f coerced via schema, not left a string)", got["query_json"])
+	}
+	if tr, ok := query["time_range"].(float64); !ok || tr != 604800 {
+		t.Errorf("query_json.time_range = %#v, want 604800", query["time_range"])
+	}
+	if ds, ok := got["dataset"].(string); !ok || ds != "api" {
+		t.Errorf("dataset = %#v, want string %q", got["dataset"], "api")
+	}
+}
+
+func TestCall_UnknownTool(t *testing.T) {
+	srv, opts, _ := setupMCPTest(t)
+	srv.AddTool(mcp.NewTool("known"), func(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		return mcp.NewToolResultText("ok"), nil
+	})
+
+	cmd := newCallCmd(opts, nil, testFactory(srv))
+	cmd.SetArgs([]string{"missing", "-f", "key=val"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for unknown tool")
+	}
+	if !strings.Contains(err.Error(), `unknown tool "missing"`) {
+		t.Errorf("error = %q, want unknown tool message", err.Error())
+	}
+}
+
+func TestCall_InputNotCoerced(t *testing.T) {
+	srv, opts, _ := setupMCPTest(t)
+
+	var got map[string]any
+	srv.AddTool(
+		mcp.NewTool("run_query", mcp.WithObject("query_json")),
+		func(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			got = req.GetArguments()
+			return mcp.NewToolResultText("ok"), nil
+		},
+	)
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "args.json")
+	if err := os.WriteFile(path, []byte(`{"query_json":"raw-string"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := newCallCmd(opts, nil, testFactory(srv))
+	cmd.SetArgs([]string{"run_query", "--input", path})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	if got["query_json"] != "raw-string" {
+		t.Errorf("query_json = %#v, want the string sent as-is (--input is not schema-coerced)", got["query_json"])
 	}
 }
 
