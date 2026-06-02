@@ -46,17 +46,19 @@ type boardListItem struct {
 }
 
 type boardDetail struct {
-	ID            string        `json:"id" detail:"ID"`
-	Name          string        `json:"name" detail:"Name"`
-	Description   string        `json:"description,omitempty" detail:"Description"`
-	Type          string        `json:"type" detail:"Type"`
-	URL           string        `json:"url,omitempty" detail:"URL"`
-	PresetFilters presetFilters `json:"preset_filters,omitempty" detail:"Preset Filters"`
-	Panels        panels        `json:"panels,omitempty" detail:"Panels"`
+	ID            string          `json:"id" detail:"ID"`
+	Name          string          `json:"name" detail:"Name"`
+	Description   string          `json:"description,omitempty" detail:"Description"`
+	Type          string          `json:"type" detail:"Type"`
+	URL           string          `json:"url,omitempty" detail:"URL"`
+	PresetFilters json.RawMessage `json:"preset_filters,omitempty"`
+	Panels        panels          `json:"panels,omitempty" detail:"Panels"`
 }
 
 func writeBoardDetail(opts *options.RootOptions, detail boardDetail) error {
-	return opts.OutputWriter().WriteFields(detail, output.FieldsFromTags(detail))
+	fields := output.FieldsFromTags(detail)
+	fields = append(fields, output.Field{Label: "Preset Filters", Value: string(detail.PresetFilters)})
+	return opts.OutputWriter().WriteFields(detail, fields)
 }
 
 // panels wraps a board's raw panels JSON. It preserves RawMessage's JSON
@@ -113,23 +115,6 @@ func (p panels) FormatField() string {
 	return strings.Join(lines, "\n")
 }
 
-// presetFilters wraps a board's raw preset_filters JSON. It preserves
-// RawMessage's JSON passthrough while rendering as its raw string in tables,
-// matching the previous string(rawMessage) behavior.
-type presetFilters json.RawMessage
-
-func (p presetFilters) MarshalJSON() ([]byte, error) {
-	return json.RawMessage(p).MarshalJSON()
-}
-
-func (p *presetFilters) UnmarshalJSON(data []byte) error {
-	return (*json.RawMessage)(p).UnmarshalJSON(data)
-}
-
-func (p presetFilters) FormatField() string {
-	return string(p)
-}
-
 func boardToDetail(b api.Board) boardDetail {
 	d := boardDetail{
 		ID:          deref.String(b.Id),
@@ -142,7 +127,7 @@ func boardToDetail(b api.Board) boardDetail {
 	}
 	if b.PresetFilters != nil {
 		raw, _ := json.Marshal(b.PresetFilters)
-		d.PresetFilters = presetFilters(raw)
+		d.PresetFilters = raw
 	}
 	if b.Panels != nil {
 		raw, _ := json.Marshal(b.Panels)
