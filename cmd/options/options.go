@@ -79,14 +79,27 @@ func (o *RootOptions) inferTeam() (string, bool) {
 	return "", false
 }
 
-func (o *RootOptions) ResolveFormat() string {
+// outputKind selects how an unset --format flag resolves. Detail output follows
+// the terminal: a table when interactive, JSON when piped, so scripts and agents
+// get structured output by default. List output defaults to a table in both
+// modes, since a collection reads best as a table.
+type outputKind int
+
+const (
+	detailOutput outputKind = iota
+	listOutput
+)
+
+// resolveFormat picks the concrete output format for kind. An explicit --format
+// flag always wins; otherwise the per-kind default applies.
+func (o *RootOptions) resolveFormat(kind outputKind) string {
 	if o.Format != "" {
 		return o.Format
 	}
-	if o.IOStreams.IsStdoutTTY() {
-		return output.FormatTable
+	if kind == detailOutput && !o.IOStreams.IsStdoutTTY() {
+		return output.FormatJSON
 	}
-	return output.FormatJSON
+	return output.FormatTable
 }
 
 func (o *RootOptions) RequireKey(kt config.KeyType) (string, error) {
@@ -128,15 +141,11 @@ func (o *RootOptions) Client(kt config.KeyType) (*api.ClientWithResponses, error
 }
 
 func (o *RootOptions) OutputWriter() *output.Writer {
-	return output.New(o.IOStreams.Out, o.ResolveFormat())
+	return output.New(o.IOStreams.Out, o.resolveFormat(detailOutput))
 }
 
 func (o *RootOptions) OutputWriterList() *output.Writer {
-	format := o.Format
-	if format == "" {
-		format = output.FormatTable
-	}
-	return output.New(o.IOStreams.Out, format)
+	return output.New(o.IOStreams.Out, o.resolveFormat(listOutput))
 }
 
 func (o *RootOptions) ResolveMCPUrl() string {
