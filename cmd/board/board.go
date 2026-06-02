@@ -46,33 +46,41 @@ type boardListItem struct {
 }
 
 type boardDetail struct {
-	ID            string          `json:"id" detail:"ID"`
-	Name          string          `json:"name" detail:"Name"`
-	Description   string          `json:"description,omitempty" detail:"Description"`
-	Type          string          `json:"type" detail:"Type"`
-	URL           string          `json:"url,omitempty" detail:"URL"`
-	PresetFilters json.RawMessage `json:"preset_filters,omitempty"`
-	Panels        json.RawMessage `json:"panels,omitempty"`
+	ID            string        `json:"id" detail:"ID"`
+	Name          string        `json:"name" detail:"Name"`
+	Description   string        `json:"description,omitempty" detail:"Description"`
+	Type          string        `json:"type" detail:"Type"`
+	URL           string        `json:"url,omitempty" detail:"URL"`
+	PresetFilters presetFilters `json:"preset_filters,omitempty" detail:"Preset Filters"`
+	Panels        panels        `json:"panels,omitempty" detail:"Panels"`
 }
 
 func writeBoardDetail(opts *options.RootOptions, detail boardDetail) error {
-	fields := output.FieldsFromTags(detail)
-	fields = append(fields,
-		output.Field{Label: "Panels", Value: formatPanels(detail.Panels)},
-		output.Field{Label: "Preset Filters", Value: string(detail.PresetFilters)},
-	)
-	return opts.OutputWriter().WriteFields(detail, fields)
+	return opts.OutputWriter().WriteFields(detail, output.FieldsFromTags(detail))
 }
 
-// formatPanels summarizes a board's panels as one line per panel, pairing each
+// panels wraps a board's raw panels JSON. It preserves RawMessage's JSON
+// passthrough via MarshalJSON while carrying its own table rendering.
+type panels json.RawMessage
+
+func (p panels) MarshalJSON() ([]byte, error) {
+	return json.RawMessage(p).MarshalJSON()
+}
+
+func (p *panels) UnmarshalJSON(data []byte) error {
+	return (*json.RawMessage)(p).UnmarshalJSON(data)
+}
+
+// FormatField summarizes a board's panels as one line per panel, pairing each
 // panel's type with the query, SLO, or text it references. An empty raw message
 // (no panels) renders as an em-dash.
-func formatPanels(raw json.RawMessage) string {
+func (p panels) FormatField() string {
+	raw := json.RawMessage(p)
 	if len(raw) == 0 {
 		return "—"
 	}
 
-	var panels []struct {
+	var parsed []struct {
 		Type       string `json:"type"`
 		QueryPanel *struct {
 			QueryId string `json:"query_id"`
@@ -84,15 +92,15 @@ func formatPanels(raw json.RawMessage) string {
 			Content string `json:"content"`
 		} `json:"text_panel"`
 	}
-	if err := json.Unmarshal(raw, &panels); err != nil {
+	if err := json.Unmarshal(raw, &parsed); err != nil {
 		return string(raw)
 	}
-	if len(panels) == 0 {
+	if len(parsed) == 0 {
 		return "—"
 	}
 
-	lines := make([]string, len(panels))
-	for i, p := range panels {
+	lines := make([]string, len(parsed))
+	for i, p := range parsed {
 		switch {
 		case p.QueryPanel != nil:
 			lines[i] = fmt.Sprintf("%s (query %s)", p.Type, p.QueryPanel.QueryId)
@@ -103,6 +111,23 @@ func formatPanels(raw json.RawMessage) string {
 		}
 	}
 	return strings.Join(lines, "\n")
+}
+
+// presetFilters wraps a board's raw preset_filters JSON. It preserves
+// RawMessage's JSON passthrough while rendering as its raw string in tables,
+// matching the previous string(rawMessage) behavior.
+type presetFilters json.RawMessage
+
+func (p presetFilters) MarshalJSON() ([]byte, error) {
+	return json.RawMessage(p).MarshalJSON()
+}
+
+func (p *presetFilters) UnmarshalJSON(data []byte) error {
+	return (*json.RawMessage)(p).UnmarshalJSON(data)
+}
+
+func (p presetFilters) FormatField() string {
+	return string(p)
 }
 
 func boardToDetail(b api.Board) boardDetail {
@@ -117,11 +142,11 @@ func boardToDetail(b api.Board) boardDetail {
 	}
 	if b.PresetFilters != nil {
 		raw, _ := json.Marshal(b.PresetFilters)
-		d.PresetFilters = raw
+		d.PresetFilters = presetFilters(raw)
 	}
 	if b.Panels != nil {
 		raw, _ := json.Marshal(b.Panels)
-		d.Panels = raw
+		d.Panels = panels(raw)
 	}
 	return d
 }

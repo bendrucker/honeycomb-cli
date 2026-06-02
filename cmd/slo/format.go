@@ -10,13 +10,21 @@ import (
 	"github.com/bendrucker/honeycomb-cli/internal/output"
 )
 
-func formatTarget(targetPerMillion int) string {
-	pct := float64(targetPerMillion) / 10000.0
+// targetPerMillion is an SLO target expressed in parts per million. It marshals
+// as its underlying integer while rendering as a percentage in detail tables.
+type targetPerMillion int
+
+func (t targetPerMillion) FormatField() string {
+	pct := float64(t) / 10000.0
 	return fmt.Sprintf("%g%%", pct)
 }
 
-func formatTimePeriod(days int) string {
-	return fmt.Sprintf("%dd", days)
+// timePeriodDays is an SLO time period in days. It marshals as its underlying
+// integer while rendering with a trailing "d" in detail tables.
+type timePeriodDays int
+
+func (d timePeriodDays) FormatField() string {
+	return fmt.Sprintf("%dd", d)
 }
 
 type sloItem struct {
@@ -29,16 +37,16 @@ type sloItem struct {
 }
 
 type sloDetail struct {
-	ID               string   `json:"id" detail:"ID"`
-	Name             string   `json:"name" detail:"Name"`
-	Description      string   `json:"description,omitempty" detail:"Description"`
-	TargetPerMillion int      `json:"target_per_million"`
-	TimePeriodDays   int      `json:"time_period_days"`
-	SLIAlias         string   `json:"sli_alias" detail:"SLI Alias"`
-	DatasetSlugs     []string `json:"dataset_slugs,omitempty"`
-	CreatedAt        string   `json:"created_at,omitempty"`
-	UpdatedAt        string   `json:"updated_at,omitempty"`
-	ResetAt          string   `json:"reset_at,omitempty"`
+	ID               string           `json:"id" detail:"ID"`
+	Name             string           `json:"name" detail:"Name"`
+	Description      string           `json:"description,omitempty" detail:"Description"`
+	TargetPerMillion targetPerMillion `json:"target_per_million" detail:"Target"`
+	TimePeriodDays   timePeriodDays   `json:"time_period_days" detail:"Time Period"`
+	SLIAlias         string           `json:"sli_alias" detail:"SLI Alias"`
+	DatasetSlugs     []string         `json:"dataset_slugs,omitempty"`
+	CreatedAt        string           `json:"created_at,omitempty"`
+	UpdatedAt        string           `json:"updated_at,omitempty"`
+	ResetAt          string           `json:"reset_at,omitempty"`
 
 	// Detailed fields (only populated with --detailed)
 	Compliance      *float64 `json:"compliance,omitempty"`
@@ -58,8 +66,8 @@ func sloToDetail(s api.SLO) sloDetail {
 		ID:               deref.String(s.Id),
 		Name:             s.Name,
 		Description:      deref.String(s.Description),
-		TargetPerMillion: s.TargetPerMillion,
-		TimePeriodDays:   s.TimePeriodDays,
+		TargetPerMillion: targetPerMillion(s.TargetPerMillion),
+		TimePeriodDays:   timePeriodDays(s.TimePeriodDays),
 		SLIAlias:         s.Sli.Alias,
 		CreatedAt:        deref.Time(s.CreatedAt),
 		UpdatedAt:        deref.Time(s.UpdatedAt),
@@ -86,10 +94,6 @@ func detailedToDetail(s sloDetailedResponse) sloDetail {
 
 func writeSloDetail(opts *options.RootOptions, detail sloDetail) error {
 	fields := output.FieldsFromTags(detail)
-	fields = append(fields,
-		output.Field{Label: "Target", Value: formatTarget(detail.TargetPerMillion)},
-		output.Field{Label: "Time Period", Value: formatTimePeriod(detail.TimePeriodDays)},
-	)
 	if len(detail.DatasetSlugs) > 0 {
 		fields = append(fields, output.Field{Label: "Datasets", Value: strings.Join(detail.DatasetSlugs, ", ")})
 	}

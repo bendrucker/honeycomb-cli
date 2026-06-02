@@ -19,9 +19,9 @@ type viewItem struct {
 }
 
 type viewDetail struct {
-	ID      string          `json:"id" detail:"ID"`
-	Name    string          `json:"name" detail:"Name"`
-	Filters json.RawMessage `json:"filters,omitempty"`
+	ID      string  `json:"id" detail:"ID"`
+	Name    string  `json:"name" detail:"Name"`
+	Filters filters `json:"filters,omitempty" detail:"Filters"`
 }
 
 var viewListTable = output.TableFromTags[viewItem]()
@@ -40,42 +40,53 @@ func viewResponseToDetail(v api.BoardViewResponse) viewDetail {
 	}
 	if v.Filters != nil {
 		raw, _ := json.Marshal(v.Filters)
-		d.Filters = raw
+		d.Filters = filters(raw)
 	}
 	return d
 }
 
 func writeViewDetail(opts *options.RootOptions, detail viewDetail) error {
-	fields := output.FieldsFromTags(detail)
-	fields = append(fields, output.Field{Label: "Filters", Value: formatFilters(detail.Filters)})
-	return opts.OutputWriter().WriteFields(detail, fields)
+	return opts.OutputWriter().WriteFields(detail, output.FieldsFromTags(detail))
 }
 
-// formatFilters renders a view's filters as one "column operation value" line
+// filters wraps a view's raw filters JSON. It preserves RawMessage's JSON
+// passthrough via MarshalJSON while carrying its own table rendering.
+type filters json.RawMessage
+
+func (f filters) MarshalJSON() ([]byte, error) {
+	return json.RawMessage(f).MarshalJSON()
+}
+
+func (f *filters) UnmarshalJSON(data []byte) error {
+	return (*json.RawMessage)(f).UnmarshalJSON(data)
+}
+
+// FormatField renders a view's filters as one "column operation value" line
 // per filter. An empty raw message (no filters) renders as an em-dash.
-func formatFilters(raw json.RawMessage) string {
+func (f filters) FormatField() string {
+	raw := json.RawMessage(f)
 	if len(raw) == 0 {
 		return "—"
 	}
 
-	var filters []struct {
+	var parsed []struct {
 		Column    string `json:"column"`
 		Operation string `json:"operation"`
 		Value     any    `json:"value,omitempty"`
 	}
-	if err := json.Unmarshal(raw, &filters); err != nil {
+	if err := json.Unmarshal(raw, &parsed); err != nil {
 		return string(raw)
 	}
-	if len(filters) == 0 {
+	if len(parsed) == 0 {
 		return "—"
 	}
 
-	lines := make([]string, len(filters))
-	for i, f := range filters {
-		if f.Value != nil {
-			lines[i] = fmt.Sprintf("%s %s %v", f.Column, f.Operation, f.Value)
+	lines := make([]string, len(parsed))
+	for i, p := range parsed {
+		if p.Value != nil {
+			lines[i] = fmt.Sprintf("%s %s %v", p.Column, p.Operation, p.Value)
 		} else {
-			lines[i] = fmt.Sprintf("%s %s", f.Column, f.Operation)
+			lines[i] = fmt.Sprintf("%s %s", p.Column, p.Operation)
 		}
 	}
 	return strings.Join(lines, "\n")
