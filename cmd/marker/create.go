@@ -32,26 +32,21 @@ func NewCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 			}
 
 			markerType, err := command.Resolve(opts.IOStreams, markerType, command.Field{
-				Prompt: "Type: ",
+				Prompt:            "Type: ",
+				Required:          true,
+				NonInteractiveErr: fmt.Errorf("--type is required in non-interactive mode"),
 			})
 			if err != nil {
 				return err
 			}
 
 			message, err := command.Resolve(opts.IOStreams, message, command.Field{
-				Prompt: "Message: ",
+				Prompt:            "Message: ",
+				Required:          true,
+				NonInteractiveErr: fmt.Errorf("--message is required in non-interactive mode"),
 			})
 			if err != nil {
 				return err
-			}
-
-			if !opts.IOStreams.CanPrompt() {
-				if markerType == "" {
-					return fmt.Errorf("--type is required in non-interactive mode")
-				}
-				if message == "" {
-					return fmt.Errorf("--message is required in non-interactive mode")
-				}
 			}
 
 			if !cmd.Flags().Changed("start-time") {

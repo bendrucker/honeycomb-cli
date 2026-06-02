@@ -2,6 +2,7 @@ package command
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/bendrucker/honeycomb-cli/internal/iostreams"
@@ -12,15 +13,16 @@ func TestResolve(t *testing.T) {
 	empty := errors.New("name is required")
 
 	for _, tc := range []struct {
-		name       string
-		value      string
-		promptable bool
-		input      string
-		field      Field
-		want       string
-		wantErr    error
-		wantPrompt string
-		wantStream Stream
+		name        string
+		value       string
+		promptable  bool
+		input       string
+		field       Field
+		want        string
+		wantErr     error
+		wantErrText string
+		wantPrompt  string
+		wantStream  Stream
 	}{
 		{
 			name:  "value present skips prompt",
@@ -111,6 +113,19 @@ func TestResolve(t *testing.T) {
 			wantStream: StreamErr,
 		},
 		{
+			name:       "prompt read error propagates",
+			value:      "",
+			promptable: true,
+			input:      "",
+			field: Field{
+				Prompt:            "Name: ",
+				Required:          true,
+				NonInteractiveErr: nonInteractive,
+				EmptyErr:          empty,
+			},
+			wantErrText: "unexpected end of input",
+		},
+		{
 			name:       "stream out writes prompt to stdout",
 			value:      "",
 			promptable: true,
@@ -137,6 +152,12 @@ func TestResolve(t *testing.T) {
 
 			got, err := Resolve(ts.IOStreams, tc.value, tc.field)
 
+			if tc.wantErrText != "" {
+				if err == nil || !strings.Contains(err.Error(), tc.wantErrText) {
+					t.Fatalf("error = %v, want containing %q", err, tc.wantErrText)
+				}
+				return
+			}
 			if tc.wantErr != nil {
 				if !errors.Is(err, tc.wantErr) {
 					t.Fatalf("error = %v, want %v", err, tc.wantErr)
