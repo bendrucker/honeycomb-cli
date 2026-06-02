@@ -41,7 +41,7 @@ func newCallCmd(opts *options.RootOptions, token *string, factory clientFactory)
 		},
 	}
 
-	cmd.Flags().StringArrayVarP(&o.fieldFlags, "field", "f", nil, "String field: key=value (repeatable; not a file)")
+	cmd.Flags().StringArrayVarP(&o.fieldFlags, "field", "f", nil, "Field: key=value, coerced to the tool's declared schema type (repeatable)")
 	cmd.Flags().StringArrayVarP(&o.typedFlags, "typed-field", "F", nil, "Typed field: bool/number/null/JSON object/array coercion, @file")
 	cmd.Flags().StringVar(&o.input, "input", "", "Read full arguments JSON from a file (- for stdin)")
 	cmd.Flags().StringVarP(&o.jqExpr, "jq", "q", "", "Filter output with jq expression")
@@ -66,6 +66,20 @@ func runCall(cmd *cobra.Command, o *callOptions, toolName string) error {
 		return err
 	}
 	defer func() { _ = c.Close() }()
+
+	// Field arguments arrive as strings; resolve the tool's schema and coerce
+	// them to the declared types. Resolving the tool first also rejects an
+	// unknown name with a clear error before the call is built. --input is
+	// user-authored full JSON, sent as-is with no schema round trip.
+	if o.input == "" {
+		tool, err := findTool(ctx, c, toolName)
+		if err != nil {
+			return err
+		}
+		if err := coerceArgs(args, tool.InputSchema); err != nil {
+			return err
+		}
+	}
 
 	request := mcp.CallToolRequest{}
 	request.Params.Name = toolName
