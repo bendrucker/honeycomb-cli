@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/deref"
-	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/spf13/cobra"
 )
 
@@ -52,24 +52,22 @@ func NewCreateCmd(opts *options.RootOptions) *cobra.Command {
 func runDatasetCreate(ctx context.Context, opts *options.RootOptions, name, description string, expandJsonDepth *int, clearProtection bool) error {
 	ios := opts.IOStreams
 
-	if ios.CanPrompt() {
-		var err error
-		if name == "" {
-			name, err = prompt.Line(ios.Out, ios.In, "Dataset name: ")
-			if err != nil {
-				return fmt.Errorf("reading name: %w", err)
-			}
-		}
-		if description == "" {
-			description, err = prompt.Line(ios.Out, ios.In, "Description (optional): ")
-			if err != nil {
-				return fmt.Errorf("reading description: %w", err)
-			}
-		}
-	} else {
-		if name == "" {
-			return fmt.Errorf("--name is required in non-interactive mode")
-		}
+	name, err := command.Resolve(ios, name, command.Field{
+		Prompt:            "Dataset name: ",
+		Required:          true,
+		Stream:            command.StreamOut,
+		NonInteractiveErr: fmt.Errorf("--name is required in non-interactive mode"),
+	})
+	if err != nil {
+		return err
+	}
+
+	description, err = command.Resolve(ios, description, command.Field{
+		Prompt: "Description (optional): ",
+		Stream: command.StreamOut,
+	})
+	if err != nil {
+		return err
 	}
 
 	client, err := opts.ClientFor(nil, options.AuthConfig)

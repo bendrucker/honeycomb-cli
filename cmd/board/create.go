@@ -8,7 +8,6 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/spf13/cobra"
 )
 
@@ -62,18 +61,20 @@ func runBoardCreate(cmd *cobra.Command, opts *options.RootOptions, file, name, d
 	}
 
 	if name == "" {
-		if !opts.IOStreams.CanPrompt() {
-			return fmt.Errorf("--name or --file is required in non-interactive mode")
-		}
-		name, err = prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, "Board name: ")
+		promptable := opts.IOStreams.CanPrompt()
+		name, err = command.Resolve(opts.IOStreams, name, command.Field{
+			Prompt:            "Board name: ",
+			Required:          true,
+			NonInteractiveErr: fmt.Errorf("--name or --file is required in non-interactive mode"),
+			EmptyErr:          fmt.Errorf("board name is required"),
+		})
 		if err != nil {
 			return err
 		}
-		if name == "" {
-			return fmt.Errorf("board name is required")
-		}
-		if !cmd.Flags().Changed("description") {
-			desc, err = prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, "Description (optional): ")
+		if promptable && !cmd.Flags().Changed("description") {
+			desc, err = command.Resolve(opts.IOStreams, desc, command.Field{
+				Prompt: "Description (optional): ",
+			})
 			if err != nil {
 				return err
 			}

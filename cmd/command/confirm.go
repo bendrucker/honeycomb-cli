@@ -1,5 +1,6 @@
 // Package command holds helpers shared by the resource CRUD commands: delete
-// confirmation, definition-file intake, and flag-override merging.
+// confirmation, definition-file intake, flag-override merging, and resolving a
+// missing flag value through an interactive prompt.
 package command
 
 import (

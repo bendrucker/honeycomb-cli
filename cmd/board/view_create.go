@@ -9,7 +9,6 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/spf13/cobra"
 )
 
@@ -60,17 +59,14 @@ func runViewCreate(cmd *cobra.Command, opts *options.RootOptions, boardID, file,
 		return createViewFromFile(ctx, client, opts, boardID, file)
 	}
 
-	if name == "" {
-		if !opts.IOStreams.CanPrompt() {
-			return fmt.Errorf("--name or --file is required in non-interactive mode")
-		}
-		name, err = prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, "View name: ")
-		if err != nil {
-			return err
-		}
-		if name == "" {
-			return fmt.Errorf("view name is required")
-		}
+	name, err = command.Resolve(opts.IOStreams, name, command.Field{
+		Prompt:            "View name: ",
+		Required:          true,
+		NonInteractiveErr: fmt.Errorf("--name or --file is required in non-interactive mode"),
+		EmptyErr:          fmt.Errorf("view name is required"),
+	})
+	if err != nil {
+		return err
 	}
 
 	filters, err := parseViewFilters(filterArgs)

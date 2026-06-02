@@ -58,6 +58,16 @@ func Test(tb testing.TB) *TestStreams {
 	}
 }
 
+// TestPromptable returns test streams whose CanPrompt reports true, so tests
+// can exercise interactive prompt paths. Write prompt answers to InBuf.
+func TestPromptable(tb testing.TB) *TestStreams {
+	tb.Helper()
+	ts := Test(tb)
+	ts.stdinIsTTY = true
+	ts.stdoutIsTTY = true
+	return ts
+}
+
 type testLogWriter struct {
 	tb testing.TB
 }

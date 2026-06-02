@@ -8,7 +8,6 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/spf13/cobra"
 )
 
@@ -28,26 +27,22 @@ func NewCalculatedCreateCmd(opts *options.RootOptions, dataset *string) *cobra.C
 				return runCalculatedCreateFromFile(cmd.Context(), opts, *dataset, file)
 			}
 
-			if alias == "" {
-				if !opts.IOStreams.CanPrompt() {
-					return fmt.Errorf("--alias is required in non-interactive mode")
-				}
-				var err error
-				alias, err = prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, "Alias: ")
-				if err != nil {
-					return err
-				}
+			alias, err := command.Resolve(opts.IOStreams, alias, command.Field{
+				Prompt:            "Alias: ",
+				Required:          true,
+				NonInteractiveErr: fmt.Errorf("--alias is required in non-interactive mode"),
+			})
+			if err != nil {
+				return err
 			}
 
-			if expression == "" {
-				if !opts.IOStreams.CanPrompt() {
-					return fmt.Errorf("--expression is required in non-interactive mode")
-				}
-				var err error
-				expression, err = prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, "Expression: ")
-				if err != nil {
-					return err
-				}
+			expression, err := command.Resolve(opts.IOStreams, expression, command.Field{
+				Prompt:            "Expression: ",
+				Required:          true,
+				NonInteractiveErr: fmt.Errorf("--expression is required in non-interactive mode"),
+			})
+			if err != nil {
+				return err
 			}
 
 			body := api.CreateCalculatedFieldJSONRequestBody{

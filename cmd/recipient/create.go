@@ -11,7 +11,6 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/spf13/cobra"
 )
 
@@ -87,15 +86,14 @@ func validateDetailFlags(cmd *cobra.Command, recipientType string) error {
 }
 
 func runCreate(ctx context.Context, opts *options.RootOptions, recipientType, target, channel, integrationKey, name, url string) error {
-	var err error
-	if recipientType == "" {
-		if !opts.IOStreams.CanPrompt() {
-			return fmt.Errorf("--type or --file is required in non-interactive mode")
-		}
-		recipientType, err = prompt.Choice(opts.IOStreams.Err, opts.IOStreams.In, "Type (email, slack, pagerduty, msteams, msteams_workflow, webhook): ", recipientTypes)
-		if err != nil {
-			return err
-		}
+	recipientType, err := command.Resolve(opts.IOStreams, recipientType, command.Field{
+		Prompt:            "Type (email, slack, pagerduty, msteams, msteams_workflow, webhook): ",
+		Required:          true,
+		Choices:           recipientTypes,
+		NonInteractiveErr: fmt.Errorf("--type or --file is required in non-interactive mode"),
+	})
+	if err != nil {
+		return err
 	}
 
 	body, err := buildRecipientBody(opts, recipientType, target, channel, integrationKey, name, url)
@@ -117,108 +115,90 @@ func buildRecipientBody(opts *options.RootOptions, recipientType, target, channe
 
 	switch recipientType {
 	case "email":
-		if target == "" {
-			if !opts.IOStreams.CanPrompt() {
-				return nil, fmt.Errorf("--target is required for email recipients in non-interactive mode")
-			}
-			target, err = prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, "Email address: ")
-			if err != nil {
-				return nil, err
-			}
-		}
-		if target == "" {
-			return nil, fmt.Errorf("email address is required")
+		target, err = command.Resolve(opts.IOStreams, target, command.Field{
+			Prompt:            "Email address: ",
+			Required:          true,
+			NonInteractiveErr: fmt.Errorf("--target is required for email recipients in non-interactive mode"),
+			EmptyErr:          fmt.Errorf("email address is required"),
+		})
+		if err != nil {
+			return nil, err
 		}
 		details["email_address"] = target
 
 	case "slack":
-		if channel == "" {
-			if !opts.IOStreams.CanPrompt() {
-				return nil, fmt.Errorf("--channel is required for slack recipients in non-interactive mode")
-			}
-			channel, err = prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, "Slack channel: ")
-			if err != nil {
-				return nil, err
-			}
-		}
-		if channel == "" {
-			return nil, fmt.Errorf("slack channel is required")
+		channel, err = command.Resolve(opts.IOStreams, channel, command.Field{
+			Prompt:            "Slack channel: ",
+			Required:          true,
+			NonInteractiveErr: fmt.Errorf("--channel is required for slack recipients in non-interactive mode"),
+			EmptyErr:          fmt.Errorf("slack channel is required"),
+		})
+		if err != nil {
+			return nil, err
 		}
 		details["slack_channel"] = channel
 
 	case "pagerduty":
-		if integrationKey == "" {
-			if !opts.IOStreams.CanPrompt() {
-				return nil, fmt.Errorf("--integration-key is required for pagerduty recipients in non-interactive mode")
-			}
-			integrationKey, err = prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, "Integration key: ")
-			if err != nil {
-				return nil, err
-			}
-		}
-		if integrationKey == "" {
-			return nil, fmt.Errorf("integration key is required")
+		integrationKey, err = command.Resolve(opts.IOStreams, integrationKey, command.Field{
+			Prompt:            "Integration key: ",
+			Required:          true,
+			NonInteractiveErr: fmt.Errorf("--integration-key is required for pagerduty recipients in non-interactive mode"),
+			EmptyErr:          fmt.Errorf("integration key is required"),
+		})
+		if err != nil {
+			return nil, err
 		}
 		details["pagerduty_integration_key"] = integrationKey
-		if name == "" && opts.IOStreams.CanPrompt() {
-			name, err = prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, "Integration name (optional): ")
-			if err != nil {
-				return nil, err
-			}
+		name, err = command.Resolve(opts.IOStreams, name, command.Field{
+			Prompt: "Integration name (optional): ",
+		})
+		if err != nil {
+			return nil, err
 		}
 		if name != "" {
 			details["pagerduty_integration_name"] = name
 		}
 
 	case "msteams", "msteams_workflow":
-		if url == "" {
-			if !opts.IOStreams.CanPrompt() {
-				return nil, fmt.Errorf("--url is required for %s recipients in non-interactive mode", recipientType)
-			}
-			url, err = prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, "Webhook URL: ")
-			if err != nil {
-				return nil, err
-			}
-		}
-		if url == "" {
-			return nil, fmt.Errorf("webhook URL is required")
+		url, err = command.Resolve(opts.IOStreams, url, command.Field{
+			Prompt:            "Webhook URL: ",
+			Required:          true,
+			NonInteractiveErr: fmt.Errorf("--url is required for %s recipients in non-interactive mode", recipientType),
+			EmptyErr:          fmt.Errorf("webhook URL is required"),
+		})
+		if err != nil {
+			return nil, err
 		}
 		details["webhook_url"] = url
-		if name == "" && opts.IOStreams.CanPrompt() {
-			name, err = prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, "Webhook name (optional): ")
-			if err != nil {
-				return nil, err
-			}
+		name, err = command.Resolve(opts.IOStreams, name, command.Field{
+			Prompt: "Webhook name (optional): ",
+		})
+		if err != nil {
+			return nil, err
 		}
 		if name != "" {
 			details["webhook_name"] = name
 		}
 
 	case "webhook":
-		if url == "" {
-			if !opts.IOStreams.CanPrompt() {
-				return nil, fmt.Errorf("--url is required for webhook recipients in non-interactive mode")
-			}
-			url, err = prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, "Webhook URL: ")
-			if err != nil {
-				return nil, err
-			}
-		}
-		if url == "" {
-			return nil, fmt.Errorf("webhook URL is required")
+		url, err = command.Resolve(opts.IOStreams, url, command.Field{
+			Prompt:            "Webhook URL: ",
+			Required:          true,
+			NonInteractiveErr: fmt.Errorf("--url is required for webhook recipients in non-interactive mode"),
+			EmptyErr:          fmt.Errorf("webhook URL is required"),
+		})
+		if err != nil {
+			return nil, err
 		}
 		details["webhook_url"] = url
-		if name == "" {
-			if !opts.IOStreams.CanPrompt() {
-				return nil, fmt.Errorf("--name is required for webhook recipients in non-interactive mode")
-			}
-			name, err = prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, "Webhook name: ")
-			if err != nil {
-				return nil, err
-			}
-		}
-		if name == "" {
-			return nil, fmt.Errorf("webhook name is required")
+		name, err = command.Resolve(opts.IOStreams, name, command.Field{
+			Prompt:            "Webhook name: ",
+			Required:          true,
+			NonInteractiveErr: fmt.Errorf("--name is required for webhook recipients in non-interactive mode"),
+			EmptyErr:          fmt.Errorf("webhook name is required"),
+		})
+		if err != nil {
+			return nil, err
 		}
 		details["webhook_name"] = name
 

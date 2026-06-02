@@ -9,7 +9,6 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
-	"github.com/bendrucker/honeycomb-cli/internal/prompt"
 	"github.com/spf13/cobra"
 )
 
@@ -32,29 +31,22 @@ func NewCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 				return runMarkerCreateFromFile(cmd.Context(), opts, *dataset, file)
 			}
 
-			if markerType == "" && opts.IOStreams.CanPrompt() {
-				v, err := prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, "Type: ")
-				if err != nil {
-					return err
-				}
-				markerType = v
+			markerType, err := command.Resolve(opts.IOStreams, markerType, command.Field{
+				Prompt:            "Type: ",
+				Required:          true,
+				NonInteractiveErr: fmt.Errorf("--type is required in non-interactive mode"),
+			})
+			if err != nil {
+				return err
 			}
 
-			if message == "" && opts.IOStreams.CanPrompt() {
-				v, err := prompt.Line(opts.IOStreams.Err, opts.IOStreams.In, "Message: ")
-				if err != nil {
-					return err
-				}
-				message = v
-			}
-
-			if !opts.IOStreams.CanPrompt() {
-				if markerType == "" {
-					return fmt.Errorf("--type is required in non-interactive mode")
-				}
-				if message == "" {
-					return fmt.Errorf("--message is required in non-interactive mode")
-				}
+			message, err := command.Resolve(opts.IOStreams, message, command.Field{
+				Prompt:            "Message: ",
+				Required:          true,
+				NonInteractiveErr: fmt.Errorf("--message is required in non-interactive mode"),
+			})
+			if err != nil {
+				return err
 			}
 
 			if !cmd.Flags().Changed("start-time") {
