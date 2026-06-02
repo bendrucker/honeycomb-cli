@@ -63,11 +63,13 @@ Choose chart types based on the data pattern, not the Honeycomb default (line gr
 | Value | Name | Best for |
 |-------|------|----------|
 | `line` | Line graph | Continuous metrics with high cardinality over time (CPU, memory) |
-| `tsbar` | Time series bar | Time-bucketed counts and sparse data (errors, deploys, events) |
-| `stacked` | Stacked area | Showing composition/proportion over time (errors by type, traffic by service) |
+| `tsbar` | Time series bar | Time-bucketed counts and sparse data (errors, deploys, events). Renders as **stacked bars** when the query has breakdowns. |
+| `stacked` | Stacked **area** | Proportion over time as filled areas, *not* bars (errors by type, traffic by service) |
 | `stat` | Stat card | Single headline number with sparkline (current p99, error rate) |
 | `cbar` | Categorical bar | Comparing values across groups, non-time-series (latency by endpoint) |
 | `cpie` | Categorical pie | Proportional breakdown of a total (traffic share by region) |
+
+**"Stacked bar" is `tsbar`, not `stacked`.** `stacked` renders a filled area chart. For stacked *bars*, use `tsbar` with breakdowns -- Honeycomb stacks the bars automatically.
 
 ### `chart_index`
 
@@ -87,7 +89,7 @@ When a query has multiple calculations, `chart_index` maps to the 0-based index 
 ### Latency
 
 - **Calculations**: Use percentiles, never AVG. AVG is skewed by outliers and doesn't represent typical user experience. Use `P50` as the baseline (median) and `P99` for worst-case.
-- **Chart type**: `line` with `overlaid_charts: true` for P50/P99 overlay. The gap between P50 and P99 is the signal -- a widening gap indicates tail latency problems.
+- **Chart type**: `line`. Set `overlaid_charts: true` to put P50 and P99 on one chart, but Honeycomb does not reliably merge multiple calculations -- they may still render as separate areas (see Anti-Patterns). The gap between P50 and P99 is the signal -- a widening gap indicates tail latency problems.
 - **Units**: Always milliseconds. Note conversion in the panel title if the column uses other units.
 - **Title pattern**: "Latency: P50 and P99 (ms)"
 - **Granularity**: Match to request volume. Low-traffic services need larger buckets (300s+) to avoid noisy graphs.
@@ -104,7 +106,7 @@ When a query has multiple calculations, `chart_index` maps to the 0-based index 
 ### Throughput / request volume
 
 - **Calculations**: `COUNT`
-- **Chart type**: `stacked` bar when broken down by service or route -- clearly shows both total volume and composition. Use `tsbar` only for total count without breakdown.
+- **Chart type**: `tsbar`. With a breakdown by service or route, Honeycomb stacks the bars automatically, showing total volume and composition together. (`stacked` is a filled *area* chart, not bars -- use it only for proportion-over-time.)
 - **Breakdowns**: `service.name`, `http.route`, `rpc.method`
 - **Granularity**: Produce meaningful bars. For a 2-hour window, 60-120s. For 24 hours, 300-600s.
 - **Title pattern**: "Request Volume by Service"
@@ -142,6 +144,9 @@ When data arrives infrequently (webhooks, batch jobs, rare errors):
 - **Status code breakdowns**: Too many series, not actionable. Break down by service or route instead.
 - **Line charts on sparse data**: Interpolation creates false continuity. Use `tsbar`.
 - **Too many breakdowns**: More than 5-7 series on one chart becomes unreadable. Use `limit` in the query or aggregate differently.
+- **`overlaid_charts` for multiple calculations**: Honeycomb does not reliably render multiple calculations (two `SUM`s, or P50 + P99) on one overlaid chart -- they often stay separate areas. Prefer a single calculation with a breakdown.
+- **Bare `COUNT` in tables**: A `COUNT` column beside other calculations is ambiguous. Alias it ("Requests", "Turns") or drop it -- it rarely adds value next to a `SUM` or `AVG`.
+- **Raw IDs as breakdowns**: Trace IDs, conversation IDs, and similar high-cardinality identifiers are unreadable in tables and always reachable by clicking through. Break down by human-readable dimensions (names, emails, routes).
 
 ## SLI-Oriented Query Design
 
@@ -152,7 +157,7 @@ Structure queries around Service Level Indicators. An SLI is a ratio: good event
 | Availability | `AVG(error)` inverted (1 - error rate) | `line` |
 | Latency | `P50`/`P99` on `duration_ms` | `line` overlaid |
 | Error rate | `AVG(error)` on boolean column | `line` |
-| Throughput | `COUNT` | `stacked` by service |
+| Throughput | `COUNT` | `tsbar`, stacked by service |
 | Freshness | `MAX(age_seconds)` or custom | `line` |
 
 For SLO-aware dashboards, use `compare_time_offset_seconds` (e.g., `86400`) to overlay current error rate against the previous day. This shows burn trajectory without requiring SLO-specific API access.
