@@ -97,7 +97,7 @@ honeycomb board get <board-id> --format json | \
 
 When adding panels to an existing board, fetch the board JSON first, modify the panels array, and send the full board back with `--replace`. The merge behavior without `--replace` replaces the panels array wholesale if the `panels` key is present.
 
-**Important**: The `dataset` field appears in `board get` output on query panels but is rejected by the update API. Strip it before sending: `jq 'walk(if type == "object" and has("dataset") and has("query_id") then del(.dataset) else . end)'`
+**Note**: Query panels include a `dataset` field in `board get` output that the update API rejects (HTTP 422). The CLI strips it automatically on `create` and `update`, so no manual `jq` filtering is needed.
 
 ## Panel Types
 
@@ -193,6 +193,7 @@ Add up to 5 preset filters for cross-board filtering. These create dropdown filt
 - `alias` is the display label (max 50 chars)
 - Choose columns that meaningfully partition the data across all panels
 - Common choices: `service.name`, `environment`, `k8s.namespace.name`, `http.route`
+- Preset filters list **every** value of the column across the whole dataset, not only values that match the panels' filters. On a focused board this surfaces irrelevant options (e.g., services that emit none of the board's events). Add a preset filter only when all of the column's values are relevant to the board's scope.
 
 ### Tags
 
@@ -331,6 +332,12 @@ honeycomb board get <board-id> --format json | \
   jq '.panels |= [.[2], .[0], .[1]] + .[3:]' | \
   honeycomb board update <board-id> --file - --replace
 ```
+
+## Gotchas
+
+### `board update --replace` Resets the Default Time Range
+
+The board-level "Default time range" overrides each query's `granularity` -- a panel built with `granularity: 86400` (daily bars) may render as 30-minute bars. This setting is not exposed in the board API, and every `board update --replace` resets it to "Last 7 days" with auto granularity. After a `--replace`, restore per-query time ranges and granularity by clicking **Apply defaults** in the board's time picker in the UI. Minimize `--replace` when per-query granularity matters.
 
 ## Reference
 
