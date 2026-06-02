@@ -29,11 +29,11 @@ var oauthScopes = []string{"mcp:read", "mcp:write"}
 // persisting the OAuth token set under the {profile}:mcp entry. Tokens never
 // touch disk in plaintext and are never logged.
 type keyringTokenStore struct {
-	profile string
+	store config.MCPStore
 }
 
 func newKeyringTokenStore(profile string) *keyringTokenStore {
-	return &keyringTokenStore{profile: profile}
+	return &keyringTokenStore{store: config.NewMCPStore(profile)}
 }
 
 func (s *keyringTokenStore) GetToken(ctx context.Context) (*transport.Token, error) {
@@ -41,7 +41,7 @@ func (s *keyringTokenStore) GetToken(ctx context.Context) (*transport.Token, err
 		return nil, err
 	}
 	var token transport.Token
-	err := config.GetMCPToken(s.profile, &token)
+	err := s.store.Token(&token)
 	if errors.Is(err, keyring.ErrNotFound) {
 		return nil, transport.ErrNoToken
 	}
@@ -61,7 +61,7 @@ func (s *keyringTokenStore) SaveToken(ctx context.Context, token *transport.Toke
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	if err := config.SetMCPToken(s.profile, token); err != nil {
+	if err := s.store.SetToken(token); err != nil {
 		return fmt.Errorf("saving MCP token: %w", err)
 	}
 	return nil
@@ -75,7 +75,7 @@ func (s *keyringTokenStore) SaveToken(ctx context.Context, token *transport.Toke
 // send a stable client_id across CLI invocations. A missing or unreadable entry
 // leaves the client ID empty, which triggers a fresh registration.
 func oauthConfig(profile, redirectURI string) transport.OAuthConfig {
-	clientID, _ := config.GetMCPClientID(profile)
+	clientID, _ := config.NewMCPStore(profile).ClientID()
 	return transport.OAuthConfig{
 		ClientID:    clientID,
 		ClientURI:   "https://github.com/bendrucker/honeycomb-cli",
@@ -127,7 +127,7 @@ func authorizeInteractive(ctx context.Context, ios *iostreams.IOStreams, profile
 		// failure here is non-fatal: the in-memory handler still works for this
 		// session.
 		if id := handler.GetClientID(); id != "" {
-			_ = config.SetMCPClientID(profile, id)
+			_ = config.NewMCPStore(profile).SetClientID(id)
 		}
 	}
 

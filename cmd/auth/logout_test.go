@@ -91,10 +91,10 @@ func TestAuthLogout_ClearsMCPToken(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = config.DeleteKey("default", config.KeyConfig) })
-	if err := config.SetMCPToken("default", map[string]string{"access_token": "tok"}); err != nil {
+	if err := config.NewMCPStore("default").SetToken(map[string]string{"access_token": "tok"}); err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { _ = config.DeleteMCPToken("default") })
+	t.Cleanup(func() { _ = config.NewMCPStore("default").DeleteToken() })
 
 	if err := runAuthLogout(opts, ""); err != nil {
 		t.Fatal(err)
@@ -116,7 +116,7 @@ func TestAuthLogout_ClearsMCPToken(t *testing.T) {
 	}
 
 	var tok map[string]string
-	if err := config.GetMCPToken("default", &tok); err == nil {
+	if err := config.NewMCPStore("default").Token(&tok); err == nil {
 		t.Error("expected MCP token to be deleted")
 	}
 }
@@ -133,10 +133,10 @@ func TestAuthLogout_KeyTypeLeavesMCPToken(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = config.DeleteKey("default", config.KeyConfig) })
-	if err := config.SetMCPToken("default", map[string]string{"access_token": "tok"}); err != nil {
+	if err := config.NewMCPStore("default").SetToken(map[string]string{"access_token": "tok"}); err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { _ = config.DeleteMCPToken("default") })
+	t.Cleanup(func() { _ = config.NewMCPStore("default").DeleteToken() })
 
 	// A targeted logout only removes the named key type. The MCP token is left
 	// intact so logging out a single API key does not silently drop the
@@ -156,7 +156,7 @@ func TestAuthLogout_KeyTypeLeavesMCPToken(t *testing.T) {
 	}
 
 	var tok map[string]string
-	if err := config.GetMCPToken("default", &tok); err != nil {
+	if err := config.NewMCPStore("default").Token(&tok); err != nil {
 		t.Errorf("expected MCP token to remain, got error: %v", err)
 	}
 }
