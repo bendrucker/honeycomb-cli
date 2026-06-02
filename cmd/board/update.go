@@ -64,7 +64,7 @@ func runBoardUpdate(cmd *cobra.Command, opts *options.RootOptions, boardID, file
 		return updateFromFile(ctx, client, opts, boardID, file, replace)
 	}
 
-	if !cmd.Flags().Changed("name") && !cmd.Flags().Changed("description") {
+	if !command.AnyChanged(cmd, "name", "description") {
 		return fmt.Errorf("--file, --name, or --description is required")
 	}
 

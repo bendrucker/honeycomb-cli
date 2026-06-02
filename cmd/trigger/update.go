@@ -2,7 +2,6 @@ package trigger
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 
@@ -31,28 +30,11 @@ func NewUpdateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
   honeycomb trigger update abc123 --dataset my-dataset --file trigger.json`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			hasFile := cmd.Flags().Changed("file")
-			hasName := cmd.Flags().Changed("name")
-			hasDesc := cmd.Flags().Changed("description")
-			hasDisabled := cmd.Flags().Changed("disabled")
-			hasEnabled := cmd.Flags().Changed("enabled")
-
-			if !hasFile && !hasName && !hasDesc && !hasDisabled && !hasEnabled {
+			if !command.AnyChanged(cmd, "file", "name", "description", "disabled", "enabled") {
 				return fmt.Errorf("provide --file or at least one of --name, --description, --disabled, --enabled")
 			}
 
-			return runUpdate(cmd.Context(), opts, *dataset, args[0], updateFlags{
-				file:        file,
-				hasFile:     hasFile,
-				name:        name,
-				hasName:     hasName,
-				description: description,
-				hasDesc:     hasDesc,
-				disabled:    disabled,
-				hasDisabled: hasDisabled,
-				enabled:     enabled,
-				hasEnabled:  hasEnabled,
-			})
+			return runUpdate(cmd, opts, *dataset, args[0], file, name, description, disabled)
 		},
 	}
 
@@ -71,29 +53,18 @@ func NewUpdateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
 	return cmd
 }
 
-type updateFlags struct {
-	file        string
-	hasFile     bool
-	name        string
-	hasName     bool
-	description string
-	hasDesc     bool
-	disabled    bool
-	hasDisabled bool
-	enabled     bool
-	hasEnabled  bool
-}
-
-func runUpdate(ctx context.Context, opts *options.RootOptions, dataset, triggerID string, flags updateFlags) error {
+func runUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, triggerID, file, name, description string, disabled bool) error {
 	client, err := opts.ClientFor(nil, options.AuthConfig)
 	if err != nil {
 		return err
 	}
 
+	ctx := cmd.Context()
+
 	var body api.TriggerResponse
 
-	if flags.hasFile {
-		data, err := command.ReadDefinitionFile(opts.IOStreams, flags.file)
+	if cmd.Flags().Changed("file") {
+		data, err := command.ReadDefinitionFile(opts.IOStreams, file)
 		if err != nil {
 			return err
 		}
@@ -111,16 +82,16 @@ func runUpdate(ctx context.Context, opts *options.RootOptions, dataset, triggerI
 		}
 		body = *current
 
-		if flags.hasName {
-			body.Name = &flags.name
+		if cmd.Flags().Changed("name") {
+			body.Name = &name
 		}
-		if flags.hasDesc {
-			body.Description = &flags.description
+		if cmd.Flags().Changed("description") {
+			body.Description = &description
 		}
-		if flags.hasDisabled {
-			body.Disabled = &flags.disabled
+		if cmd.Flags().Changed("disabled") {
+			body.Disabled = &disabled
 		}
-		if flags.hasEnabled {
+		if cmd.Flags().Changed("enabled") {
 			v := false
 			body.Disabled = &v
 		}

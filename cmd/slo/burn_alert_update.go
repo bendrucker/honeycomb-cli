@@ -60,7 +60,7 @@ func runBurnAlertUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, 
 		if err != nil {
 			return err
 		}
-	} else if hasAnyFlag(cmd, burnAlertUpdateFlags...) {
+	} else if command.AnyChanged(cmd, burnAlertUpdateFlags...) {
 		resp, err := client.GetBurnAlertWithResponse(ctx, dataset, burnAlertID)
 		if err != nil {
 			return fmt.Errorf("getting burn alert: %w", err)
@@ -99,15 +99,6 @@ func runBurnAlertUpdate(cmd *cobra.Command, opts *options.RootOptions, dataset, 
 	}
 
 	return writeBurnAlertDetail(opts, detail)
-}
-
-func hasAnyFlag(cmd *cobra.Command, names ...string) bool {
-	for _, n := range names {
-		if cmd.Flags().Changed(n) {
-			return true
-		}
-	}
-	return false
 }
 
 func applyBurnAlertFlags(cmd *cobra.Command, current map[string]any, exhaustionMinutes, budgetRateWindow, budgetRateThreshold int, recipients []string, description string) {

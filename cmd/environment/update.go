@@ -40,7 +40,7 @@ func NewUpdateCmd(opts *options.RootOptions, team *string) *cobra.Command {
 }
 
 func runEnvironmentUpdate(cmd *cobra.Command, opts *options.RootOptions, client *api.ClientWithResponses, team, envID, desc, color string, deleteProtected bool) error {
-	if !cmd.Flags().Changed("description") && !cmd.Flags().Changed("color") && !cmd.Flags().Changed("delete-protected") {
+	if !command.AnyChanged(cmd, "description", "color", "delete-protected") {
 		return fmt.Errorf("--description, --color, or --delete-protected is required")
 	}
 

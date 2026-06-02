@@ -73,7 +73,7 @@ func runKeyUpdateFromFile(ctx context.Context, opts *options.RootOptions, client
 }
 
 func runKeyUpdateFromFlags(cmd *cobra.Command, opts *options.RootOptions, client *api.ClientWithResponses, team, id, name string) error {
-	if !cmd.Flags().Changed("name") && !cmd.Flags().Changed("disabled") && !cmd.Flags().Changed("enabled") {
+	if !command.AnyChanged(cmd, "name", "disabled", "enabled") {
 		return fmt.Errorf("--file, --name, --disabled, or --enabled is required")
 	}
 

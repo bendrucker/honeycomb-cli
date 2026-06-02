@@ -56,7 +56,7 @@ func runViewUpdate(cmd *cobra.Command, opts *options.RootOptions, boardID, viewI
 		return updateViewFromFile(ctx, client, opts, boardID, viewID, file)
 	}
 
-	if !cmd.Flags().Changed("name") && !cmd.Flags().Changed("filter") {
+	if !command.AnyChanged(cmd, "name", "filter") {
 		return fmt.Errorf("--file, --name, or --filter is required")
 	}
 

@@ -60,7 +60,7 @@ func runUpdate(cmd *cobra.Command, opts *options.RootOptions, recipientID, file,
 		if err != nil {
 			return err
 		}
-	} else if hasAnyFlag(cmd, "type", "target", "channel", "integration-key", "name", "url") {
+	} else if command.AnyChanged(cmd, "type", "target", "channel", "integration-key", "name", "url") {
 		resp, err := client.GetRecipientWithResponse(ctx, recipientID)
 		if err != nil {
 			return fmt.Errorf("getting recipient: %w", err)
@@ -99,15 +99,6 @@ func runUpdate(cmd *cobra.Command, opts *options.RootOptions, recipientID, file,
 	}
 
 	return writeRecipientDetail(opts, detail)
-}
-
-func hasAnyFlag(cmd *cobra.Command, names ...string) bool {
-	for _, n := range names {
-		if cmd.Flags().Changed(n) {
-			return true
-		}
-	}
-	return false
 }
 
 func applyRecipientFlags(cmd *cobra.Command, current map[string]any, recipientType, target, channel, integrationKey, name, url string) {
