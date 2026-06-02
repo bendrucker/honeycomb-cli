@@ -14,3 +14,25 @@ archives:
       - goos: windows
         formats:
           - zip
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  use: github
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - "^build\\(deps\\):"
+  groups:
+    - title: Features
+      regexp: "^.*feat(\\(.+\\))??!?:.+$"
+      order: 0
+    - title: Bug Fixes
+      regexp: "^.*fix(\\(.+\\))??!?:.+$"
+      order: 1
+    - title: Others
+      order: 999
