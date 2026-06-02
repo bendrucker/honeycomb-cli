@@ -15,8 +15,8 @@ var sloListTable = output.TableDef{
 	Columns: []output.Column{
 		output.Col("ID", func(s sloItem) string { return s.ID }),
 		output.Col("Name", func(s sloItem) string { return s.Name }),
-		output.Col("Target", func(s sloItem) string { return formatTarget(s.TargetPerMillion) }),
-		output.Col("Time Period", func(s sloItem) string { return formatTimePeriod(s.TimePeriodDays) }),
+		output.Col("Target", func(s sloItem) string { return targetPerMillion(s.TargetPerMillion).FormatField() }),
+		output.Col("Time Period", func(s sloItem) string { return timePeriodDays(s.TimePeriodDays).FormatField() }),
 		output.Col("SLI Alias", func(s sloItem) string { return s.SLIAlias }),
 		output.Col("Description", func(s sloItem) string { return output.Truncate(s.Description, 40) }),
 	},

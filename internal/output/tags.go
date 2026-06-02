@@ -45,7 +45,25 @@ func FieldsFromTags(v any) []Field {
 	return fields
 }
 
+// Formatter renders a detail field value as a single string. A field whose
+// value implements Formatter is rendered via FormatField instead of the
+// primitive switch in formatField, letting non-primitive types carry their own
+// table representation while keeping JSON output governed by their json tags.
+type Formatter interface {
+	FormatField() string
+}
+
 func formatField(rv reflect.Value) string {
+	if rv.Kind() == reflect.Pointer && rv.IsNil() {
+		if _, ok := reflect.Zero(rv.Type()).Interface().(Formatter); ok {
+			return ""
+		}
+	}
+	if rv.CanInterface() {
+		if f, ok := rv.Interface().(Formatter); ok {
+			return f.FormatField()
+		}
+	}
 	switch rv.Kind() {
 	case reflect.String:
 		return rv.String()

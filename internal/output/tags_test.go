@@ -64,6 +64,56 @@ func TestFieldsFromTags_Float(t *testing.T) {
 	}
 }
 
+type formatterValue struct {
+	Op string
+}
+
+func (f formatterValue) FormatField() string {
+	return "op=" + f.Op
+}
+
+func TestFieldsFromTags_Formatter(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		item any
+		want []Field
+	}{
+		{
+			name: "value formatter",
+			item: struct {
+				F formatterValue `detail:"F"`
+			}{F: formatterValue{Op: ">"}},
+			want: []Field{{Label: "F", Value: "op=>"}},
+		},
+		{
+			name: "non-nil pointer formatter",
+			item: struct {
+				F *formatterValue `detail:"F"`
+			}{F: &formatterValue{Op: "<"}},
+			want: []Field{{Label: "F", Value: "op=<"}},
+		},
+		{
+			name: "nil pointer formatter",
+			item: struct {
+				F *formatterValue `detail:"F"`
+			}{F: nil},
+			want: []Field{{Label: "F", Value: ""}},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			fields := FieldsFromTags(tc.item)
+			if len(fields) != len(tc.want) {
+				t.Fatalf("got %d fields, want %d", len(fields), len(tc.want))
+			}
+			for i, f := range fields {
+				if f != tc.want[i] {
+					t.Errorf("field %d = %+v, want %+v", i, f, tc.want[i])
+				}
+			}
+		})
+	}
+}
+
 func TestTableFromTags_RendersThroughWrite(t *testing.T) {
 	var buf strings.Builder
 	w := New(&buf, FormatTable)

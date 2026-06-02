@@ -57,7 +57,7 @@ type triggerDetail struct {
 	Triggered   bool              `json:"triggered" detail:"Triggered"`
 	AlertType   string            `json:"alert_type,omitempty" detail:"Alert Type"`
 	Frequency   int               `json:"frequency,omitempty" detail:"Frequency"`
-	Threshold   *triggerThreshold `json:"threshold,omitempty"`
+	Threshold   *triggerThreshold `json:"threshold,omitempty" detail:"Threshold"`
 	QueryID     string            `json:"query_id,omitempty"`
 	HasQuery    bool              `json:"has_query,omitempty"`
 	Recipients  []recipientItem   `json:"recipients,omitempty"`
@@ -70,6 +70,15 @@ type triggerThreshold struct {
 	Op            string  `json:"op"`
 	Value         float64 `json:"value"`
 	ExceededLimit int     `json:"exceeded_limit,omitempty"`
+}
+
+// FormatField renders the threshold as "op value" for detail table output. A
+// nil pointer is handled by the output package and renders as an empty string.
+func (t *triggerThreshold) FormatField() string {
+	if t == nil {
+		return ""
+	}
+	return fmt.Sprintf("%s %g", t.Op, t.Value)
 }
 
 type recipientItem struct {
@@ -144,8 +153,6 @@ func toDetail(t api.TriggerResponse) triggerDetail {
 func writeTriggerDetail(opts *options.RootOptions, detail triggerDetail) error {
 	fields := output.FieldsFromTags(detail)
 
-	fields = append(fields, output.Field{Label: "Threshold", Value: formatThresholdDetail(detail.Threshold)})
-
 	if detail.QueryID != "" {
 		fields = append(fields, output.Field{Label: "Query ID", Value: detail.QueryID})
 	} else if detail.HasQuery {
@@ -169,11 +176,4 @@ func writeTriggerDetail(opts *options.RootOptions, detail triggerDetail) error {
 	}
 
 	return opts.OutputWriter().WriteFields(detail, fields)
-}
-
-func formatThresholdDetail(t *triggerThreshold) string {
-	if t == nil {
-		return ""
-	}
-	return fmt.Sprintf("%s %g", t.Op, t.Value)
 }
