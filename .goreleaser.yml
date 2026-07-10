@@ -15,6 +15,26 @@ archives:
         formats:
           - zip
 
+homebrew_casks:
+  - name: honeycomb
+    repository:
+      owner: bendrucker
+      name: homebrew-tap
+      branch: main
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
+    homepage: https://github.com/bendrucker/honeycomb-cli
+    description: Unofficial CLI for Honeycomb, modeled after the GitHub CLI
+    binaries:
+      - honeycomb
+    # The binary is unsigned, so strip the quarantine flag Homebrew sets on
+    # download to avoid Gatekeeper blocking the first run.
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/honeycomb"]
+          end
+
 checksum:
   name_template: checksums.txt
 

@@ -34,5 +34,8 @@ go.work.sum
 # Build output
 /honeycomb
 
+# GoReleaser output
+/dist/
+
 # Temporary files
 tmp/

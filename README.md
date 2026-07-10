@@ -4,6 +4,18 @@ Unofficial CLI for [Honeycomb](https://www.honeycomb.io/), modeled after the [Gi
 
 ## Installation
 
+### Homebrew
+
+```
+brew install bendrucker/tap/honeycomb
+```
+
+### Prebuilt Binary
+
+Download an archive for your platform from the [latest release](https://github.com/bendrucker/honeycomb-cli/releases/latest), extract it, and move the `honeycomb` binary onto your `PATH`.
+
+### Go
+
 ```
 go install github.com/bendrucker/honeycomb-cli/cmd/honeycomb@latest
 ```
