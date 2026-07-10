@@ -5,11 +5,6 @@ builds:
     binary: honeycomb
     env:
       - CGO_ENABLED=0
-    ldflags:
-      - -s -w
-      - -X main.version={{.Version}}
-      - -X main.commit={{.Commit}}
-      - -X main.date={{.Date}}
     goarch:
       - amd64
       - arm64
