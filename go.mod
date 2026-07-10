@@ -9,7 +9,7 @@ require (
 	github.com/itchyny/gojq v0.12.19
 	github.com/mark3labs/mcp-go v0.54.1
 	github.com/mattn/go-isatty v0.0.22
-	github.com/oapi-codegen/nullable v1.1.0
+	github.com/oapi-codegen/nullable v1.2.0
 	github.com/oapi-codegen/runtime v1.4.1
 	github.com/peterhellberg/link v1.2.0
 	github.com/spf13/cobra v1.10.2
