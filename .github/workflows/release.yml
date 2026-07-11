@@ -18,7 +18,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
-      - uses: actions/create-github-app-token@v2
+      - uses: actions/create-github-app-token@v3
         id: tap-token
         with:
           app-id: ${{ vars.TAP_APP_ID }}
