@@ -54,11 +54,11 @@ func TestDefinitionUpdate(t *testing.T) {
 	if err := json.Unmarshal(ts.OutBuf.Bytes(), &defs); err != nil {
 		t.Fatalf("unmarshal output: %v", err)
 	}
-	if defs.DurationMs == nil {
-		t.Fatal("DurationMs is nil")
+	if !defs.DurationMs.IsSpecified() {
+		t.Fatal("DurationMs is not specified")
 	}
-	if defs.DurationMs.Name != "duration_ms" {
-		t.Errorf("DurationMs.Name = %q, want %q", defs.DurationMs.Name, "duration_ms")
+	if got := defs.DurationMs.MustGet().Name; got != "duration_ms" {
+		t.Errorf("DurationMs.Name = %q, want %q", got, "duration_ms")
 	}
 }
 

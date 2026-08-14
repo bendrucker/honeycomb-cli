@@ -7,6 +7,7 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
+	"github.com/bendrucker/honeycomb-cli/internal/deref"
 	"github.com/spf13/cobra"
 )
 
@@ -47,7 +48,7 @@ func runColumnDelete(ctx context.Context, opts *options.RootOptions, dataset, co
 			return "", fmt.Errorf("unexpected response: %s", getResp.Status())
 		}
 
-		return getResp.JSON200.KeyName, nil
+		return deref.String(getResp.JSON200.KeyName), nil
 	})
 	if err != nil {
 		return err

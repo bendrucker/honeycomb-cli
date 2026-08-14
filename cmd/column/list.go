@@ -48,7 +48,7 @@ func runColumnList(ctx context.Context, opts *options.RootOptions, dataset, keyN
 	for i, c := range columns {
 		items[i] = columnItem{
 			ID:          deref.String(c.Id),
-			KeyName:     c.KeyName,
+			KeyName:     deref.String(c.KeyName),
 			Type:        deref.Enum(c.Type),
 			Description: deref.String(c.Description),
 			Hidden:      deref.Bool(c.Hidden),

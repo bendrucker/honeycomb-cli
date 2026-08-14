@@ -12,11 +12,11 @@ import (
 )
 
 var columnTypes = []string{
-	string(api.String),
-	string(api.Float),
-	string(api.Integer),
-	string(api.Boolean),
-	string(api.Histogram),
+	string(api.CreateColumnTypeString),
+	string(api.CreateColumnTypeFloat),
+	string(api.CreateColumnTypeInteger),
+	string(api.CreateColumnTypeBoolean),
+	string(api.CreateColumnTypeHistogram),
 }
 
 func NewCreateCmd(opts *options.RootOptions, dataset *string) *cobra.Command {
