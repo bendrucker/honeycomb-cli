@@ -60,6 +60,32 @@ func TestGet(t *testing.T) {
 	}
 }
 
+func TestGet_MetricsDataset(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"name":         "host metrics",
+			"slug":         "host-metrics",
+			"dataset_type": "metrics",
+			"created_at":   "2026-06-01T00:00:00Z",
+		})
+	}))
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"get", "host-metrics"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	var detail datasetDetail
+	if err := json.Unmarshal(ts.OutBuf.Bytes(), &detail); err != nil {
+		t.Fatalf("unmarshal output: %v", err)
+	}
+	if detail.DatasetType != "metrics" {
+		t.Errorf("DatasetType = %q, want %q", detail.DatasetType, "metrics")
+	}
+}
+
 func TestGet_NotFound(t *testing.T) {
 	opts, _ := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

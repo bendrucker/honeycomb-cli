@@ -2,7 +2,6 @@ package environment
 
 import (
 	"encoding/json"
-	"strings"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
@@ -12,20 +11,20 @@ import (
 )
 
 var environmentColors = []string{
-	string(api.Blue),
-	string(api.Gold),
-	string(api.Green),
-	string(api.LightBlue),
-	string(api.LightGold),
-	string(api.LightGreen),
-	string(api.LightPurple),
-	string(api.LightRed),
-	string(api.Purple),
-	string(api.Red),
+	string(api.EnvironmentColorBlue),
+	string(api.EnvironmentColorGold),
+	string(api.EnvironmentColorGreen),
+	string(api.EnvironmentColorLightBlue),
+	string(api.EnvironmentColorLightGold),
+	string(api.EnvironmentColorLightGreen),
+	string(api.EnvironmentColorLightPurple),
+	string(api.EnvironmentColorLightRed),
+	string(api.EnvironmentColorPurple),
+	string(api.EnvironmentColorRed),
 }
 
 func colorFlagUsage() string {
-	return "Environment color: " + strings.Join(environmentColors, ", ")
+	return "Environment color: " + command.EnumUsage(environmentColors)
 }
 
 func NewCmd(opts *options.RootOptions) *cobra.Command {

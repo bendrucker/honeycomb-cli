@@ -3,7 +3,6 @@ package key
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"strings"
 
 	"github.com/bendrucker/honeycomb-cli/internal/api"
@@ -22,6 +21,7 @@ func resolveEnvironment(ctx context.Context, client *api.ClientWithResponses, te
 	}
 
 	params := &api.ListEnvironmentsParams{}
+	var cursor string
 	for {
 		resp, err := client.ListEnvironmentsWithResponse(ctx, api.TeamSlug(team), params)
 		if err != nil {
@@ -39,7 +39,7 @@ func resolveEnvironment(ctx context.Context, client *api.ClientWithResponses, te
 			}
 		}
 
-		cursor, err := nextEnvironmentPageCursor(list.Links)
+		cursor, err = api.NextPageCursor(list.Links, cursor)
 		if err != nil {
 			return "", err
 		}
@@ -50,27 +50,4 @@ func resolveEnvironment(ctx context.Context, client *api.ClientWithResponses, te
 	}
 
 	return "", fmt.Errorf("no environment found with name %q", value)
-}
-
-// nextEnvironmentPageCursor extracts the page[after] cursor from a links.next
-// URL. It returns an empty string when there is no further page.
-func nextEnvironmentPageCursor(links *api.PaginationLinks) (string, error) {
-	if links == nil || !links.Next.IsSpecified() || links.Next.IsNull() {
-		return "", nil
-	}
-
-	next, err := links.Next.Get()
-	if err != nil {
-		return "", fmt.Errorf("reading next page link: %w", err)
-	}
-	if next == "" {
-		return "", nil
-	}
-
-	parsed, err := url.Parse(next)
-	if err != nil {
-		return "", fmt.Errorf("parsing next page link: %w", err)
-	}
-
-	return parsed.Query().Get("page[after]"), nil
 }

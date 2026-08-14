@@ -17,5 +17,11 @@ func ValidateEnum(flag, value string, allowed []string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("invalid --%s %q: must be one of %s", flag, value, strings.Join(allowed, ", "))
+	return fmt.Errorf("invalid --%s %q: must be one of %s", flag, value, EnumUsage(allowed))
+}
+
+// EnumUsage renders allowed values for a flag's usage string, matching how
+// ValidateEnum lists them when it rejects a value.
+func EnumUsage(allowed []string) string {
+	return strings.Join(allowed, ", ")
 }

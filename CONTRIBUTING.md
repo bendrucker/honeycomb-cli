@@ -25,6 +25,21 @@ go generate ./internal/api/...
 
 The generated file is committed. Do not edit it by hand.
 
+Honeycomb publishes the spec as YAML. Refresh `api.json` from it:
+
+```
+curl -sSL https://docs.honeycomb.io/api/openapi-public.yaml |
+  yq -o=json -I 2 '.' > api.json
+```
+
+A refresh can move `oapi-codegen`'s generated names around. Enum constants gain
+a type prefix once a second schema uses the same value, and a schema that
+upstream inlines loses its named Go type. Build and fix call sites after
+regenerating. The overlay targets specific JSON paths, so an action whose target
+upstream renamed or removed fails generation with `did not match any targets`.
+Drop or retarget it. An action that still matches something else does not fail,
+so prefer a selector keyed on a name over one keyed on a list position.
+
 ## Integration Tests
 
 Integration tests live in `integration/` and run against the live Honeycomb API

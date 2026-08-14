@@ -499,6 +499,7 @@ func TestCreate_WithPermissions(t *testing.T) {
 				"manage_markers":        true,
 				"manage_private_boards": true,
 				"manage_recipients":     true,
+				"manage_signals":        true,
 				"manage_slos":           true,
 				"manage_triggers":       true,
 				"read_service_maps":     true,

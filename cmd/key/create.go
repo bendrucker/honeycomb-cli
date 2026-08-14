@@ -21,6 +21,7 @@ var knownPermissions = []string{
 	"manage_markers",
 	"manage_private_boards",
 	"manage_recipients",
+	"manage_signals",
 	"manage_slos",
 	"manage_triggers",
 	"read_service_maps",
@@ -206,6 +207,7 @@ func setPermissions(attrs *api.ConfigurationKeyAttributes, permissions []string)
 		ManageMarkers       *bool `json:"manage_markers,omitempty"`
 		ManagePrivateBoards *bool `json:"manage_privateBoards,omitempty"`
 		ManageRecipients    *bool `json:"manage_recipients,omitempty"`
+		ManageSignals       *bool `json:"manage_signals,omitempty"`
 		ManageSlos          *bool `json:"manage_slos,omitempty"`
 		ManageTriggers      *bool `json:"manage_triggers,omitempty"`
 		ReadServiceMaps     *bool `json:"read_service_maps,omitempty"`
@@ -227,6 +229,8 @@ func setPermissions(attrs *api.ConfigurationKeyAttributes, permissions []string)
 			attrs.Permissions.ManagePrivateBoards = &t
 		case "manage_recipients":
 			attrs.Permissions.ManageRecipients = &t
+		case "manage_signals":
+			attrs.Permissions.ManageSignals = &t
 		case "manage_slos":
 			attrs.Permissions.ManageSlos = &t
 		case "manage_triggers":
@@ -248,6 +252,7 @@ func grantedPermissions(perms *struct {
 	ManageMarkers       *bool `json:"manage_markers,omitempty"`
 	ManagePrivateBoards *bool `json:"manage_privateBoards,omitempty"`
 	ManageRecipients    *bool `json:"manage_recipients,omitempty"`
+	ManageSignals       *bool `json:"manage_signals,omitempty"`
 	ManageSlos          *bool `json:"manage_slos,omitempty"`
 	ManageTriggers      *bool `json:"manage_triggers,omitempty"`
 	ReadServiceMaps     *bool `json:"read_service_maps,omitempty"`
@@ -266,6 +271,7 @@ func grantedPermissions(perms *struct {
 		"manage_markers":        perms.ManageMarkers,
 		"manage_private_boards": perms.ManagePrivateBoards,
 		"manage_recipients":     perms.ManageRecipients,
+		"manage_signals":        perms.ManageSignals,
 		"manage_slos":           perms.ManageSlos,
 		"manage_triggers":       perms.ManageTriggers,
 		"read_service_maps":     perms.ReadServiceMaps,

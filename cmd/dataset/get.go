@@ -14,6 +14,7 @@ import (
 type datasetDetail struct {
 	Name            string  `json:"name" detail:"Name"`
 	Slug            string  `json:"slug" detail:"Slug"`
+	DatasetType     string  `json:"dataset_type,omitempty"`
 	Description     string  `json:"description,omitempty"`
 	ExpandJsonDepth *int    `json:"expand_json_depth,omitempty"`
 	Columns         *int    `json:"columns,omitempty"`
@@ -26,6 +27,7 @@ func mapDatasetDetail(d *api.Dataset) datasetDetail {
 	detail := datasetDetail{
 		Name:        d.Name,
 		Slug:        deref.String(d.Slug),
+		DatasetType: deref.Enum(d.DatasetType),
 		Description: deref.String(d.Description),
 		CreatedAt:   deref.String(d.CreatedAt),
 	}
@@ -79,6 +81,9 @@ func runDatasetGet(ctx context.Context, opts *options.RootOptions, slug string) 
 
 func writeDatasetDetail(opts *options.RootOptions, detail datasetDetail) error {
 	fields := output.FieldsFromTags(detail)
+	if detail.DatasetType != "" {
+		fields = append(fields, output.Field{Label: "Dataset Type", Value: detail.DatasetType})
+	}
 	if detail.Description != "" {
 		fields = append(fields, output.Field{Label: "Description", Value: detail.Description})
 	}
