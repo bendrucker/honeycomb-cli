@@ -26,6 +26,28 @@ const (
 	Ingest_keyScopes          = "ingest_key.Scopes"
 )
 
+// Defines values for AnomalySignal.
+const (
+	ErrorRate AnomalySignal = "error_rate"
+	Presence  AnomalySignal = "presence"
+)
+
+// Defines values for AnomalySignalSensitivity.
+const (
+	High   AnomalySignalSensitivity = "high"
+	Low    AnomalySignalSensitivity = "low"
+	Medium AnomalySignalSensitivity = "medium"
+)
+
+// Defines values for AnomalySignalStatus.
+const (
+	AnomalySignalStatusActive     AnomalySignalStatus = "active"
+	AnomalySignalStatusIneligible AnomalySignalStatus = "ineligible"
+	AnomalySignalStatusOff        AnomalySignalStatus = "off"
+	AnomalySignalStatusOnboarding AnomalySignalStatus = "onboarding"
+	AnomalySignalStatusTraining   AnomalySignalStatus = "training"
+)
+
 // Defines values for ApiKeyCreateRequestDataType.
 const (
 	ApiKeyCreateRequestDataTypeApiKeys ApiKeyCreateRequestDataType = "api-keys"
@@ -205,6 +227,11 @@ const (
 	CreateMapDependenciesResponseStatusReady   CreateMapDependenciesResponseStatus = "ready"
 )
 
+// Defines values for DatasetDatasetType.
+const (
+	Metrics DatasetDatasetType = "metrics"
+)
+
 // Defines values for DatasetDefinitionColumnType.
 const (
 	DatasetDefinitionColumnTypeColumn        DatasetDefinitionColumnType = "column"
@@ -228,16 +255,16 @@ const (
 
 // Defines values for EnvironmentColor.
 const (
-	Blue        EnvironmentColor = "blue"
-	Gold        EnvironmentColor = "gold"
-	Green       EnvironmentColor = "green"
-	LightBlue   EnvironmentColor = "lightBlue"
-	LightGold   EnvironmentColor = "lightGold"
-	LightGreen  EnvironmentColor = "lightGreen"
-	LightPurple EnvironmentColor = "lightPurple"
-	LightRed    EnvironmentColor = "lightRed"
-	Purple      EnvironmentColor = "purple"
-	Red         EnvironmentColor = "red"
+	EnvironmentColorBlue        EnvironmentColor = "blue"
+	EnvironmentColorGold        EnvironmentColor = "gold"
+	EnvironmentColorGreen       EnvironmentColor = "green"
+	EnvironmentColorLightBlue   EnvironmentColor = "lightBlue"
+	EnvironmentColorLightGold   EnvironmentColor = "lightGold"
+	EnvironmentColorLightGreen  EnvironmentColor = "lightGreen"
+	EnvironmentColorLightPurple EnvironmentColor = "lightPurple"
+	EnvironmentColorLightRed    EnvironmentColor = "lightRed"
+	EnvironmentColorPurple      EnvironmentColor = "purple"
+	EnvironmentColorRed         EnvironmentColor = "red"
 )
 
 // Defines values for EnvironmentRelationshipDataType.
@@ -445,6 +472,14 @@ const (
 	RecipientTypeWebhook         RecipientType = "webhook"
 )
 
+// Defines values for SignalRecipientDetailsPagerdutySeverity.
+const (
+	SignalRecipientDetailsPagerdutySeverityCritical SignalRecipientDetailsPagerdutySeverity = "critical"
+	SignalRecipientDetailsPagerdutySeverityError    SignalRecipientDetailsPagerdutySeverity = "error"
+	SignalRecipientDetailsPagerdutySeverityInfo     SignalRecipientDetailsPagerdutySeverity = "info"
+	SignalRecipientDetailsPagerdutySeverityWarning  SignalRecipientDetailsPagerdutySeverity = "warning"
+)
+
 // Defines values for SlackRecipientType.
 const (
 	Slack SlackRecipientType = "slack"
@@ -453,6 +488,29 @@ const (
 // Defines values for TeamRelationshipTeamDataType.
 const (
 	Teams TeamRelationshipTeamDataType = "teams"
+)
+
+// Defines values for ThresholdColor.
+const (
+	ThresholdColorBlue   ThresholdColor = "blue"
+	ThresholdColorGreen  ThresholdColor = "green"
+	ThresholdColorPurple ThresholdColor = "purple"
+	ThresholdColorRed    ThresholdColor = "red"
+	ThresholdColorYellow ThresholdColor = "yellow"
+)
+
+// Defines values for ThresholdLineStyle.
+const (
+	Dotted       ThresholdLineStyle = "dotted"
+	FilledDotted ThresholdLineStyle = "filled-dotted"
+	FilledSolid  ThresholdLineStyle = "filled-solid"
+	Solid        ThresholdLineStyle = "solid"
+)
+
+// Defines values for ThresholdOperation.
+const (
+	Gt ThresholdOperation = "gt"
+	Lt ThresholdOperation = "lt"
 )
 
 // Defines values for TriggerResponseAlertType.
@@ -631,11 +689,38 @@ const (
 	Zstd CreateEventsParamsContentEncoding = "zstd"
 )
 
+// Defines values for ListSignalsParamsStatus.
+const (
+	ListSignalsParamsStatusActive     ListSignalsParamsStatus = "active"
+	ListSignalsParamsStatusIneligible ListSignalsParamsStatus = "ineligible"
+	ListSignalsParamsStatusOff        ListSignalsParamsStatus = "off"
+	ListSignalsParamsStatusOnboarding ListSignalsParamsStatus = "onboarding"
+	ListSignalsParamsStatusTraining   ListSignalsParamsStatus = "training"
+)
+
 // Defines values for ListApiKeysParamsFilterType.
 const (
 	Configuration ListApiKeysParamsFilterType = "configuration"
 	Ingest        ListApiKeysParamsFilterType = "ingest"
 )
+
+// AnomalySignal The kind of measurement the Signal is trained on.
+//
+// - `error_rate`: The fraction of erroring requests for the service.
+// - `presence`: Whether the service is producing spans.
+type AnomalySignal string
+
+// AnomalySignalSensitivity How far a measurement must deviate from the trained normal band before the Signal fires.
+//
+// Higher sensitivity narrows the normal band and catches smaller deviations.
+// `sensitivity` is always `null` for `presence` Signals.
+type AnomalySignalSensitivity string
+
+// AnomalySignalStatus The lifecycle status of the Signal.
+//
+// `ineligible` is returned when the underlying service does not meet the conditions
+// required for training.
+type AnomalySignalStatus string
 
 // ApiKeyAttributes defines model for ApiKeyAttributes.
 type ApiKeyAttributes struct {
@@ -767,10 +852,6 @@ type Auth struct {
 		Slug *string `json:"slug,omitempty"`
 	} `json:"team"`
 
-	// TimeToLive An optional property of an ingest key that determines the time at which the key becomes unauthorized.
-	// When the time_to_live passes, the key will no longer be usable. Expressed as a RFC3339-formatted time.
-	TimeToLive *string `json:"time_to_live,omitempty"`
-
 	// Type The type of API Key.
 	Type AuthType `json:"type"`
 }
@@ -823,7 +904,10 @@ type BaseTrigger struct {
 	//   The trigger resolves only when the result of the query no longer satisfies the threshold condition.
 	// - `on_true` keeps sending a trigger notification at current frequency when and while the threshold is met.
 	//   (This reflects the same behavior as the "Send an alert every time a threshold is met" checkbox in the Honeycomb UI.)
-	AlertType       *BaseTriggerAlertType        `json:"alert_type,omitempty"`
+	AlertType *BaseTriggerAlertType `json:"alert_type,omitempty"`
+
+	// AutoInvestigate When true, Honeycomb will automatically start an investigation when this Trigger fires.
+	AutoInvestigate *bool                        `json:"auto_investigate,omitempty"`
 	BaselineDetails *BaseTrigger_BaselineDetails `json:"baseline_details,omitempty"`
 	CreatedAt       *time.Time                   `json:"created_at,omitempty"`
 
@@ -994,8 +1078,12 @@ type BoardQueryVisualizationSettings struct {
 	Charts *[]struct {
 		ChartIndex        *int                                            `json:"chart_index,omitempty"`
 		ChartType         *BoardQueryVisualizationSettingsChartsChartType `json:"chart_type,omitempty"`
+		HideOther         *bool                                           `json:"hide_other,omitempty"`
 		LogScale          *bool                                           `json:"log_scale,omitempty"`
 		OmitMissingValues *bool                                           `json:"omit_missing_values,omitempty"`
+
+		// Thresholds Optional threshold lines to display on this chart. Currently limited to at most 5 entries.
+		Thresholds *[]Threshold `json:"thresholds,omitempty"`
 	} `json:"charts,omitempty"`
 	HideCompare    *bool `json:"hide_compare,omitempty"`
 	HideHovers     *bool `json:"hide_hovers,omitempty"`
@@ -1042,6 +1130,9 @@ type BudgetRateBurnAlert struct {
 	// 1. `exhaustion_time`: Notifies when you are about to run out of SLO budget within a specified number of hours.
 	// 1. `budget_rate`: Notifies when budget drops by at least a specified percentage within a defined time window.
 	AlertType BudgetRateBurnAlertAlertType `json:"alert_type"`
+
+	// AutoInvestigate When true, Honeycomb will automatically start an investigation when this Burn Alert fires.
+	AutoInvestigate *bool `json:"auto_investigate,omitempty"`
 
 	// BudgetRateDecreaseThresholdPerMillion Required when `alert_type` is `budget_rate`.
 	//
@@ -1095,6 +1186,9 @@ type BudgetRateBurnAlertDetailResponse struct {
 	// 1. `exhaustion_time`: Notifies when you are about to run out of SLO budget within a specified number of hours.
 	// 1. `budget_rate`: Notifies when budget drops by at least a specified percentage within a defined time window.
 	AlertType BudgetRateBurnAlertDetailResponseAlertType `json:"alert_type"`
+
+	// AutoInvestigate When true, Honeycomb will automatically start an investigation when this Burn Alert fires.
+	AutoInvestigate *bool `json:"auto_investigate,omitempty"`
 
 	// BudgetRateDecreaseThresholdPerMillion Required when `alert_type` is `budget_rate`.
 	//
@@ -1157,6 +1251,9 @@ type BudgetRateBurnAlertListResponse struct {
 	// 1. `exhaustion_time`: Notifies when you are about to run out of SLO budget within a specified number of hours.
 	// 1. `budget_rate`: Notifies when budget drops by at least a specified percentage within a defined time window.
 	AlertType BudgetRateBurnAlertListResponseAlertType `json:"alert_type"`
+
+	// AutoInvestigate When true, Honeycomb will automatically start an investigation when this Burn Alert fires.
+	AutoInvestigate *bool `json:"auto_investigate,omitempty"`
 
 	// BudgetRateDecreaseThresholdPerMillion Required when `alert_type` is `budget_rate`.
 	//
@@ -1224,6 +1321,9 @@ type BurnAlertListResponse struct {
 
 // BurnAlertSharedParams defines model for BurnAlertSharedParams.
 type BurnAlertSharedParams struct {
+	// AutoInvestigate When true, Honeycomb will automatically start an investigation when this Burn Alert fires.
+	AutoInvestigate *bool `json:"auto_investigate,omitempty"`
+
 	// CreatedAt The ISO8601-formatted time when the Burn Alert was created.
 	CreatedAt *time.Time `json:"created_at,omitempty"`
 
@@ -1300,6 +1400,9 @@ type ConfigurationKeyAttributes struct {
 
 		// ManageRecipients Whether this API Key can manage Recipients
 		ManageRecipients *bool `json:"manage_recipients,omitempty"`
+
+		// ManageSignals Whether this API Key can manage Signals (Anomaly Detection)
+		ManageSignals *bool `json:"manage_signals,omitempty"`
 
 		// ManageSlos Whether this API Key can manage SLOs
 		ManageSlos *bool `json:"manage_slos,omitempty"`
@@ -1409,6 +1512,9 @@ type CreateBudgetRateBurnAlertRequest struct {
 	// 1. `exhaustion_time`: Notifies when you are about to run out of SLO budget within a specified number of hours.
 	// 1. `budget_rate`: Notifies when budget drops by at least a specified percentage within a defined time window.
 	AlertType CreateBudgetRateBurnAlertRequestAlertType `json:"alert_type"`
+
+	// AutoInvestigate When true, Honeycomb will automatically start an investigation when this Burn Alert fires.
+	AutoInvestigate *bool `json:"auto_investigate,omitempty"`
 
 	// BudgetRateDecreaseThresholdPerMillion Required when `alert_type` is `budget_rate`.
 	//
@@ -1523,6 +1629,9 @@ type CreateExhaustionTimeBurnAlertRequest struct {
 	// 1. `budget_rate`: Notifies when budget drops by at least a specified percentage within a defined time window.
 	AlertType *CreateExhaustionTimeBurnAlertRequestAlertType `json:"alert_type,omitempty"`
 
+	// AutoInvestigate When true, Honeycomb will automatically start an investigation when this Burn Alert fires.
+	AutoInvestigate *bool `json:"auto_investigate,omitempty"`
+
 	// CreatedAt The ISO8601-formatted time when the Burn Alert was created.
 	CreatedAt *time.Time `json:"created_at,omitempty"`
 
@@ -1619,6 +1728,9 @@ type Dataset struct {
 	// CreatedAt The ISO8601-formatted time when the dataset was created.
 	CreatedAt *string `json:"created_at,omitempty"`
 
+	// DatasetType The type of data contained in the dataset. Only present for time-series metrics datasets.
+	DatasetType *DatasetDatasetType `json:"dataset_type,omitempty"`
+
 	// Description A description for the dataset.
 	Description *string `json:"description,omitempty"`
 
@@ -1641,6 +1753,9 @@ type Dataset struct {
 	// Slug The 'slug' of the dataset to be used in URLs.
 	Slug *string `json:"slug,omitempty"`
 }
+
+// DatasetDatasetType The type of data contained in the dataset. Only present for time-series metrics datasets.
+type DatasetDatasetType string
 
 // DatasetCreationPayload an object to send to the Dataset API via PUT
 type DatasetCreationPayload struct {
@@ -1846,6 +1961,9 @@ type ExhaustionTimeBurnAlert struct {
 	// 1. `budget_rate`: Notifies when budget drops by at least a specified percentage within a defined time window.
 	AlertType *ExhaustionTimeBurnAlertAlertType `json:"alert_type,omitempty"`
 
+	// AutoInvestigate When true, Honeycomb will automatically start an investigation when this Burn Alert fires.
+	AutoInvestigate *bool `json:"auto_investigate,omitempty"`
+
 	// CreatedAt The ISO8601-formatted time when the Burn Alert was created.
 	CreatedAt *time.Time `json:"created_at,omitempty"`
 
@@ -1881,6 +1999,9 @@ type ExhaustionTimeBurnAlertDetailResponse struct {
 	// 1. `exhaustion_time`: Notifies when you are about to run out of SLO budget within a specified number of hours.
 	// 1. `budget_rate`: Notifies when budget drops by at least a specified percentage within a defined time window.
 	AlertType *ExhaustionTimeBurnAlertDetailResponseAlertType `json:"alert_type,omitempty"`
+
+	// AutoInvestigate When true, Honeycomb will automatically start an investigation when this Burn Alert fires.
+	AutoInvestigate *bool `json:"auto_investigate,omitempty"`
 
 	// CreatedAt The ISO8601-formatted time when the Burn Alert was created.
 	CreatedAt *time.Time `json:"created_at,omitempty"`
@@ -1926,6 +2047,9 @@ type ExhaustionTimeBurnAlertListResponse struct {
 	// 1. `exhaustion_time`: Notifies when you are about to run out of SLO budget within a specified number of hours.
 	// 1. `budget_rate`: Notifies when budget drops by at least a specified percentage within a defined time window.
 	AlertType *ExhaustionTimeBurnAlertListResponseAlertType `json:"alert_type,omitempty"`
+
+	// AutoInvestigate When true, Honeycomb will automatically start an investigation when this Burn Alert fires.
+	AutoInvestigate *bool `json:"auto_investigate,omitempty"`
 
 	// CreatedAt The ISO8601-formatted time when the Burn Alert was created.
 	CreatedAt *time.Time `json:"created_at,omitempty"`
@@ -2015,6 +2139,33 @@ type HavingCalculateOp string
 // HavingOp defines model for HavingOp.
 type HavingOp string
 
+// HistoricalAnomaly A resolved anomaly that a Signal previously fired for.
+type HistoricalAnomaly struct {
+	// EndedAt The time the anomaly ended, in seconds since UNIX epoch.
+	EndedAt *int `json:"ended_at,omitempty"`
+
+	// Id A deterministic identifier for the anomaly, derived from the Signal, its measured kind, and the anomaly's start time.
+	Id *string `json:"id,omitempty"`
+
+	// Measurement The measured value that triggered the anomaly.
+	Measurement *float32 `json:"measurement,omitempty"`
+
+	// NormalRange The trained normal band a measurement exceeded.
+	NormalRange HistoricalAnomalyNormalRange `json:"normal_range"`
+
+	// StartedAt The time the anomaly started, in seconds since UNIX epoch.
+	StartedAt *int `json:"started_at,omitempty"`
+}
+
+// HistoricalAnomalyNormalRange The trained normal band a measurement exceeded.
+type HistoricalAnomalyNormalRange struct {
+	// Lower The lower bound of the trained normal band.
+	Lower float32 `json:"lower"`
+
+	// Upper The upper bound of the trained normal band.
+	Upper float32 `json:"upper"`
+}
+
 // IncludedResource defines model for IncludedResource.
 type IncludedResource struct {
 	Attributes *map[string]interface{} `json:"attributes,omitempty"`
@@ -2040,12 +2191,6 @@ type IngestKeyAttributes struct {
 		// CreateDatasets Whether this API Key can create new Datasets
 		CreateDatasets *bool `json:"create_datasets,omitempty"`
 	} `json:"permissions,omitempty"`
-
-	// TimeToLive An optional property of an ingest key that determines the time at which the key becomes unauthorized.
-	// When the time_to_live passes, the key will no longer be usable. The time_to_live property can only
-	// be set when the key is created and cannot be changed.
-	// Expressed as a RFC3339-formatted time.
-	TimeToLive *string `json:"time_to_live,omitempty"`
 	Timestamps *struct {
 		// Created The ISO8601-formatted time when the API Key was created.
 		Created *time.Time `json:"created,omitempty"`
@@ -2080,12 +2225,6 @@ type IngestKeyRequestType string
 type IngestKeyType struct {
 	// KeyType The type of API Key
 	KeyType IngestKeyTypeKeyType `json:"key_type"`
-
-	// TimeToLive An optional property of an ingest key that determines the time at which the key becomes unauthorized.
-	// When the time_to_live passes, the key will no longer be usable. The time_to_live property can only
-	// be set when the key is created and cannot be changed.
-	// Expressed as a RFC3339-formatted time.
-	TimeToLive *string `json:"time_to_live,omitempty"`
 }
 
 // IngestKeyTypeKeyType The type of API Key
@@ -2265,6 +2404,10 @@ type NotificationRecipient struct {
 
 // NotificationRecipientDetails defines model for NotificationRecipientDetails.
 type NotificationRecipientDetails struct {
+	// Muted When `true`, the Recipient is muted for this alert and will not receive notifications.
+	// Only applies to Recipients assigned to a Signal via the Anomaly Detection API.
+	Muted *bool `json:"muted,omitempty"`
+
 	// PagerdutySeverity When using a Recipient of `type = "pagerduty"`, the severity of the alert can be specified.
 	PagerdutySeverity *NotificationRecipientDetailsPagerdutySeverity `json:"pagerduty_severity,omitempty"`
 
@@ -2300,6 +2443,24 @@ type PagerDutyRecipient struct {
 
 // PagerDutyRecipientType defines model for PagerDutyRecipient.Type.
 type PagerDutyRecipientType string
+
+// PaginatedHistoricalAnomaliesResponse A page of resolved historical anomalies for a Signal.
+type PaginatedHistoricalAnomaliesResponse struct {
+	// HistoricalAnomalies The anomalies in this page, most recent first.
+	HistoricalAnomalies []HistoricalAnomaly `json:"historical_anomalies"`
+
+	// Links Links to iterate through the pages of results.
+	Links *PaginationLinks `json:"links,omitempty"`
+}
+
+// PaginatedSignalsResponse A page of Signals.
+type PaginatedSignalsResponse struct {
+	// Links Links to iterate through the pages of results.
+	Links *PaginationLinks `json:"links,omitempty"`
+
+	// Signals The Signals in this page.
+	Signals []Signal `json:"signals"`
+}
 
 // PaginationLinks Links to iterate through the pages of results.
 type PaginationLinks struct {
@@ -2522,7 +2683,7 @@ type QueryResult struct {
 }
 
 // QueryResultDetails Query Results for the Query ID.
-// The response body will be a JSON object with "complete": true and the results populated once the query is complete. The response body will contain caching headers to indicate that once complete, and the Query Result may be cached, as it will not change.
+// The response body will be a JSON object with "complete": true and the results populated once the query is complete. If the query fails to run, the response will still return HTTP 200 with "complete": true, but the "data" field will be replaced by an "error" field describing the failure. The response body will contain caching headers to indicate that once complete, and the Query Result may be cached, as it will not change.
 type QueryResultDetails struct {
 	// Complete Indicates if the query results are available yet or not. For example, is the query still being processed or complete?
 	Complete *bool `json:"complete,omitempty"`
@@ -2544,6 +2705,9 @@ type QueryResultDetails struct {
 		// TotalByAggregateSeries Timeseries data showing the total value of each aggregate returned in `total_by_aggregate` across the time range. Aggregate values returned do not respect any Having clauses included in a query. Only available if both `disable_total_by_aggregate` and `disable_series` are set to `false`.
 		TotalByAggregateSeries *[]QueryResultsSeries `json:"total_by_aggregate_series,omitempty"`
 	} `json:"data,omitempty"`
+
+	// Error Only present if the query failed to run. Contains a human-readable message describing the failure. When set, the "data" field is omitted.
+	Error *string `json:"error,omitempty"`
 
 	// Id The unique identifier (ID) of a Query Result
 	Id *string `json:"id,omitempty"`
@@ -2626,6 +2790,59 @@ type SLO struct {
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 }
 
+// SLOCountWindow defines model for SLOCountWindow.
+type SLOCountWindow struct {
+	// ErrorCount Number of failed (bad) events in this window.
+	ErrorCount *int `json:"error_count,omitempty"`
+
+	// IsPartial When `true`, the data for this window may be incomplete. This occurs in three cases:
+	// 1. **No prior anchor**: The first window has no preceding snapshot
+	//    to delta from, so the value is a raw cumulative total rather
+	//    than a true per-minute delta.
+	//
+	// 2. **Settlement window**: The window started within the last 10
+	//    minutes. Late-arriving events from client buffering or
+	//    ingestion lag may still appear in a subsequent snapshot.
+	//
+	// 3. **Hour boundary reset**: Cumulative totals reset to zero at
+	//    each hour boundary. A request spanning a boundary will see
+	//    the new hour's counts start near zero while the anchor came
+	//    from the prior hour's larger total. Both `total_count` and
+	//    `error_count` are zeroed for this window. Use `period_start`
+	//    to detect this and avoid requesting ranges that cross a
+	//    boundary.
+	//
+	// Clients building alerting on top of this data should treat `is_partial: true` windows as provisional.
+	IsPartial *bool `json:"is_partial,omitempty"`
+
+	// TotalCount Total number of events (good + bad) in this window.
+	TotalCount *int `json:"total_count,omitempty"`
+
+	// WindowEnd End of the window as a Unix timestamp (seconds). Always `window_start + 60`.
+	WindowEnd *int `json:"window_end,omitempty"`
+
+	// WindowStart Start of the window as a Unix timestamp (seconds).
+	WindowStart *int `json:"window_start,omitempty"`
+}
+
+// SLOCountsResponse defines model for SLOCountsResponse.
+type SLOCountsResponse struct {
+	// Epoch A hash of the SLO's SLI expression and dataset configuration. This value changes whenever the SLO definition changes in a way that affects count computation (e.g. a derived column expression update). Clients should compare this value across responses: a change means counts have reset under a new key and any client-side cache should be invalidated.
+	Epoch *string `json:"epoch,omitempty"`
+
+	// PeriodStart Unix timestamp of the start of the current accumulation period (the most recent hour boundary). The cumulative totals used to compute deltas reset to zero at this point. Clients should re-baseline their delta computations whenever this value changes between responses.
+	PeriodStart *int64 `json:"period_start,omitempty"`
+
+	// ResolutionSeconds The width of each window in seconds. Always `60`.
+	ResolutionSeconds *int `json:"resolution_seconds,omitempty"`
+
+	// SloId The unique identifier of the SLO.
+	SloId *string `json:"slo_id,omitempty"`
+
+	// Windows Ordered list of per-minute count windows within the requested time range. Gaps between windows indicate minutes with no recorded snapshot. An empty array means no data exists for the requested range.
+	Windows *[]SLOCountWindow `json:"windows,omitempty"`
+}
+
 // SLOCreate defines model for SLOCreate.
 type SLOCreate struct {
 	// CreatedAt The ISO8601-formatted time when the SLO was created.
@@ -2693,6 +2910,36 @@ type SLOHistoryRequest struct {
 // SLOHistoryResponse A mapping from SLO IDs (e.g., "2LBq9LckbcA") to their historical data. Each SLO ID maps to an array of compliance and budget intervals.
 type SLOHistoryResponse map[string][]SLOHistory
 
+// SLOHourBucket defines model for SLOHourBucket.
+type SLOHourBucket struct {
+	// EndTime End of the hour as a Unix timestamp (seconds). Always `start_time + 3600`.
+	EndTime *int64 `json:"end_time,omitempty"`
+
+	// ErrorCount Number of failed (bad) events in this hour.
+	ErrorCount *int `json:"error_count,omitempty"`
+
+	// IsPartial When `true`, this bucket covers the current in-progress hour and its counts will increase until the hour completes. Clients should treat `is_partial: true` buckets as provisional.
+	IsPartial *bool `json:"is_partial,omitempty"`
+
+	// StartTime Start of the hour as a Unix timestamp (seconds).
+	StartTime *int64 `json:"start_time,omitempty"`
+
+	// TotalCount Total number of events (good + bad) in this hour.
+	TotalCount *int `json:"total_count,omitempty"`
+}
+
+// SLOHourlyCountsResponse defines model for SLOHourlyCountsResponse.
+type SLOHourlyCountsResponse struct {
+	// Buckets Ordered list of hourly count buckets within the requested time range. Gaps indicate hours with no recorded data. An empty array means no data exists for the requested range.
+	Buckets *[]SLOHourBucket `json:"buckets,omitempty"`
+
+	// ResolutionSeconds The width of each bucket in seconds. Always `3600`.
+	ResolutionSeconds *int `json:"resolution_seconds,omitempty"`
+
+	// SloId The unique identifier of the SLO.
+	SloId *string `json:"slo_id,omitempty"`
+}
+
 // SLOPanel defines model for SLOPanel.
 type SLOPanel struct {
 	// Position The position of the panel within the layout. When X and Y coordinates are not specified for any of the panels, the layout will be generated automatically.
@@ -2705,6 +2952,123 @@ type SLOPanel struct {
 	// Type The type of the board panel.
 	Type interface{} `json:"type"`
 }
+
+// Signal A Honeycomb Anomaly Detection Signal.
+type Signal struct {
+	// AutoInvestigate When `true`, Honeycomb will automatically start an investigation when this Signal fires.
+	AutoInvestigate *bool `json:"auto_investigate,omitempty"`
+
+	// CreatedAt The ISO8601-formatted time when the Signal was created.
+	CreatedAt *time.Time `json:"created_at,omitempty"`
+
+	// CurrentlyAnomalous Whether the Signal is currently in an anomalous state.
+	CurrentlyAnomalous *bool `json:"currently_anomalous,omitempty"`
+
+	// DatasetSlug The slug of the dataset the Signal's service reports to.
+	DatasetSlug *string `json:"dataset_slug,omitempty"`
+
+	// Enabled Whether the Signal is currently enabled. Disabled Signals do not fire.
+	Enabled bool `json:"enabled"`
+
+	// EnvironmentSlug The slug of the environment the Signal belongs to.
+	EnvironmentSlug *string `json:"environment_slug,omitempty"`
+
+	// Id Unique identifier (ID) of the Signal.
+	Id *string `json:"id,omitempty"`
+
+	// LastAnomalyEndedAt The end time of the most recent anomaly, in seconds since UNIX epoch. `null` when no anomaly has ended yet, or the Signal is currently anomalous.
+	LastAnomalyEndedAt nullable.Nullable[int] `json:"last_anomaly_ended_at,omitempty"`
+
+	// LastAnomalyStartedAt The start time of the most recent anomaly, in seconds since UNIX epoch. `null` when the Signal has never been anomalous.
+	LastAnomalyStartedAt nullable.Nullable[int] `json:"last_anomaly_started_at,omitempty"`
+
+	// MeasuredSignal The kind of measurement the Signal is trained on.
+	MeasuredSignal *AnomalySignal `json:"measured_signal,omitempty"`
+
+	// Sensitivity How far a measurement must deviate from the trained normal band before the Signal fires.
+	//
+	// Higher sensitivity narrows the normal band and catches smaller deviations.
+	// `sensitivity` is always `null` for `presence` Signals.
+	Sensitivity AnomalySignalSensitivity `json:"sensitivity"`
+
+	// ServiceName The name of the service the Signal monitors.
+	ServiceName *string `json:"service_name,omitempty"`
+
+	// Status The lifecycle status of the Signal.
+	Status *AnomalySignalStatus `json:"status,omitempty"`
+
+	// UpdatedAt The ISO8601-formatted time when the Signal was last updated.
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+}
+
+// SignalDetailResponse defines model for SignalDetailResponse.
+type SignalDetailResponse struct {
+	// AutoInvestigate When `true`, Honeycomb will automatically start an investigation when this Signal fires.
+	AutoInvestigate *bool `json:"auto_investigate,omitempty"`
+
+	// CreatedAt The ISO8601-formatted time when the Signal was created.
+	CreatedAt *time.Time `json:"created_at,omitempty"`
+
+	// CurrentlyAnomalous Whether the Signal is currently in an anomalous state.
+	CurrentlyAnomalous *bool `json:"currently_anomalous,omitempty"`
+
+	// DatasetSlug The slug of the dataset the Signal's service reports to.
+	DatasetSlug *string `json:"dataset_slug,omitempty"`
+
+	// Enabled Whether the Signal is currently enabled. Disabled Signals do not fire.
+	Enabled bool `json:"enabled"`
+
+	// EnvironmentSlug The slug of the environment the Signal belongs to.
+	EnvironmentSlug *string `json:"environment_slug,omitempty"`
+
+	// Id Unique identifier (ID) of the Signal.
+	Id *string `json:"id,omitempty"`
+
+	// LastAnomalyEndedAt The end time of the most recent anomaly, in seconds since UNIX epoch. `null` when no anomaly has ended yet, or the Signal is currently anomalous.
+	LastAnomalyEndedAt nullable.Nullable[int] `json:"last_anomaly_ended_at,omitempty"`
+
+	// LastAnomalyStartedAt The start time of the most recent anomaly, in seconds since UNIX epoch. `null` when the Signal has never been anomalous.
+	LastAnomalyStartedAt nullable.Nullable[int] `json:"last_anomaly_started_at,omitempty"`
+
+	// MeasuredSignal The kind of measurement the Signal is trained on.
+	MeasuredSignal *AnomalySignal `json:"measured_signal,omitempty"`
+
+	// Recipients The Recipients notified when this Signal fires.
+	Recipients []NotificationRecipient `json:"recipients"`
+
+	// Sensitivity How far a measurement must deviate from the trained normal band before the Signal fires.
+	//
+	// Higher sensitivity narrows the normal band and catches smaller deviations.
+	// `sensitivity` is always `null` for `presence` Signals.
+	Sensitivity AnomalySignalSensitivity `json:"sensitivity"`
+
+	// ServiceName The name of the service the Signal monitors.
+	ServiceName *string `json:"service_name,omitempty"`
+
+	// Status The lifecycle status of the Signal.
+	Status *AnomalySignalStatus `json:"status,omitempty"`
+
+	// UpdatedAt The ISO8601-formatted time when the Signal was last updated.
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+}
+
+// SignalRecipient A Recipient assigned to a Signal.
+type SignalRecipient struct {
+	// Details Per-assignment settings for how this Recipient receives notifications for this Signal.
+	Details *struct {
+		// Muted When `true`, the Recipient is muted for this Signal and will not receive notifications.
+		Muted *bool `json:"muted,omitempty"`
+
+		// PagerdutySeverity Severity to use when the assigned Recipient is a PagerDuty Recipient. Rejected for non-PagerDuty Recipients.
+		PagerdutySeverity *SignalRecipientDetailsPagerdutySeverity `json:"pagerduty_severity,omitempty"`
+	} `json:"details,omitempty"`
+
+	// Id The unique identifier of an existing Recipient. Create Recipients via the [Recipients API](/api/recipients/).
+	Id string `json:"id"`
+}
+
+// SignalRecipientDetailsPagerdutySeverity Severity to use when the assigned Recipient is a PagerDuty Recipient. Rejected for non-PagerDuty Recipients.
+type SignalRecipientDetailsPagerdutySeverity string
 
 // SlackRecipient defines model for SlackRecipient.
 type SlackRecipient struct {
@@ -2768,6 +3132,33 @@ type TextPanel struct {
 	Type interface{} `json:"type"`
 }
 
+// Threshold A threshold line to display on a chart, with optional label and styling. Thresholds allow you to visualize important values or boundaries on your charts.
+type Threshold struct {
+	// Color Color for the threshold line
+	Color ThresholdColor `json:"color"`
+
+	// Label Optional label to display for the threshold (max 35 characters)
+	Label *string `json:"label,omitempty"`
+
+	// LineStyle Line style for the threshold: "filled-solid" for filled area with solid line, "filled-dotted" for filled area with dotted line, "solid" for solid line only, "dotted" for dotted line only
+	LineStyle ThresholdLineStyle `json:"line_style"`
+
+	// Operation Threshold operation type: "gt" for greater than, "lt" for less than
+	Operation ThresholdOperation `json:"operation"`
+
+	// Value The numeric value where the threshold line should be displayed
+	Value float64 `json:"value"`
+}
+
+// ThresholdColor Color for the threshold line
+type ThresholdColor string
+
+// ThresholdLineStyle Line style for the threshold: "filled-solid" for filled area with solid line, "filled-dotted" for filled area with dotted line, "solid" for solid line only, "dotted" for dotted line only
+type ThresholdLineStyle string
+
+// ThresholdOperation Threshold operation type: "gt" for greater than, "lt" for less than
+type ThresholdOperation string
+
 // TriggerResponse defines model for TriggerResponse.
 type TriggerResponse struct {
 	// AlertType How often to fire an alert when a trigger threshold is crossed.
@@ -2775,7 +3166,10 @@ type TriggerResponse struct {
 	//   The trigger resolves only when the result of the query no longer satisfies the threshold condition.
 	// - `on_true` keeps sending a trigger notification at current frequency when and while the threshold is met.
 	//   (This reflects the same behavior as the "Send an alert every time a threshold is met" checkbox in the Honeycomb UI.)
-	AlertType       *TriggerResponseAlertType        `json:"alert_type,omitempty"`
+	AlertType *TriggerResponseAlertType `json:"alert_type,omitempty"`
+
+	// AutoInvestigate When true, Honeycomb will automatically start an investigation when this Trigger fires.
+	AutoInvestigate *bool                            `json:"auto_investigate,omitempty"`
 	BaselineDetails *TriggerResponse_BaselineDetails `json:"baseline_details,omitempty"`
 	CreatedAt       *time.Time                       `json:"created_at,omitempty"`
 
@@ -2818,10 +3212,50 @@ type TriggerResponse struct {
 	// Name A short, human-readable name for this Trigger, which will be displayed in the UI and when the trigger fires.
 	Name *string `json:"name,omitempty"`
 
-	// Query A query ID or an inline query that is a strict subset of a Query Specification. Note: `usage_mode` is not supported for triggers.
+	// Query An inline query specification that is a strict subset of the standard Query Specification.
+	//
+	// **Required Fields:**
+	// - `calculations`: At least one aggregate calculation (e.g., COUNT, AVG, SUM). Cannot use HEATMAP or CONCURRENCY.
+	// - `time_range`: Query duration in seconds. Must be between the trigger `frequency` and the lesser of (4 × `frequency`) or 86400 (24 hours).
+	//
+	// **Prohibited Fields:**
+	// - `orders`: Not supported. Trigger queries automatically order results based on the threshold operator.
+	// - `limit`: Not supported. All matching result groups are evaluated.
+	// - `start_time` and `end_time`: Not supported. Use `time_range` instead for relative time windows.
+	// - `usage_mode`: Not supported for triggers.
+	//
+	// **Calculation Restrictions:**
+	// - Without formulas: Maximum 1 non-having aggregate allowed.
+	// - With formulas: Maximum 1 formula allowed, with up to 100 aggregates.
+	// - Maximum 1 HAVING clause allowed, which must correspond to an existing calculation.
+	// - Named aggregates cannot be combined with global `filters`.
+	//
+	// **Metrics Dataset Specific:**
+	// - `granularity` field is supported and must be within calculated min/max bounds based on time range.
+	// - Nil aggregate values are skipped during trigger evaluation (no error, group is simply not evaluated).
+	// - Requires a non-legacy environment.
+	//
+	// **Standard Datasets:**
+	// - `granularity` field is not supported.
+	//
+	// Learn more about [Triggers](https://docs.honeycomb.io/notify/alert/triggers/).
 	Query *map[string]interface{} `json:"query,omitempty"`
 
-	// QueryId The ID of a Query that meets the criteria for being used as a Trigger, per above.
+	// QueryId The ID of an existing saved Query that meets the trigger query requirements.
+	//
+	// The referenced query must satisfy the same restrictions as inline trigger queries:
+	// - Must have at least one aggregate calculation (not HEATMAP or CONCURRENCY)
+	// - Cannot have `orders`, `limit`, `start_time`, `end_time`, or `usage_mode` fields set
+	// - Must have appropriate `time_range` relative to trigger frequency
+	// - Must respect calculation restrictions (max 1 non-having aggregate without formulas, or max 1 formula with up to 100 aggregates)
+	// - Maximum 1 having clause allowed
+	// - Named aggregates cannot be combined with global filters
+	// - For metrics datasets: may include `granularity` field (within calculated bounds)
+	// - For standard datasets: must not include `granularity` field
+	//
+	// The API will validate the referenced query meets these criteria when creating or updating the trigger.
+	//
+	// See the inline `query` field documentation above for complete trigger query requirements and learn more about [Triggers](https://docs.honeycomb.io/notify/alert/triggers/).
 	QueryId *string `json:"query_id,omitempty"`
 
 	// Recipients A list of [Recipients](/api/recipients/) to notify when the Trigger fires. Using `type`+`target` is deprecated. First, create the Recipient via the Recipients API, and then specify the ID.
@@ -2891,7 +3325,10 @@ type TriggerWithInlineQuery struct {
 	//   The trigger resolves only when the result of the query no longer satisfies the threshold condition.
 	// - `on_true` keeps sending a trigger notification at current frequency when and while the threshold is met.
 	//   (This reflects the same behavior as the "Send an alert every time a threshold is met" checkbox in the Honeycomb UI.)
-	AlertType       *TriggerWithInlineQueryAlertType        `json:"alert_type,omitempty"`
+	AlertType *TriggerWithInlineQueryAlertType `json:"alert_type,omitempty"`
+
+	// AutoInvestigate When true, Honeycomb will automatically start an investigation when this Trigger fires.
+	AutoInvestigate *bool                                   `json:"auto_investigate,omitempty"`
 	BaselineDetails *TriggerWithInlineQuery_BaselineDetails `json:"baseline_details,omitempty"`
 	CreatedAt       *time.Time                              `json:"created_at,omitempty"`
 
@@ -2934,7 +3371,33 @@ type TriggerWithInlineQuery struct {
 	// Name A short, human-readable name for this Trigger, which will be displayed in the UI and when the trigger fires.
 	Name *string `json:"name,omitempty"`
 
-	// Query A query ID or an inline query that is a strict subset of a Query Specification. Note: `usage_mode` is not supported for triggers.
+	// Query An inline query specification that is a strict subset of the standard Query Specification.
+	//
+	// **Required Fields:**
+	// - `calculations`: At least one aggregate calculation (e.g., COUNT, AVG, SUM). Cannot use HEATMAP or CONCURRENCY.
+	// - `time_range`: Query duration in seconds. Must be between the trigger `frequency` and the lesser of (4 × `frequency`) or 86400 (24 hours).
+	//
+	// **Prohibited Fields:**
+	// - `orders`: Not supported. Trigger queries automatically order results based on the threshold operator.
+	// - `limit`: Not supported. All matching result groups are evaluated.
+	// - `start_time` and `end_time`: Not supported. Use `time_range` instead for relative time windows.
+	// - `usage_mode`: Not supported for triggers.
+	//
+	// **Calculation Restrictions:**
+	// - Without formulas: Maximum 1 non-having aggregate allowed.
+	// - With formulas: Maximum 1 formula allowed, with up to 100 aggregates.
+	// - Maximum 1 HAVING clause allowed, which must correspond to an existing calculation.
+	// - Named aggregates cannot be combined with global `filters`.
+	//
+	// **Metrics Dataset Specific:**
+	// - `granularity` field is supported and must be within calculated min/max bounds based on time range.
+	// - Nil aggregate values are skipped during trigger evaluation (no error, group is simply not evaluated).
+	// - Requires a non-legacy environment.
+	//
+	// **Standard Datasets:**
+	// - `granularity` field is not supported.
+	//
+	// Learn more about [Triggers](https://docs.honeycomb.io/notify/alert/triggers/).
 	Query *map[string]interface{} `json:"query,omitempty"`
 
 	// Recipients A list of [Recipients](/api/recipients/) to notify when the Trigger fires. Using `type`+`target` is deprecated. First, create the Recipient via the Recipients API, and then specify the ID.
@@ -3004,7 +3467,10 @@ type TriggerWithQueryReference struct {
 	//   The trigger resolves only when the result of the query no longer satisfies the threshold condition.
 	// - `on_true` keeps sending a trigger notification at current frequency when and while the threshold is met.
 	//   (This reflects the same behavior as the "Send an alert every time a threshold is met" checkbox in the Honeycomb UI.)
-	AlertType       *TriggerWithQueryReferenceAlertType        `json:"alert_type,omitempty"`
+	AlertType *TriggerWithQueryReferenceAlertType `json:"alert_type,omitempty"`
+
+	// AutoInvestigate When true, Honeycomb will automatically start an investigation when this Trigger fires.
+	AutoInvestigate *bool                                      `json:"auto_investigate,omitempty"`
 	BaselineDetails *TriggerWithQueryReference_BaselineDetails `json:"baseline_details,omitempty"`
 	CreatedAt       *time.Time                                 `json:"created_at,omitempty"`
 
@@ -3047,7 +3513,21 @@ type TriggerWithQueryReference struct {
 	// Name A short, human-readable name for this Trigger, which will be displayed in the UI and when the trigger fires.
 	Name *string `json:"name,omitempty"`
 
-	// QueryId The ID of a Query that meets the criteria for being used as a Trigger, per above.
+	// QueryId The ID of an existing saved Query that meets the trigger query requirements.
+	//
+	// The referenced query must satisfy the same restrictions as inline trigger queries:
+	// - Must have at least one aggregate calculation (not HEATMAP or CONCURRENCY)
+	// - Cannot have `orders`, `limit`, `start_time`, `end_time`, or `usage_mode` fields set
+	// - Must have appropriate `time_range` relative to trigger frequency
+	// - Must respect calculation restrictions (max 1 non-having aggregate without formulas, or max 1 formula with up to 100 aggregates)
+	// - Maximum 1 having clause allowed
+	// - Named aggregates cannot be combined with global filters
+	// - For metrics datasets: may include `granularity` field (within calculated bounds)
+	// - For standard datasets: must not include `granularity` field
+	//
+	// The API will validate the referenced query meets these criteria when creating or updating the trigger.
+	//
+	// See the inline `query` field documentation above for complete trigger query requirements and learn more about [Triggers](https://docs.honeycomb.io/notify/alert/triggers/).
 	QueryId *string `json:"query_id,omitempty"`
 
 	// Recipients A list of [Recipients](/api/recipients/) to notify when the Trigger fires. Using `type`+`target` is deprecated. First, create the Recipient via the Recipients API, and then specify the ID.
@@ -3128,6 +3608,9 @@ type UpdateBudgetRateBurnAlertRequest struct {
 	// 1. `exhaustion_time`: Notifies when you are about to run out of SLO budget within a specified number of hours.
 	// 1. `budget_rate`: Notifies when budget drops by at least a specified percentage within a defined time window.
 	AlertType UpdateBudgetRateBurnAlertRequestAlertType `json:"alert_type"`
+
+	// AutoInvestigate When true, Honeycomb will automatically start an investigation when this Burn Alert fires.
+	AutoInvestigate *bool `json:"auto_investigate,omitempty"`
 
 	// BudgetRateDecreaseThresholdPerMillion Required when `alert_type` is `budget_rate`.
 	//
@@ -3210,6 +3693,9 @@ type UpdateExhaustionTimeBurnAlertRequest struct {
 	// 1. `budget_rate`: Notifies when budget drops by at least a specified percentage within a defined time window.
 	AlertType *UpdateExhaustionTimeBurnAlertRequestAlertType `json:"alert_type,omitempty"`
 
+	// AutoInvestigate When true, Honeycomb will automatically start an investigation when this Burn Alert fires.
+	AutoInvestigate *bool `json:"auto_investigate,omitempty"`
+
 	// CreatedAt The ISO8601-formatted time when the Burn Alert was created.
 	CreatedAt *time.Time `json:"created_at,omitempty"`
 
@@ -3241,6 +3727,18 @@ type UpdateExhaustionTimeBurnAlertRequest struct {
 // 1. `exhaustion_time`: Notifies when you are about to run out of SLO budget within a specified number of hours.
 // 1. `budget_rate`: Notifies when budget drops by at least a specified percentage within a defined time window.
 type UpdateExhaustionTimeBurnAlertRequestAlertType string
+
+// UpdateSignalRequest Fields to update on a Signal. All fields are optional and only supplied fields are applied.
+type UpdateSignalRequest struct {
+	// Enabled Turn the Signal on (`true`) or off (`false`).
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// Recipients Replace the Signal's Recipient set with the given list. An empty array clears all Recipients. Each Recipient must be referenced by its `id` from the [Recipients API](/api/recipients/). Requires the **Manage Recipients** permission in addition to **Manage Signals**.
+	Recipients *[]SignalRecipient `json:"recipients,omitempty"`
+
+	// Sensitivity Set the sensitivity bucket for `error_rate` Signals. Cannot be set on `presence` Signals or on Signals that have not yet trained.
+	Sensitivity *AnomalySignalSensitivity `json:"sensitivity,omitempty"`
+}
 
 // UserRelationship defines model for UserRelationship.
 type UserRelationship struct {
@@ -3491,6 +3989,50 @@ type ListQueryAnnotationsParams struct {
 	IncludeBoardAnnotations *bool `form:"include_board_annotations,omitempty" json:"include_board_annotations,omitempty"`
 }
 
+// ListSignalsParams defines parameters for ListSignals.
+type ListSignalsParams struct {
+	// PageAfter The string value of the `next` attribute from a previous result page.
+	// The cursor value must be empty or omitted for the first request of a cursor-paginated query.
+	PageAfter *PaginationCursor `form:"page[after],omitempty" json:"page[after],omitempty"`
+
+	// PageSize The number of entries to include per response. Maximum value is 100.
+	PageSize *PaginationSize `form:"page[size],omitempty" json:"page[size],omitempty"`
+
+	// ServiceName Restrict results to Signals for a single service.
+	ServiceName *string `form:"service_name,omitempty" json:"service_name,omitempty"`
+
+	// DatasetSlug Restrict results to Signals in a single dataset.
+	DatasetSlug *string `form:"dataset_slug,omitempty" json:"dataset_slug,omitempty"`
+
+	// MeasuredSignal Restrict results to Signals of the given kind.
+	MeasuredSignal *AnomalySignal `form:"measured_signal,omitempty" json:"measured_signal,omitempty"`
+
+	// Status Restrict results to Signals in the given status.
+	Status *ListSignalsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// CurrentlyAnomalous When `true`, only return Signals that are currently in an anomalous state.
+	CurrentlyAnomalous *bool `form:"currently_anomalous,omitempty" json:"currently_anomalous,omitempty"`
+}
+
+// ListSignalsParamsStatus defines parameters for ListSignals.
+type ListSignalsParamsStatus string
+
+// ListSignalHistoricalAnomaliesParams defines parameters for ListSignalHistoricalAnomalies.
+type ListSignalHistoricalAnomaliesParams struct {
+	// StartTime Start of the query window, in seconds since UNIX epoch.
+	StartTime int `form:"start_time" json:"start_time"`
+
+	// EndTime End of the query window, in seconds since UNIX epoch. Must be after `start_time` and within 30 days of it.
+	EndTime int `form:"end_time" json:"end_time"`
+
+	// PageAfter The string value of the `next` attribute from a previous result page.
+	// The cursor value must be empty or omitted for the first request of a cursor-paginated query.
+	PageAfter *PaginationCursor `form:"page[after],omitempty" json:"page[after],omitempty"`
+
+	// PageSize The number of entries to include per response. Maximum value is 100.
+	PageSize *PaginationSize `form:"page[size],omitempty" json:"page[size],omitempty"`
+}
+
 // GetSloParams defines parameters for GetSlo.
 type GetSloParams struct {
 	// Detailed Allows SLO reporting data (`status`, `burn_rate`, `budget_remaining` and `compliance`) to be returned when retrieving a single SLO.
@@ -3499,6 +4041,24 @@ type GetSloParams struct {
 	//
 	// **Note:** `burn_rate` is calculated based on the last 4 hours of data.
 	Detailed *bool `form:"detailed,omitempty" json:"detailed,omitempty"`
+}
+
+// GetSloRealtimeCountsParams defines parameters for GetSloRealtimeCounts.
+type GetSloRealtimeCountsParams struct {
+	// StartTime Start of the time range as a Unix timestamp (seconds). Must be within the last 24 hours and no later than `end_time`.
+	StartTime int `form:"start_time" json:"start_time"`
+
+	// EndTime End of the time range as a Unix timestamp (seconds). Must be greater than `start_time` and within the same clock hour as `start_time`. Realtime counts accumulate from the start of each hour and reset at hour boundaries; use the [Get SLO Hourly Counts History endpoint](https://api-docs.honeycomb.io/api/slos/getSloHourlyCountsHistory/) for completed hours.
+	EndTime int `form:"end_time" json:"end_time"`
+}
+
+// GetSloHourlyCountsHistoryParams defines parameters for GetSloHourlyCountsHistory.
+type GetSloHourlyCountsHistoryParams struct {
+	// StartTime Start of the time range as a Unix timestamp (seconds).
+	StartTime int `form:"start_time" json:"start_time"`
+
+	// EndTime End of the time range as a Unix timestamp (seconds). Must be greater than `start_time`.
+	EndTime int `form:"end_time" json:"end_time"`
 }
 
 // ListApiKeysParams defines parameters for ListApiKeys.
@@ -3614,6 +4174,9 @@ type UpdateRecipientJSONRequestBody = Recipient
 
 // GetSloHistoryJSONRequestBody defines body for GetSloHistory for application/json ContentType.
 type GetSloHistoryJSONRequestBody = SLOHistoryRequest
+
+// UpdateSignalJSONRequestBody defines body for UpdateSignal for application/json ContentType.
+type UpdateSignalJSONRequestBody = UpdateSignalRequest
 
 // CreateSloJSONRequestBody defines body for CreateSlo for application/json ContentType.
 type CreateSloJSONRequestBody = SLOCreate
@@ -5589,6 +6152,20 @@ type ClientInterface interface {
 
 	GetSloHistory(ctx context.Context, body GetSloHistoryJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListSignals request
+	ListSignals(ctx context.Context, params *ListSignalsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetSignal request
+	GetSignal(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateSignalWithBody request with any body
+	UpdateSignalWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateSignal(ctx context.Context, id string, body UpdateSignalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListSignalHistoricalAnomalies request
+	ListSignalHistoricalAnomalies(ctx context.Context, id string, params *ListSignalHistoricalAnomaliesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListSlos request
 	ListSlos(ctx context.Context, datasetSlug DatasetSlugOrAll, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -5607,6 +6184,12 @@ type ClientInterface interface {
 	UpdateSloWithBody(ctx context.Context, datasetSlug DatasetSlugOrAll, sloId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	UpdateSlo(ctx context.Context, datasetSlug DatasetSlugOrAll, sloId string, body UpdateSloJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetSloRealtimeCounts request
+	GetSloRealtimeCounts(ctx context.Context, datasetSlug DatasetSlugOrAll, sloId string, params *GetSloRealtimeCountsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetSloHourlyCountsHistory request
+	GetSloHourlyCountsHistory(ctx context.Context, datasetSlug DatasetSlugOrAll, sloId string, params *GetSloHourlyCountsHistoryParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListTriggers request
 	ListTriggers(ctx context.Context, datasetSlug DatasetSlugOrAll, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -6749,6 +7332,66 @@ func (c *Client) GetSloHistory(ctx context.Context, body GetSloHistoryJSONReques
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListSignals(ctx context.Context, params *ListSignalsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListSignalsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetSignal(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSignalRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateSignalWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateSignalRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateSignal(ctx context.Context, id string, body UpdateSignalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateSignalRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListSignalHistoricalAnomalies(ctx context.Context, id string, params *ListSignalHistoricalAnomaliesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListSignalHistoricalAnomaliesRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListSlos(ctx context.Context, datasetSlug DatasetSlugOrAll, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListSlosRequest(c.Server, datasetSlug)
 	if err != nil {
@@ -6823,6 +7466,30 @@ func (c *Client) UpdateSloWithBody(ctx context.Context, datasetSlug DatasetSlugO
 
 func (c *Client) UpdateSlo(ctx context.Context, datasetSlug DatasetSlugOrAll, sloId string, body UpdateSloJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateSloRequest(c.Server, datasetSlug, sloId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetSloRealtimeCounts(ctx context.Context, datasetSlug DatasetSlugOrAll, sloId string, params *GetSloRealtimeCountsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSloRealtimeCountsRequest(c.Server, datasetSlug, sloId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetSloHourlyCountsHistory(ctx context.Context, datasetSlug DatasetSlugOrAll, sloId string, params *GetSloHourlyCountsHistoryParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSloHourlyCountsHistoryRequest(c.Server, datasetSlug, sloId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -9851,6 +10518,328 @@ func NewGetSloHistoryRequestWithBody(server string, contentType string, body io.
 	return req, nil
 }
 
+// NewListSignalsRequest generates requests for ListSignals
+func NewListSignalsRequest(server string, params *ListSignalsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/1/signals")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.PageAfter != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "page[after]", runtime.ParamLocationQuery, *params.PageAfter); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "page[size]", runtime.ParamLocationQuery, *params.PageSize); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.ServiceName != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "service_name", runtime.ParamLocationQuery, *params.ServiceName); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.DatasetSlug != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "dataset_slug", runtime.ParamLocationQuery, *params.DatasetSlug); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.MeasuredSignal != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "measured_signal", runtime.ParamLocationQuery, *params.MeasuredSignal); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Status != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "status", runtime.ParamLocationQuery, *params.Status); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.CurrentlyAnomalous != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "currently_anomalous", runtime.ParamLocationQuery, *params.CurrentlyAnomalous); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetSignalRequest generates requests for GetSignal
+func NewGetSignalRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/1/signals/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateSignalRequest calls the generic UpdateSignal builder with application/json body
+func NewUpdateSignalRequest(server string, id string, body UpdateSignalJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateSignalRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewUpdateSignalRequestWithBody generates requests for UpdateSignal with any type of body
+func NewUpdateSignalRequestWithBody(server string, id string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/1/signals/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListSignalHistoricalAnomaliesRequest generates requests for ListSignalHistoricalAnomalies
+func NewListSignalHistoricalAnomaliesRequest(server string, id string, params *ListSignalHistoricalAnomaliesParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/1/signals/%s/historical_anomalies", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "start_time", runtime.ParamLocationQuery, params.StartTime); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "end_time", runtime.ParamLocationQuery, params.EndTime); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		if params.PageAfter != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "page[after]", runtime.ParamLocationQuery, *params.PageAfter); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "page[size]", runtime.ParamLocationQuery, *params.PageSize); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListSlosRequest generates requests for ListSlos
 func NewListSlosRequest(server string, datasetSlug DatasetSlugOrAll) (*http.Request, error) {
 	var err error
@@ -10086,6 +11075,148 @@ func NewUpdateSloRequestWithBody(server string, datasetSlug DatasetSlugOrAll, sl
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetSloRealtimeCountsRequest generates requests for GetSloRealtimeCounts
+func NewGetSloRealtimeCountsRequest(server string, datasetSlug DatasetSlugOrAll, sloId string, params *GetSloRealtimeCountsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "datasetSlug", runtime.ParamLocationPath, datasetSlug)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "sloId", runtime.ParamLocationPath, sloId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/1/slos/%s/%s/counts", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "start_time", runtime.ParamLocationQuery, params.StartTime); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "end_time", runtime.ParamLocationQuery, params.EndTime); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetSloHourlyCountsHistoryRequest generates requests for GetSloHourlyCountsHistory
+func NewGetSloHourlyCountsHistoryRequest(server string, datasetSlug DatasetSlugOrAll, sloId string, params *GetSloHourlyCountsHistoryParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "datasetSlug", runtime.ParamLocationPath, datasetSlug)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "sloId", runtime.ParamLocationPath, sloId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/1/slos/%s/%s/counts/history", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "start_time", runtime.ParamLocationQuery, params.StartTime); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "end_time", runtime.ParamLocationQuery, params.EndTime); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -11145,6 +12276,20 @@ type ClientWithResponsesInterface interface {
 
 	GetSloHistoryWithResponse(ctx context.Context, body GetSloHistoryJSONRequestBody, reqEditors ...RequestEditorFn) (*GetSloHistoryResp, error)
 
+	// ListSignalsWithResponse request
+	ListSignalsWithResponse(ctx context.Context, params *ListSignalsParams, reqEditors ...RequestEditorFn) (*ListSignalsResp, error)
+
+	// GetSignalWithResponse request
+	GetSignalWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetSignalResp, error)
+
+	// UpdateSignalWithBodyWithResponse request with any body
+	UpdateSignalWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSignalResp, error)
+
+	UpdateSignalWithResponse(ctx context.Context, id string, body UpdateSignalJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSignalResp, error)
+
+	// ListSignalHistoricalAnomaliesWithResponse request
+	ListSignalHistoricalAnomaliesWithResponse(ctx context.Context, id string, params *ListSignalHistoricalAnomaliesParams, reqEditors ...RequestEditorFn) (*ListSignalHistoricalAnomaliesResp, error)
+
 	// ListSlosWithResponse request
 	ListSlosWithResponse(ctx context.Context, datasetSlug DatasetSlugOrAll, reqEditors ...RequestEditorFn) (*ListSlosResp, error)
 
@@ -11163,6 +12308,12 @@ type ClientWithResponsesInterface interface {
 	UpdateSloWithBodyWithResponse(ctx context.Context, datasetSlug DatasetSlugOrAll, sloId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSloResp, error)
 
 	UpdateSloWithResponse(ctx context.Context, datasetSlug DatasetSlugOrAll, sloId string, body UpdateSloJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSloResp, error)
+
+	// GetSloRealtimeCountsWithResponse request
+	GetSloRealtimeCountsWithResponse(ctx context.Context, datasetSlug DatasetSlugOrAll, sloId string, params *GetSloRealtimeCountsParams, reqEditors ...RequestEditorFn) (*GetSloRealtimeCountsResp, error)
+
+	// GetSloHourlyCountsHistoryWithResponse request
+	GetSloHourlyCountsHistoryWithResponse(ctx context.Context, datasetSlug DatasetSlugOrAll, sloId string, params *GetSloHourlyCountsHistoryParams, reqEditors ...RequestEditorFn) (*GetSloHourlyCountsHistoryResp, error)
 
 	// ListTriggersWithResponse request
 	ListTriggersWithResponse(ctx context.Context, datasetSlug DatasetSlugOrAll, reqEditors ...RequestEditorFn) (*ListTriggersResp, error)
@@ -13241,6 +14392,160 @@ func (r GetSloHistoryResp) StatusCode() int {
 	return 0
 }
 
+type ListSignalsResp struct {
+	Body                      []byte
+	HTTPResponse              *http.Response
+	JSON200                   *PaginatedSignalsResponse
+	JSON401                   *UnauthorizedApplicationJSON
+	ApplicationvndApiJSON401  *UnauthorizedApplicationVndAPIPlusJSON
+	JSON403                   *ForbiddenApplicationJSON
+	ApplicationproblemJSON403 *ForbiddenApplicationProblemPlusJSON
+	ApplicationvndApiJSON403  *ForbiddenApplicationVndAPIPlusJSON
+	JSON404                   *NotFoundApplicationJSON
+	ApplicationproblemJSON404 *NotFoundApplicationProblemPlusJSON
+	ApplicationvndApiJSON404  *NotFoundApplicationVndAPIPlusJSON
+	JSON422                   *ValidationFailedApplicationJSON
+	ApplicationproblemJSON422 *ValidationFailedApplicationProblemPlusJSON
+	ApplicationvndApiJSON422  *ValidationFailedApplicationVndAPIPlusJSON
+	JSON429                   *RateLimitedApplicationJSON
+	ApplicationproblemJSON429 *RateLimitedApplicationProblemPlusJSON
+	ApplicationvndApiJSON429  *RateLimitedApplicationVndAPIPlusJSON
+	JSONDefault               *GenericError
+}
+
+// Status returns HTTPResponse.Status
+func (r ListSignalsResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListSignalsResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetSignalResp struct {
+	Body                      []byte
+	HTTPResponse              *http.Response
+	JSON200                   *SignalDetailResponse
+	JSON401                   *UnauthorizedApplicationJSON
+	ApplicationvndApiJSON401  *UnauthorizedApplicationVndAPIPlusJSON
+	JSON403                   *ForbiddenApplicationJSON
+	ApplicationproblemJSON403 *ForbiddenApplicationProblemPlusJSON
+	ApplicationvndApiJSON403  *ForbiddenApplicationVndAPIPlusJSON
+	JSON404                   *NotFoundApplicationJSON
+	ApplicationproblemJSON404 *NotFoundApplicationProblemPlusJSON
+	ApplicationvndApiJSON404  *NotFoundApplicationVndAPIPlusJSON
+	JSON429                   *RateLimitedApplicationJSON
+	ApplicationproblemJSON429 *RateLimitedApplicationProblemPlusJSON
+	ApplicationvndApiJSON429  *RateLimitedApplicationVndAPIPlusJSON
+	JSONDefault               *GenericError
+}
+
+// Status returns HTTPResponse.Status
+func (r GetSignalResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetSignalResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateSignalResp struct {
+	Body                      []byte
+	HTTPResponse              *http.Response
+	JSON200                   *SignalDetailResponse
+	JSON400                   *BadRequestApplicationJSON
+	ApplicationproblemJSON400 *BadRequestApplicationProblemPlusJSON
+	ApplicationvndApiJSON400  *BadRequestApplicationVndAPIPlusJSON
+	JSON401                   *UnauthorizedApplicationJSON
+	ApplicationvndApiJSON401  *UnauthorizedApplicationVndAPIPlusJSON
+	JSON403                   *ForbiddenApplicationJSON
+	ApplicationproblemJSON403 *ForbiddenApplicationProblemPlusJSON
+	ApplicationvndApiJSON403  *ForbiddenApplicationVndAPIPlusJSON
+	JSON404                   *NotFoundApplicationJSON
+	ApplicationproblemJSON404 *NotFoundApplicationProblemPlusJSON
+	ApplicationvndApiJSON404  *NotFoundApplicationVndAPIPlusJSON
+	JSON409                   *ConflictApplicationJSON
+	ApplicationproblemJSON409 *ConflictApplicationProblemPlusJSON
+	ApplicationvndApiJSON409  *ConflictApplicationVndAPIPlusJSON
+	JSON422                   *ValidationFailedApplicationJSON
+	ApplicationproblemJSON422 *ValidationFailedApplicationProblemPlusJSON
+	ApplicationvndApiJSON422  *ValidationFailedApplicationVndAPIPlusJSON
+	JSON429                   *RateLimitedApplicationJSON
+	ApplicationproblemJSON429 *RateLimitedApplicationProblemPlusJSON
+	ApplicationvndApiJSON429  *RateLimitedApplicationVndAPIPlusJSON
+	JSONDefault               *GenericError
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateSignalResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateSignalResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListSignalHistoricalAnomaliesResp struct {
+	Body                      []byte
+	HTTPResponse              *http.Response
+	JSON200                   *PaginatedHistoricalAnomaliesResponse
+	JSON400                   *BadRequestApplicationJSON
+	ApplicationproblemJSON400 *BadRequestApplicationProblemPlusJSON
+	ApplicationvndApiJSON400  *BadRequestApplicationVndAPIPlusJSON
+	JSON401                   *UnauthorizedApplicationJSON
+	ApplicationvndApiJSON401  *UnauthorizedApplicationVndAPIPlusJSON
+	JSON403                   *ForbiddenApplicationJSON
+	ApplicationproblemJSON403 *ForbiddenApplicationProblemPlusJSON
+	ApplicationvndApiJSON403  *ForbiddenApplicationVndAPIPlusJSON
+	JSON404                   *NotFoundApplicationJSON
+	ApplicationproblemJSON404 *NotFoundApplicationProblemPlusJSON
+	ApplicationvndApiJSON404  *NotFoundApplicationVndAPIPlusJSON
+	JSON422                   *ValidationFailedApplicationJSON
+	ApplicationproblemJSON422 *ValidationFailedApplicationProblemPlusJSON
+	ApplicationvndApiJSON422  *ValidationFailedApplicationVndAPIPlusJSON
+	JSON429                   *RateLimitedApplicationJSON
+	ApplicationproblemJSON429 *RateLimitedApplicationProblemPlusJSON
+	ApplicationvndApiJSON429  *RateLimitedApplicationVndAPIPlusJSON
+	JSONDefault               *GenericError
+}
+
+// Status returns HTTPResponse.Status
+func (r ListSignalHistoricalAnomaliesResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListSignalHistoricalAnomaliesResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type ListSlosResp struct {
 	Body                      []byte
 	HTTPResponse              *http.Response
@@ -13412,6 +14717,80 @@ func (r UpdateSloResp) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r UpdateSloResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetSloRealtimeCountsResp struct {
+	Body                      []byte
+	HTTPResponse              *http.Response
+	JSON200                   *SLOCountsResponse
+	JSON400                   *BadRequestApplicationJSON
+	ApplicationproblemJSON400 *BadRequestApplicationProblemPlusJSON
+	ApplicationvndApiJSON400  *BadRequestApplicationVndAPIPlusJSON
+	JSON401                   *UnauthorizedApplicationJSON
+	ApplicationvndApiJSON401  *UnauthorizedApplicationVndAPIPlusJSON
+	JSON403                   *ForbiddenApplicationJSON
+	ApplicationproblemJSON403 *ForbiddenApplicationProblemPlusJSON
+	ApplicationvndApiJSON403  *ForbiddenApplicationVndAPIPlusJSON
+	JSON404                   *NotFoundApplicationJSON
+	ApplicationproblemJSON404 *NotFoundApplicationProblemPlusJSON
+	ApplicationvndApiJSON404  *NotFoundApplicationVndAPIPlusJSON
+	JSON429                   *RateLimitedApplicationJSON
+	ApplicationproblemJSON429 *RateLimitedApplicationProblemPlusJSON
+	ApplicationvndApiJSON429  *RateLimitedApplicationVndAPIPlusJSON
+	JSONDefault               *GenericError
+}
+
+// Status returns HTTPResponse.Status
+func (r GetSloRealtimeCountsResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetSloRealtimeCountsResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetSloHourlyCountsHistoryResp struct {
+	Body                      []byte
+	HTTPResponse              *http.Response
+	JSON200                   *SLOHourlyCountsResponse
+	JSON400                   *BadRequestApplicationJSON
+	ApplicationproblemJSON400 *BadRequestApplicationProblemPlusJSON
+	ApplicationvndApiJSON400  *BadRequestApplicationVndAPIPlusJSON
+	JSON401                   *UnauthorizedApplicationJSON
+	ApplicationvndApiJSON401  *UnauthorizedApplicationVndAPIPlusJSON
+	JSON403                   *ForbiddenApplicationJSON
+	ApplicationproblemJSON403 *ForbiddenApplicationProblemPlusJSON
+	ApplicationvndApiJSON403  *ForbiddenApplicationVndAPIPlusJSON
+	JSON404                   *NotFoundApplicationJSON
+	ApplicationproblemJSON404 *NotFoundApplicationProblemPlusJSON
+	ApplicationvndApiJSON404  *NotFoundApplicationVndAPIPlusJSON
+	JSON429                   *RateLimitedApplicationJSON
+	ApplicationproblemJSON429 *RateLimitedApplicationProblemPlusJSON
+	ApplicationvndApiJSON429  *RateLimitedApplicationVndAPIPlusJSON
+	JSONDefault               *GenericError
+}
+
+// Status returns HTTPResponse.Status
+func (r GetSloHourlyCountsHistoryResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetSloHourlyCountsHistoryResp) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -14796,6 +16175,50 @@ func (c *ClientWithResponses) GetSloHistoryWithResponse(ctx context.Context, bod
 	return ParseGetSloHistoryResp(rsp)
 }
 
+// ListSignalsWithResponse request returning *ListSignalsResp
+func (c *ClientWithResponses) ListSignalsWithResponse(ctx context.Context, params *ListSignalsParams, reqEditors ...RequestEditorFn) (*ListSignalsResp, error) {
+	rsp, err := c.ListSignals(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListSignalsResp(rsp)
+}
+
+// GetSignalWithResponse request returning *GetSignalResp
+func (c *ClientWithResponses) GetSignalWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetSignalResp, error) {
+	rsp, err := c.GetSignal(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetSignalResp(rsp)
+}
+
+// UpdateSignalWithBodyWithResponse request with arbitrary body returning *UpdateSignalResp
+func (c *ClientWithResponses) UpdateSignalWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSignalResp, error) {
+	rsp, err := c.UpdateSignalWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateSignalResp(rsp)
+}
+
+func (c *ClientWithResponses) UpdateSignalWithResponse(ctx context.Context, id string, body UpdateSignalJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSignalResp, error) {
+	rsp, err := c.UpdateSignal(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateSignalResp(rsp)
+}
+
+// ListSignalHistoricalAnomaliesWithResponse request returning *ListSignalHistoricalAnomaliesResp
+func (c *ClientWithResponses) ListSignalHistoricalAnomaliesWithResponse(ctx context.Context, id string, params *ListSignalHistoricalAnomaliesParams, reqEditors ...RequestEditorFn) (*ListSignalHistoricalAnomaliesResp, error) {
+	rsp, err := c.ListSignalHistoricalAnomalies(ctx, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListSignalHistoricalAnomaliesResp(rsp)
+}
+
 // ListSlosWithResponse request returning *ListSlosResp
 func (c *ClientWithResponses) ListSlosWithResponse(ctx context.Context, datasetSlug DatasetSlugOrAll, reqEditors ...RequestEditorFn) (*ListSlosResp, error) {
 	rsp, err := c.ListSlos(ctx, datasetSlug, reqEditors...)
@@ -14855,6 +16278,24 @@ func (c *ClientWithResponses) UpdateSloWithResponse(ctx context.Context, dataset
 		return nil, err
 	}
 	return ParseUpdateSloResp(rsp)
+}
+
+// GetSloRealtimeCountsWithResponse request returning *GetSloRealtimeCountsResp
+func (c *ClientWithResponses) GetSloRealtimeCountsWithResponse(ctx context.Context, datasetSlug DatasetSlugOrAll, sloId string, params *GetSloRealtimeCountsParams, reqEditors ...RequestEditorFn) (*GetSloRealtimeCountsResp, error) {
+	rsp, err := c.GetSloRealtimeCounts(ctx, datasetSlug, sloId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetSloRealtimeCountsResp(rsp)
+}
+
+// GetSloHourlyCountsHistoryWithResponse request returning *GetSloHourlyCountsHistoryResp
+func (c *ClientWithResponses) GetSloHourlyCountsHistoryWithResponse(ctx context.Context, datasetSlug DatasetSlugOrAll, sloId string, params *GetSloHourlyCountsHistoryParams, reqEditors ...RequestEditorFn) (*GetSloHourlyCountsHistoryResp, error) {
+	rsp, err := c.GetSloHourlyCountsHistory(ctx, datasetSlug, sloId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetSloHourlyCountsHistoryResp(rsp)
 }
 
 // ListTriggersWithResponse request returning *ListTriggersResp
@@ -21183,6 +22624,572 @@ func ParseGetSloHistoryResp(rsp *http.Response) (*GetSloHistoryResp, error) {
 	return response, nil
 }
 
+// ParseListSignalsResp parses an HTTP response from a ListSignalsWithResponse call
+func ParseListSignalsResp(rsp *http.Response) (*ListSignalsResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListSignalsResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 401:
+		var dest UnauthorizedApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 403:
+		var dest ForbiddenApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 404:
+		var dest NotFoundApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 422:
+		var dest ValidationFailedApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 429:
+		var dest RateLimitedApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/problem+json" && rsp.StatusCode == 403:
+		var dest ForbiddenApplicationProblemPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON403 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/problem+json" && rsp.StatusCode == 404:
+		var dest NotFoundApplicationProblemPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/problem+json" && rsp.StatusCode == 422:
+		var dest ValidationFailedApplicationProblemPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON422 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/problem+json" && rsp.StatusCode == 429:
+		var dest RateLimitedApplicationProblemPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON429 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 401:
+		var dest UnauthorizedApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON401 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 403:
+		var dest ForbiddenApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON403 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 404:
+		var dest NotFoundApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON404 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 422:
+		var dest ValidationFailedApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON422 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 429:
+		var dest RateLimitedApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PaginatedSignalsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GenericError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetSignalResp parses an HTTP response from a GetSignalWithResponse call
+func ParseGetSignalResp(rsp *http.Response) (*GetSignalResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetSignalResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 401:
+		var dest UnauthorizedApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 403:
+		var dest ForbiddenApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 404:
+		var dest NotFoundApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 429:
+		var dest RateLimitedApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/problem+json" && rsp.StatusCode == 403:
+		var dest ForbiddenApplicationProblemPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON403 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/problem+json" && rsp.StatusCode == 404:
+		var dest NotFoundApplicationProblemPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/problem+json" && rsp.StatusCode == 429:
+		var dest RateLimitedApplicationProblemPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON429 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 401:
+		var dest UnauthorizedApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON401 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 403:
+		var dest ForbiddenApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON403 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 404:
+		var dest NotFoundApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON404 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 429:
+		var dest RateLimitedApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SignalDetailResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GenericError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateSignalResp parses an HTTP response from a UpdateSignalWithResponse call
+func ParseUpdateSignalResp(rsp *http.Response) (*UpdateSignalResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateSignalResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 400:
+		var dest BadRequestApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 401:
+		var dest UnauthorizedApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 403:
+		var dest ForbiddenApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 404:
+		var dest NotFoundApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 409:
+		var dest ConflictApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 422:
+		var dest ValidationFailedApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 429:
+		var dest RateLimitedApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/problem+json" && rsp.StatusCode == 400:
+		var dest BadRequestApplicationProblemPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/problem+json" && rsp.StatusCode == 403:
+		var dest ForbiddenApplicationProblemPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON403 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/problem+json" && rsp.StatusCode == 404:
+		var dest NotFoundApplicationProblemPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/problem+json" && rsp.StatusCode == 409:
+		var dest ConflictApplicationProblemPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON409 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/problem+json" && rsp.StatusCode == 422:
+		var dest ValidationFailedApplicationProblemPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON422 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/problem+json" && rsp.StatusCode == 429:
+		var dest RateLimitedApplicationProblemPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON429 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 400:
+		var dest BadRequestApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON400 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 401:
+		var dest UnauthorizedApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON401 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 403:
+		var dest ForbiddenApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON403 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 404:
+		var dest NotFoundApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON404 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 409:
+		var dest ConflictApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON409 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 422:
+		var dest ValidationFailedApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON422 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 429:
+		var dest RateLimitedApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SignalDetailResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GenericError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListSignalHistoricalAnomaliesResp parses an HTTP response from a ListSignalHistoricalAnomaliesWithResponse call
+func ParseListSignalHistoricalAnomaliesResp(rsp *http.Response) (*ListSignalHistoricalAnomaliesResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListSignalHistoricalAnomaliesResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 400:
+		var dest BadRequestApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 401:
+		var dest UnauthorizedApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 403:
+		var dest ForbiddenApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 404:
+		var dest NotFoundApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 422:
+		var dest ValidationFailedApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 429:
+		var dest RateLimitedApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/problem+json" && rsp.StatusCode == 400:
+		var dest BadRequestApplicationProblemPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/problem+json" && rsp.StatusCode == 403:
+		var dest ForbiddenApplicationProblemPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON403 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/problem+json" && rsp.StatusCode == 404:
+		var dest NotFoundApplicationProblemPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/problem+json" && rsp.StatusCode == 422:
+		var dest ValidationFailedApplicationProblemPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON422 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/problem+json" && rsp.StatusCode == 429:
+		var dest RateLimitedApplicationProblemPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON429 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 400:
+		var dest BadRequestApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON400 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 401:
+		var dest UnauthorizedApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON401 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 403:
+		var dest ForbiddenApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON403 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 404:
+		var dest NotFoundApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON404 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 422:
+		var dest ValidationFailedApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON422 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 429:
+		var dest RateLimitedApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PaginatedHistoricalAnomaliesResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GenericError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListSlosResp parses an HTTP response from a ListSlosWithResponse call
 func ParseListSlosResp(rsp *http.Response) (*ListSlosResp, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -21753,6 +23760,268 @@ func ParseUpdateSloResp(rsp *http.Response) (*UpdateSloResp, error) {
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest SLO
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GenericError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetSloRealtimeCountsResp parses an HTTP response from a GetSloRealtimeCountsWithResponse call
+func ParseGetSloRealtimeCountsResp(rsp *http.Response) (*GetSloRealtimeCountsResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetSloRealtimeCountsResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 400:
+		var dest BadRequestApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 401:
+		var dest UnauthorizedApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 403:
+		var dest ForbiddenApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 404:
+		var dest NotFoundApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 429:
+		var dest RateLimitedApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/problem+json" && rsp.StatusCode == 400:
+		var dest BadRequestApplicationProblemPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/problem+json" && rsp.StatusCode == 403:
+		var dest ForbiddenApplicationProblemPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON403 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/problem+json" && rsp.StatusCode == 404:
+		var dest NotFoundApplicationProblemPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/problem+json" && rsp.StatusCode == 429:
+		var dest RateLimitedApplicationProblemPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON429 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 400:
+		var dest BadRequestApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON400 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 401:
+		var dest UnauthorizedApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON401 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 403:
+		var dest ForbiddenApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON403 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 404:
+		var dest NotFoundApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON404 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 429:
+		var dest RateLimitedApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SLOCountsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GenericError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetSloHourlyCountsHistoryResp parses an HTTP response from a GetSloHourlyCountsHistoryWithResponse call
+func ParseGetSloHourlyCountsHistoryResp(rsp *http.Response) (*GetSloHourlyCountsHistoryResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetSloHourlyCountsHistoryResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 400:
+		var dest BadRequestApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 401:
+		var dest UnauthorizedApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 403:
+		var dest ForbiddenApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 404:
+		var dest NotFoundApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/json" && rsp.StatusCode == 429:
+		var dest RateLimitedApplicationJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/problem+json" && rsp.StatusCode == 400:
+		var dest BadRequestApplicationProblemPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/problem+json" && rsp.StatusCode == 403:
+		var dest ForbiddenApplicationProblemPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON403 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/problem+json" && rsp.StatusCode == 404:
+		var dest NotFoundApplicationProblemPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/problem+json" && rsp.StatusCode == 429:
+		var dest RateLimitedApplicationProblemPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON429 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 400:
+		var dest BadRequestApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON400 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 401:
+		var dest UnauthorizedApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON401 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 403:
+		var dest ForbiddenApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON403 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 404:
+		var dest NotFoundApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON404 = &dest
+
+	case rsp.Header.Get("Content-Type") == "application/vnd.api+json" && rsp.StatusCode == 429:
+		var dest RateLimitedApplicationVndAPIPlusJSON
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationvndApiJSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SLOHourlyCountsResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

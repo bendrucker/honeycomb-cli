@@ -25,6 +25,10 @@
   ],
   "tags": [
     {
+      "name": "Anomaly Detection",
+      "description": "Anomaly Detection is in public beta. Endpoints and response shapes may change.\n\nAnomaly Detection identifies Signals - patterns in your services that deviate from their historical baseline - and can notify Recipients when a Signal turns anomalous.\nEach Signal is scoped to a service in a dataset and monitors one of the following:\n- **`error_rate`**: The fraction of erroring requests, compared to a trained normal band.\n- **`presence`**: Whether the service is emitting spans at all.\n\nSignals progress through the following statuses:\n- **`onboarding`**: The Signal has been created but does not yet have enough data to train.\n- **`training`**: A baseline is being learned from recent traffic.\n- **`active`**: The Signal is trained and monitoring for anomalies.\n- **`off`**: The Signal has been disabled and will not fire.\n- **`ineligible`**: The Signal cannot train because its service is not sending enough traffic to establish a reliable baseline.\n\nThis API allows you to list Signals, retrieve a Signal with its assigned Recipients, page through a Signal's historical anomalies, and update a Signal's enabled state, sensitivity, and Recipient assignments.\n\n## Authorization\n\nThe API key must have the **Manage Signals** permission. Learn more about [API keys here](https://docs.honeycomb.io/configure/environments/manage-api-keys/).\n"
+    },
+    {
       "name": "Auth",
       "description": "API Keys have various scopes permissions and belong to a specific Team or Environment.\n\nAny valid Honeycomb ingest or configuration API Key will work with this endpoint. Learn more about [API keys](https://docs.honeycomb.io/get-started/best-practices/api-keys).\n\nThese endpoints can be used to validate authentication for a key, to determine what authorizations have been granted\nto a key, and to determine the Team and Environment that a key belongs to.\n"
     },
@@ -106,11 +110,7 @@
     },
     {
       "name": "Triggers",
-      "description": "Triggers let you receive notifications when your data in Honeycomb crosses the thresholds that you configure.\nThe graph on which to alert is as flexible as a Honeycomb query, which helps reduce false positives due to known errors.\n\nThis API allows you to list, create, update, and delete Triggers.\n\n## Authorization\n\nThe API key must have the **Manage Triggers** permission. Learn more about [API keys here](https://docs.honeycomb.io/configure/environments/manage-api-keys/).\n"
-    },
-    {
-      "name": "Errors",
-      "description": "The Honeycomb API returns standardized error responses, as documented here.\n"
+      "description": "Triggers let you receive notifications when your data in Honeycomb crosses the thresholds that you configure.\nThe graph on which to alert is as flexible as a Honeycomb query, which helps reduce false positives due to known errors.\n\nTriggers support both standard event-based datasets and metrics datasets. Metrics triggers have additional capabilities\nsuch as granularity control.\nLearn more in the [Triggers documentation](https://docs.honeycomb.io/notify/alert/triggers/).\n\nThis API allows you to list, create, update, and delete Triggers.\n\n## Authorization\n\nThe API key must have the **Manage Triggers** permission. Learn more about [API keys here](https://docs.honeycomb.io/configure/environments/manage-api-keys/).\n"
     }
   ],
   "paths": {
@@ -1852,18 +1852,12 @@
                   "slug": "mydataset-",
                   "description": "A nice description of my dataset",
                   "expand_json_depth": 3,
-                  "created_at": "2022-07-21T18:39:23Z",
+                  "created_at": "2022-07-21 18:39:23+00:00",
                   "last_written_at": null,
                   "regular_columns_count": 0
                 }
               }
             }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
           },
           "409": {
             "description": "Conflict",
@@ -1897,6 +1891,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "422": {
             "$ref": "#/components/responses/ValidationFailed"
@@ -4104,7 +4104,7 @@
           }
         ],
         "summary": "Get Query Result",
-        "description": "Get the Query Result details for a specific Query Result ID.\nThis endpoint is used to fetch the results of a query that had previously been created. It is recommended to follow the Location header included in the Create Query Result output, but the URL can also be constructed manually with the &lt;query-result-id&gt;.\n",
+        "description": "Get the Query Result details for a specific Query Result ID.\nThis endpoint is used to fetch the results of a query that had previously been created. It is recommended to follow the Location header included in the Create Query Result output, but the URL can also be constructed manually with the &lt;query-result-id&gt;.\nNote: a query that fails to run still returns HTTP 200. Check the response body: a failed query has \"complete\": true with an \"error\" field in place of \"data\".\n",
         "tags": [
           "Query Data"
         ],
@@ -4226,6 +4226,33 @@
                         "graph_image_url": "https://ui.honeycomb.io/myteam/datasets/test-via-curl/result/hij678a/snapshot"
                       }
                     }
+                  },
+                  "Failed Query": {
+                    "description": "The query failed to run, so \"error\" replaces \"data\".",
+                    "value": {
+                      "query": {
+                        "calculations": [
+                          {
+                            "op": "COUNT"
+                          }
+                        ],
+                        "orders": [
+                          {
+                            "op": "COUNT",
+                            "order": "descending"
+                          }
+                        ],
+                        "limit": 10000,
+                        "time_range": 7200
+                      },
+                      "complete": true,
+                      "id": "klm901",
+                      "error": "we had trouble fetching your results! try again?",
+                      "links": {
+                        "query_url": "https://ui.honeycomb.io/myteam/datasets/test-via-curl/result/klm901",
+                        "graph_image_url": "https://ui.honeycomb.io/myteam/datasets/test-via-curl/result/klm901/snapshot"
+                      }
+                    }
                   }
                 }
               }
@@ -4291,11 +4318,11 @@
           "403": {
             "$ref": "#/components/responses/Forbidden"
           },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
-          },
           "422": {
             "$ref": "#/components/responses/ValidationFailed"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           }
         }
       },
@@ -4830,6 +4857,240 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/GenericError"
+          }
+        }
+      }
+    },
+    "/1/slos/{datasetSlug}/{sloId}/counts": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/datasetSlugOrAll"
+        },
+        {
+          "name": "sloId",
+          "description": "Unique identifier (ID) of the SLO.",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "security": [
+          {
+            "configuration_key": []
+          }
+        ],
+        "summary": "Get SLO Realtime Counts",
+        "description": "Get per-minute success and failure event counts for an SLO, updated approximately once per minute from a rolling 24-hour window.\n\nThis endpoint is intended for near-real-time integrations such as external SLO dashboards and alerting tools (e.g. nobl9). For weekly compliance history, use the [Get SLO History endpoint](https://api-docs.honeycomb.io/api/reporting/getSloHistory/).\n\n**Requirements:**\n- Available on the [Enterprise plan](https://www.honeycomb.io/pricing/) only.\n- This feature must be enabled for your team. Contact your account team\n  to request access.\n\n\n**Gaps:** Some minutes may have no entry in the `windows` array. The first window after a gap may contain a larger-than-usual delta. Treat missing timestamps as unavailable data, not zero-event periods.\n\n**Epoch:** The response includes an `epoch` field — a hash of the SLO's SLI expression and dataset configuration. If this value changes between responses, the underlying SLO definition has changed and any client-side cache should be invalidated.\n\n**Partial windows:** Windows marked `is_partial: true` may still receive additional events. This occurs for the most recent 10 minutes (late-arriving data settlement) or when no prior snapshot exists to compute a delta from.\n",
+        "tags": [
+          "SLOs"
+        ],
+        "operationId": "getSloRealtimeCounts",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "start_time",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Start of the time range as a Unix timestamp (seconds). Must be within the last 24 hours and no later than `end_time`.\n",
+            "example": 1745251200
+          },
+          {
+            "in": "query",
+            "name": "end_time",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "End of the time range as a Unix timestamp (seconds). Must be greater than `start_time` and within the same clock hour as `start_time`. Realtime counts accumulate from the start of each hour and reset at hour boundaries; use the [Get SLO Hourly Counts History endpoint](https://api-docs.honeycomb.io/api/slos/getSloHourlyCountsHistory/) for completed hours.\n",
+            "example": 1745254740
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "Ratelimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimitPolicy": {
+                "$ref": "#/components/headers/RateLimitPolicy"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SLOCountsResponse"
+                },
+                "example": {
+                  "slo_id": "bZ1aRHAUsjG",
+                  "resolution_seconds": 60,
+                  "epoch": "a3f9c2d1e8b74056",
+                  "period_start": 1745251200,
+                  "windows": [
+                    {
+                      "window_start": 1745251200,
+                      "window_end": 1745251260,
+                      "total_count": 1243,
+                      "error_count": 3,
+                      "is_partial": false
+                    },
+                    {
+                      "window_start": 1745251260,
+                      "window_end": 1745251320,
+                      "total_count": 1188,
+                      "error_count": 1,
+                      "is_partial": false
+                    },
+                    {
+                      "window_start": 1745251320,
+                      "window_end": 1745251380,
+                      "total_count": 1301,
+                      "error_count": 0,
+                      "is_partial": true
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/GenericError"
+          }
+        }
+      }
+    },
+    "/1/slos/{datasetSlug}/{sloId}/counts/history": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/datasetSlugOrAll"
+        },
+        {
+          "name": "sloId",
+          "description": "Unique identifier (ID) of the SLO.",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "security": [
+          {
+            "configuration_key": []
+          }
+        ],
+        "summary": "Get SLO Hourly Counts History",
+        "description": "Get hourly-bucketed total and error event counts for an SLO from the persistent historical store. Use this endpoint to retrieve completed historical hours; pair with the [Get SLO Realtime Counts endpoint](https://api-docs.honeycomb.io/api/slos/getslorealtimecounts/) for the current in-progress hour.\n\n**Requirements:**\n- Available on the [Enterprise plan](https://www.honeycomb.io/pricing/) only.\n- This feature must be enabled for your team. Contact your account team\n  to request access.\n\n\n**Partial buckets:** The most recent bucket may be marked `is_partial: true` if it covers the current in-progress hour. Counts for that bucket will increase until the hour completes.\n",
+        "tags": [
+          "SLOs"
+        ],
+        "operationId": "getSloHourlyCountsHistory",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "start_time",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Start of the time range as a Unix timestamp (seconds).\n",
+            "example": 1745168400
+          },
+          {
+            "in": "query",
+            "name": "end_time",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "End of the time range as a Unix timestamp (seconds). Must be greater than `start_time`.\n",
+            "example": 1745254800
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "Ratelimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimitPolicy": {
+                "$ref": "#/components/headers/RateLimitPolicy"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SLOHourlyCountsResponse"
+                },
+                "example": {
+                  "slo_id": "bZ1aRHAUsjG",
+                  "resolution_seconds": 3600,
+                  "buckets": [
+                    {
+                      "start_time": 1745168400,
+                      "end_time": 1745172000,
+                      "total_count": 74520,
+                      "error_count": 182,
+                      "is_partial": false
+                    },
+                    {
+                      "start_time": 1745172000,
+                      "end_time": 1745175600,
+                      "total_count": 71043,
+                      "error_count": 97,
+                      "is_partial": false
+                    },
+                    {
+                      "start_time": 1745251200,
+                      "end_time": 1745254800,
+                      "total_count": 12300,
+                      "error_count": 14,
+                      "is_partial": true
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
           },
@@ -4901,6 +5162,360 @@
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
+          },
+          "default": {
+            "$ref": "#/components/responses/GenericError"
+          }
+        }
+      }
+    },
+    "/1/signals": {
+      "get": {
+        "security": [
+          {
+            "configuration_key": []
+          }
+        ],
+        "summary": "List All Signals",
+        "description": "List Signals in the environment associated with your API key. Signals are returned in cursor-paginated pages and can be filtered by service, dataset, kind, status, and whether they are currently anomalous.\n",
+        "tags": [
+          "Anomaly Detection"
+        ],
+        "operationId": "listSignals",
+        "x-mint": {
+          "metadata": {
+            "tag": "Beta"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PaginationCursor"
+          },
+          {
+            "$ref": "#/components/parameters/PaginationSize"
+          },
+          {
+            "in": "query",
+            "name": "service_name",
+            "description": "Restrict results to Signals for a single service.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "checkout-api"
+          },
+          {
+            "in": "query",
+            "name": "dataset_slug",
+            "description": "Restrict results to Signals in a single dataset.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "checkout-api"
+          },
+          {
+            "in": "query",
+            "name": "measured_signal",
+            "description": "Restrict results to Signals of the given kind.",
+            "schema": {
+              "$ref": "#/components/schemas/AnomalySignal"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "description": "Restrict results to Signals in the given status.\n",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "onboarding",
+                "training",
+                "active",
+                "ineligible",
+                false
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "currently_anomalous",
+            "description": "When `true`, only return Signals that are currently in an anomalous state.",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "Ratelimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimitPolicy": {
+                "$ref": "#/components/headers/RateLimitPolicy"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedSignalsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/GenericError"
+          }
+        }
+      }
+    },
+    "/1/signals/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "description": "The unique identifier (ID) of a Signal.",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "security": [
+          {
+            "configuration_key": []
+          }
+        ],
+        "summary": "Get a Signal",
+        "description": "Fetch a Signal by ID, including the Recipients assigned to it.\n",
+        "tags": [
+          "Anomaly Detection"
+        ],
+        "operationId": "getSignal",
+        "x-mint": {
+          "metadata": {
+            "tag": "Beta"
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "Ratelimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimitPolicy": {
+                "$ref": "#/components/headers/RateLimitPolicy"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignalDetailResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/GenericError"
+          }
+        }
+      },
+      "put": {
+        "security": [
+          {
+            "configuration_key": []
+          }
+        ],
+        "summary": "Update a Signal",
+        "description": "Update a Signal by ID. All fields in the body are optional; only the fields you supply\nare applied.\n\n- `enabled`: Toggles the Signal on or off. Re-enabling a Signal that has already trained puts it back into `active`; otherwise it returns to `onboarding`.\n- `sensitivity`: Sets how far a measurement must deviate from the trained normal band before the Signal fires. Not applicable to `presence` Signals, and cannot be set on a Signal that has not yet trained.\n- `recipients`: Replaces the Signal's Recipient set. An empty array clears all Recipients. Modifying Recipients requires the **Manage Recipients** permission in addition to **Manage Signals**.\n",
+        "tags": [
+          "Anomaly Detection"
+        ],
+        "operationId": "updateSignal",
+        "x-mint": {
+          "metadata": {
+            "tag": "Beta"
+          }
+        },
+        "requestBody": {
+          "description": "Fields to update on the Signal. All fields are optional.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSignalRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "Ratelimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimitPolicy": {
+                "$ref": "#/components/headers/RateLimitPolicy"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignalDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/GenericError"
+          }
+        }
+      }
+    },
+    "/1/signals/{id}/historical_anomalies": {
+      "parameters": [
+        {
+          "name": "id",
+          "description": "The unique identifier (ID) of a Signal.",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "security": [
+          {
+            "configuration_key": []
+          }
+        ],
+        "summary": "List Historical Anomalies",
+        "description": "List anomalies that a Signal has resolved within a bounded time window. Anomalies are returned in cursor-paginated pages, most recent first. `start_time` and `end_time` are required and must span no more than 30 days.\n",
+        "tags": [
+          "Anomaly Detection"
+        ],
+        "operationId": "listSignalHistoricalAnomalies",
+        "x-mint": {
+          "metadata": {
+            "tag": "Beta"
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "start_time",
+            "required": true,
+            "description": "Start of the query window, in seconds since UNIX epoch.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1740787200
+          },
+          {
+            "in": "query",
+            "name": "end_time",
+            "required": true,
+            "description": "End of the query window, in seconds since UNIX epoch. Must be after `start_time` and within 30 days of it.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1741392000
+          },
+          {
+            "$ref": "#/components/parameters/PaginationCursor"
+          },
+          {
+            "$ref": "#/components/parameters/PaginationSize"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "Ratelimit": {
+                "$ref": "#/components/headers/RateLimit"
+              },
+              "RateLimitPolicy": {
+                "$ref": "#/components/headers/RateLimitPolicy"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedHistoricalAnomaliesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           },
           "default": {
             "$ref": "#/components/responses/GenericError"
@@ -5538,11 +6153,11 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
           },
           "409": {
             "$ref": "#/components/responses/Conflict"
@@ -5809,6 +6424,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
           "400": {
             "description": "Bad Request",
             "headers": {
@@ -5829,15 +6453,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
           }
         }
       },
@@ -5892,6 +6507,15 @@
               }
             }
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
           "400": {
             "description": "Bad Request",
             "headers": {
@@ -5913,17 +6537,8 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
           "422": {
             "$ref": "#/components/responses/ValidationFailed"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
           }
         }
       },
@@ -5954,11 +6569,11 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
           },
           "409": {
             "$ref": "#/components/responses/Conflict"
@@ -6753,12 +7368,6 @@
           "type": "string"
         },
         "example": "Fri, 22 Mar 2024 18:37:53 GMT"
-      },
-      "ETag": {
-        "description": "The ETag header is a response header that allows a client to cache the response. If the client has a cached copy of the pipeline configuration, it can provide the ETag value of the cached copy in the If-None-Match header. If the configuration has not changed since the client last fetched it, the server will respond with a 304 Not Modified status code.\n",
-        "schema": {
-          "type": "string"
-        }
       }
     },
     "responses": {
@@ -7228,75 +7837,6 @@
           }
         }
       },
-      "RateLimitedError": {
-        "x-tags": [
-          "Errors"
-        ],
-        "description": "You have exceeded your assigned limit for the requested API action.\n\nHoneycomb supports two response formats for rate limited errors:\n\n  * JSON:API errors are in use for 'V2' API endpoints.\n  * RFC7807 'Problem Detail' errors are in use for 'V1' API endpoints.\n\nIn either case, an HTTP 429 'Rate Limited' response will include the RFC7231 `Retry-After` header with the time at which you may retry the request,\nwith the exception of the Query Data, and Events and OpenTelemetry ingestion APIs.\nIn the case of the Query Data, and Events and OpenTelemetry ingestion APIs, the `Retry-After` header is not included in the Rate Limited response.\n\nIn addition to the `Retry-After` header when rate limiting is in effect,\nthe API response may include `RateLimit` and `RateLimitPolicy` headers with detailed information about your limits for that type of interaction.\nThe documentation for the specific endpoint will indicate if these headers are included in the response.\n",
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/RateLimitedProblem"
-          },
-          {
-            "$ref": "#/components/schemas/RateLimitedJSONAPI"
-          }
-        ],
-        "examples": [
-          {
-            "RateLimited V1": {
-              "status": 429,
-              "type": "https://api.honeycomb.io/problems/rate-limited",
-              "title": "You have exceeded your rate limit.",
-              "error": "You have exceeded your rate limit.",
-              "detail": "Please try again after 2025-02-01T15:23:12Z."
-            }
-          },
-          {
-            "RateLimited V2": null,
-            "errors": [
-              {
-                "id": "06dcdd6508ca822f0e7e2bb4121c1f52",
-                "code": "rate-limited/may-retry",
-                "title": "request rate limit exceeded",
-                "detail": "Please try again after 2025-02-01T15:23:12Z."
-              }
-            ]
-          }
-        ]
-      },
-      "RateLimitedProblem": {
-        "description": "An RFC7807 'Problem Detail' formatted Rate Limited error.",
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/DetailedError"
-          }
-        ],
-        "example": {
-          "status": 429,
-          "type": "https://api.honeycomb.io/problems/rate-limited",
-          "title": "You have exceeded your rate limit.",
-          "error": "You have exceeded your rate limit.",
-          "detail": "Please try again after 2025-02-01T15:23:12Z."
-        }
-      },
-      "RateLimitedJSONAPI": {
-        "description": "An JSON:API formatted Rate Limited error.",
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/JSONAPIError"
-          }
-        ],
-        "example": {
-          "errors": [
-            {
-              "id": "06dcdd6508ca822f0e7e2bb4121c1f52",
-              "code": "rate-limited/may-retry",
-              "title": "request rate limit exceeded",
-              "detail": "Please try again after 2025-02-01T15:23:12Z."
-            }
-          ]
-        }
-      },
       "ValidationError": {
         "x-tags": [
           "Errors"
@@ -7408,12 +7948,6 @@
               "ingest"
             ],
             "description": "The type of API Key."
-          },
-          "time_to_live": {
-            "x-hidden": true,
-            "type": "string",
-            "description": "An optional property of an ingest key that determines the time at which the key becomes unauthorized.\nWhen the time_to_live passes, the key will no longer be usable. Expressed as a RFC3339-formatted time.\n",
-            "example": "2025-11-19T18:01:02+00:00"
           },
           "api_key_access": {
             "type": "object",
@@ -7872,6 +8406,62 @@
           }
         }
       },
+      "Threshold": {
+        "type": "object",
+        "description": "A threshold line to display on a chart, with optional label and styling. Thresholds allow you to visualize important values or boundaries on your charts.\n",
+        "required": [
+          "value",
+          "color",
+          "operation",
+          "line_style"
+        ],
+        "properties": {
+          "value": {
+            "type": "number",
+            "description": "The numeric value where the threshold line should be displayed",
+            "format": "double",
+            "example": 100
+          },
+          "label": {
+            "type": "string",
+            "description": "Optional label to display for the threshold (max 35 characters)",
+            "maxLength": 35,
+            "example": "Critical"
+          },
+          "color": {
+            "type": "string",
+            "description": "Color for the threshold line",
+            "enum": [
+              "red",
+              "yellow",
+              "blue",
+              "green",
+              "purple"
+            ],
+            "example": "red"
+          },
+          "operation": {
+            "type": "string",
+            "description": "Threshold operation type: \"gt\" for greater than, \"lt\" for less than\n",
+            "enum": [
+              "gt",
+              "lt"
+            ],
+            "example": "gt"
+          },
+          "line_style": {
+            "type": "string",
+            "description": "Line style for the threshold: \"filled-solid\" for filled area with solid line, \"filled-dotted\" for filled area with dotted line, \"solid\" for solid line only, \"dotted\" for dotted line only\n",
+            "enum": [
+              "filled-solid",
+              "filled-dotted",
+              "solid",
+              "dotted"
+            ],
+            "example": "filled-solid"
+          }
+        }
+      },
       "BoardQueryVisualizationSettings": {
         "type": "object",
         "description": "A map of values to control the display settings for the Query on the Board. Unspecified boolean values are assumed to be `false`. Unspecified integers are assumed to be `0`, unspecified arrays are assumed to be null and unspecified strings are assumed to be empty. This is incompatible with the `graph_settings` field.\n",
@@ -7918,6 +8508,10 @@
                   ],
                   "default": "default"
                 },
+                "hide_other": {
+                  "type": "boolean",
+                  "default": false
+                },
                 "log_scale": {
                   "type": "boolean",
                   "default": false
@@ -7925,6 +8519,14 @@
                 "omit_missing_values": {
                   "type": "boolean",
                   "default": false
+                },
+                "thresholds": {
+                  "type": "array",
+                  "description": "Optional threshold lines to display on this chart. Currently limited to at most 5 entries.\n",
+                  "maxItems": 5,
+                  "items": {
+                    "$ref": "#/components/schemas/Threshold"
+                  }
                 }
               }
             }
@@ -8287,6 +8889,15 @@
             "description": "The ISO8601-formatted time when the dataset was created.",
             "example": "2022-09-22T17:32:11Z",
             "readOnly": true
+          },
+          "dataset_type": {
+            "type": "string",
+            "description": "The type of data contained in the dataset. Only present for time-series metrics datasets.\n",
+            "enum": [
+              "metrics"
+            ],
+            "example": "metrics",
+            "readOnly": true
           }
         }
       },
@@ -8547,6 +9158,10 @@
                 }
               }
             }
+          },
+          "muted": {
+            "type": "boolean",
+            "description": "When `true`, the Recipient is muted for this alert and will not receive notifications.\nOnly applies to Recipients assigned to a Signal via the Anomaly Detection API.\n"
           }
         }
       },
@@ -8645,12 +9260,6 @@
           "RATE_AVG",
           "RATE_SUM",
           "RATE_MAX"
-        ]
-      },
-      "UpdatePipelineConfigurationRolloutResponse": {
-        "type": "object",
-        "required": [
-          "data"
         ]
       },
       "QueryOp": {
@@ -9144,7 +9753,7 @@
       },
       "QueryResultDetails": {
         "type": "object",
-        "description": "Query Results for the Query ID.\nThe response body will be a JSON object with \"complete\": true and the results populated once the query is complete. The response body will contain caching headers to indicate that once complete, and the Query Result may be cached, as it will not change.\n",
+        "description": "Query Results for the Query ID.\nThe response body will be a JSON object with \"complete\": true and the results populated once the query is complete. If the query fails to run, the response will still return HTTP 200 with \"complete\": true, but the \"data\" field will be replaced by an \"error\" field describing the failure. The response body will contain caching headers to indicate that once complete, and the Query Result may be cached, as it will not change.\n",
         "properties": {
           "query": {
             "readOnly": true,
@@ -9165,6 +9774,12 @@
             "description": "Indicates if the query results are available yet or not. For example, is the query still being processed or complete?",
             "readOnly": true,
             "example": true
+          },
+          "error": {
+            "type": "string",
+            "description": "Only present if the query failed to run. Contains a human-readable message describing the failure. When set, the \"data\" field is omitted.\n",
+            "readOnly": true,
+            "example": "we had trouble fetching your results! try again?"
           },
           "data": {
             "type": "object",
@@ -9811,13 +10426,13 @@
                   "start_time": {
                     "type": "string",
                     "description": "A UTC time in HH:mm format (13:00)",
-                    "example": "14:00",
+                    "example": 840,
                     "pattern": "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$"
                   },
                   "end_time": {
                     "type": "string",
                     "description": "A UTC time in HH:mm format (13:00)",
-                    "example": "21:00",
+                    "example": 1260,
                     "pattern": "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$"
                   }
                 }
@@ -9874,6 +10489,13 @@
                 "example": {}
               }
             ]
+          },
+          "auto_investigate": {
+            "x-internal": true,
+            "type": "boolean",
+            "description": "When true, Honeycomb will automatically start an investigation when this Trigger fires.\n",
+            "default": false,
+            "example": false
           }
         }
       },
@@ -9887,7 +10509,7 @@
             "properties": {
               "query": {
                 "type": "object",
-                "description": "A query ID or an inline query that is a strict subset of a Query Specification. Note: `usage_mode` is not supported for triggers.\n",
+                "description": "An inline query specification that is a strict subset of the standard Query Specification.\n\n**Required Fields:**\n- `calculations`: At least one aggregate calculation (e.g., COUNT, AVG, SUM). Cannot use HEATMAP or CONCURRENCY.\n- `time_range`: Query duration in seconds. Must be between the trigger `frequency` and the lesser of (4 × `frequency`) or 86400 (24 hours).\n\n**Prohibited Fields:**\n- `orders`: Not supported. Trigger queries automatically order results based on the threshold operator.\n- `limit`: Not supported. All matching result groups are evaluated.\n- `start_time` and `end_time`: Not supported. Use `time_range` instead for relative time windows.\n- `usage_mode`: Not supported for triggers.\n\n**Calculation Restrictions:**\n- Without formulas: Maximum 1 non-having aggregate allowed.\n- With formulas: Maximum 1 formula allowed, with up to 100 aggregates.\n- Maximum 1 HAVING clause allowed, which must correspond to an existing calculation.\n- Named aggregates cannot be combined with global `filters`.\n\n**Metrics Dataset Specific:**\n- `granularity` field is supported and must be within calculated min/max bounds based on time range.\n- Nil aggregate values are skipped during trigger evaluation (no error, group is simply not evaluated).\n- Requires a non-legacy environment.\n\n**Standard Datasets:**\n- `granularity` field is not supported.\n\nLearn more about [Triggers](https://docs.honeycomb.io/notify/alert/triggers/).\n",
                 "properties": {}
               }
             }
@@ -9904,7 +10526,7 @@
             "properties": {
               "query_id": {
                 "type": "string",
-                "description": "The ID of a Query that meets the criteria for being used as a Trigger, per above.\n"
+                "description": "The ID of an existing saved Query that meets the trigger query requirements.\n\nThe referenced query must satisfy the same restrictions as inline trigger queries:\n- Must have at least one aggregate calculation (not HEATMAP or CONCURRENCY)\n- Cannot have `orders`, `limit`, `start_time`, `end_time`, or `usage_mode` fields set\n- Must have appropriate `time_range` relative to trigger frequency\n- Must respect calculation restrictions (max 1 non-having aggregate without formulas, or max 1 formula with up to 100 aggregates)\n- Maximum 1 having clause allowed\n- Named aggregates cannot be combined with global filters\n- For metrics datasets: may include `granularity` field (within calculated bounds)\n- For standard datasets: must not include `granularity` field\n\nThe API will validate the referenced query meets these criteria when creating or updating the trigger.\n\nSee the inline `query` field documentation above for complete trigger query requirements and learn more about [Triggers](https://docs.honeycomb.io/notify/alert/triggers/).\n"
               }
             }
           }
@@ -10276,6 +10898,139 @@
           }
         }
       },
+      "SLOCountsResponse": {
+        "type": "object",
+        "properties": {
+          "slo_id": {
+            "type": "string",
+            "description": "The unique identifier of the SLO.",
+            "readOnly": true,
+            "example": "bZ1aRHAUsjG"
+          },
+          "resolution_seconds": {
+            "type": "integer",
+            "description": "The width of each window in seconds. Always `60`.",
+            "readOnly": true,
+            "example": 60
+          },
+          "epoch": {
+            "type": "string",
+            "description": "A hash of the SLO's SLI expression and dataset configuration. This value changes whenever the SLO definition changes in a way that affects count computation (e.g. a derived column expression update). Clients should compare this value across responses: a change means counts have reset under a new key and any client-side cache should be invalidated.\n",
+            "readOnly": true,
+            "example": "a3f9c2d1e8b74056"
+          },
+          "period_start": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Unix timestamp of the start of the current accumulation period (the most recent hour boundary). The cumulative totals used to compute deltas reset to zero at this point. Clients should re-baseline their delta computations whenever this value changes between responses.\n",
+            "readOnly": true,
+            "example": 1745251200
+          },
+          "windows": {
+            "type": "array",
+            "description": "Ordered list of per-minute count windows within the requested time range. Gaps between windows indicate minutes with no recorded snapshot. An empty array means no data exists for the requested range.\n",
+            "items": {
+              "$ref": "#/components/schemas/SLOCountWindow"
+            }
+          }
+        }
+      },
+      "SLOCountWindow": {
+        "type": "object",
+        "properties": {
+          "window_start": {
+            "type": "integer",
+            "description": "Start of the window as a Unix timestamp (seconds).",
+            "readOnly": true,
+            "example": 1745251200
+          },
+          "window_end": {
+            "type": "integer",
+            "description": "End of the window as a Unix timestamp (seconds). Always `window_start + 60`.\n",
+            "readOnly": true,
+            "example": 1745254260
+          },
+          "total_count": {
+            "type": "integer",
+            "description": "Total number of events (good + bad) in this window.",
+            "readOnly": true,
+            "example": 1243
+          },
+          "error_count": {
+            "type": "integer",
+            "description": "Number of failed (bad) events in this window.",
+            "readOnly": true,
+            "example": 3
+          },
+          "is_partial": {
+            "type": "boolean",
+            "description": "When `true`, the data for this window may be incomplete. This occurs in three cases:\n1. **No prior anchor**: The first window has no preceding snapshot\n   to delta from, so the value is a raw cumulative total rather\n   than a true per-minute delta.\n\n2. **Settlement window**: The window started within the last 10\n   minutes. Late-arriving events from client buffering or\n   ingestion lag may still appear in a subsequent snapshot.\n\n3. **Hour boundary reset**: Cumulative totals reset to zero at\n   each hour boundary. A request spanning a boundary will see\n   the new hour's counts start near zero while the anchor came\n   from the prior hour's larger total. Both `total_count` and\n   `error_count` are zeroed for this window. Use `period_start`\n   to detect this and avoid requesting ranges that cross a\n   boundary.\n\nClients building alerting on top of this data should treat `is_partial: true` windows as provisional.\n",
+            "readOnly": true,
+            "example": false
+          }
+        }
+      },
+      "SLOHourlyCountsResponse": {
+        "type": "object",
+        "properties": {
+          "slo_id": {
+            "type": "string",
+            "description": "The unique identifier of the SLO.",
+            "readOnly": true,
+            "example": "bZ1aRHAUsjG"
+          },
+          "resolution_seconds": {
+            "type": "integer",
+            "description": "The width of each bucket in seconds. Always `3600`.",
+            "readOnly": true,
+            "example": 3600
+          },
+          "buckets": {
+            "type": "array",
+            "description": "Ordered list of hourly count buckets within the requested time range. Gaps indicate hours with no recorded data. An empty array means no data exists for the requested range.\n",
+            "items": {
+              "$ref": "#/components/schemas/SLOHourBucket"
+            }
+          }
+        }
+      },
+      "SLOHourBucket": {
+        "type": "object",
+        "properties": {
+          "start_time": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Start of the hour as a Unix timestamp (seconds).",
+            "readOnly": true,
+            "example": 1745168400
+          },
+          "end_time": {
+            "type": "integer",
+            "format": "int64",
+            "description": "End of the hour as a Unix timestamp (seconds). Always `start_time + 3600`.\n",
+            "readOnly": true,
+            "example": 1745172000
+          },
+          "total_count": {
+            "type": "integer",
+            "description": "Total number of events (good + bad) in this hour.",
+            "readOnly": true,
+            "example": 74520
+          },
+          "error_count": {
+            "type": "integer",
+            "description": "Number of failed (bad) events in this hour.",
+            "readOnly": true,
+            "example": 182
+          },
+          "is_partial": {
+            "type": "boolean",
+            "description": "When `true`, this bucket covers the current in-progress hour and its counts will increase until the hour completes. Clients should treat `is_partial: true` buckets as provisional.\n",
+            "readOnly": true,
+            "example": false
+          }
+        }
+      },
       "BurnAlertListResponse": {
         "type": "object",
         "required": [
@@ -10414,6 +11169,13 @@
             "description": "The ISO8601-formatted time when the Burn Alert was updated.",
             "readOnly": true,
             "example": "2022-10-31T15:08:11Z"
+          },
+          "auto_investigate": {
+            "x-internal": true,
+            "type": "boolean",
+            "description": "When true, Honeycomb will automatically start an investigation when this Burn Alert fires.\n",
+            "default": false,
+            "example": false
           }
         }
       },
@@ -10751,6 +11513,362 @@
           }
         ]
       },
+      "AnomalySignal": {
+        "type": "string",
+        "description": "The kind of measurement the Signal is trained on.\n\n- `error_rate`: The fraction of erroring requests for the service.\n- `presence`: Whether the service is producing spans.\n",
+        "enum": [
+          "error_rate",
+          "presence"
+        ],
+        "example": "error_rate"
+      },
+      "AnomalySignalStatus": {
+        "type": "string",
+        "description": "The lifecycle status of the Signal.\n\n`ineligible` is returned when the underlying service does not meet the conditions\nrequired for training.\n",
+        "enum": [
+          "onboarding",
+          "training",
+          "active",
+          false,
+          "ineligible"
+        ],
+        "example": "active"
+      },
+      "AnomalySignalSensitivity": {
+        "type": "string",
+        "description": "How far a measurement must deviate from the trained normal band before the Signal fires.\n\nHigher sensitivity narrows the normal band and catches smaller deviations.\n`sensitivity` is always `null` for `presence` Signals.\n",
+        "enum": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "example": "medium"
+      },
+      "Signal": {
+        "type": "object",
+        "description": "A Honeycomb Anomaly Detection Signal.",
+        "required": [
+          "id",
+          "service_name",
+          "dataset_slug",
+          "environment_slug",
+          "measured_signal",
+          "enabled",
+          "status",
+          "sensitivity",
+          "auto_investigate",
+          "currently_anomalous",
+          "last_anomaly_started_at",
+          "last_anomaly_ended_at",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier (ID) of the Signal.",
+            "readOnly": true,
+            "example": "hcasp_01j9x1yq0k2t8m9n3v4b5r6c7d"
+          },
+          "service_name": {
+            "type": "string",
+            "description": "The name of the service the Signal monitors.",
+            "readOnly": true,
+            "example": "checkout-api"
+          },
+          "dataset_slug": {
+            "type": "string",
+            "description": "The slug of the dataset the Signal's service reports to.",
+            "readOnly": true,
+            "example": "checkout-api"
+          },
+          "environment_slug": {
+            "type": "string",
+            "description": "The slug of the environment the Signal belongs to.",
+            "readOnly": true,
+            "example": "production"
+          },
+          "measured_signal": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AnomalySignal"
+              }
+            ],
+            "description": "The kind of measurement the Signal is trained on.",
+            "readOnly": true
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether the Signal is currently enabled. Disabled Signals do not fire.",
+            "example": true
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AnomalySignalStatus"
+              }
+            ],
+            "description": "The lifecycle status of the Signal.",
+            "readOnly": true
+          },
+          "sensitivity": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AnomalySignalSensitivity"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How far a measurement must deviate from the trained normal band before the Signal fires. Always `null` for `presence` Signals, and `null` for any Signal that has not yet trained.\n"
+          },
+          "auto_investigate": {
+            "type": "boolean",
+            "description": "When `true`, Honeycomb will automatically start an investigation when this Signal fires.",
+            "readOnly": true,
+            "example": false
+          },
+          "currently_anomalous": {
+            "type": "boolean",
+            "description": "Whether the Signal is currently in an anomalous state.",
+            "readOnly": true,
+            "example": false
+          },
+          "last_anomaly_started_at": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "The start time of the most recent anomaly, in seconds since UNIX epoch. `null` when the Signal has never been anomalous.",
+            "readOnly": true,
+            "example": 1741089600
+          },
+          "last_anomaly_ended_at": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "The end time of the most recent anomaly, in seconds since UNIX epoch. `null` when no anomaly has ended yet, or the Signal is currently anomalous.",
+            "readOnly": true,
+            "example": 1741093200
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The ISO8601-formatted time when the Signal was created.",
+            "readOnly": true,
+            "example": "2025-02-14T17:32:11Z"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The ISO8601-formatted time when the Signal was last updated.",
+            "readOnly": true,
+            "example": "2025-03-01T10:04:22Z"
+          }
+        }
+      },
+      "SignalDetailResponse": {
+        "description": "A Signal with its assigned Recipients.",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Signal"
+          },
+          {
+            "type": "object",
+            "required": [
+              "recipients"
+            ],
+            "properties": {
+              "recipients": {
+                "type": "array",
+                "description": "The Recipients notified when this Signal fires.",
+                "items": {
+                  "$ref": "#/components/schemas/NotificationRecipient"
+                },
+                "example": [
+                  {
+                    "id": "hcar_01jak3ymk8s5cpc2xz3q7d8v9r",
+                    "type": "pagerduty",
+                    "details": {
+                      "pagerduty_severity": "critical",
+                      "muted": false
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "PaginatedSignalsResponse": {
+        "type": "object",
+        "description": "A page of Signals.",
+        "required": [
+          "signals"
+        ],
+        "properties": {
+          "signals": {
+            "type": "array",
+            "description": "The Signals in this page.",
+            "items": {
+              "$ref": "#/components/schemas/Signal"
+            }
+          },
+          "links": {
+            "$ref": "#/components/schemas/PaginationLinks"
+          }
+        }
+      },
+      "UpdateSignalRequest": {
+        "type": "object",
+        "description": "Fields to update on a Signal. All fields are optional and only supplied fields are applied.",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "description": "Turn the Signal on (`true`) or off (`false`).",
+            "example": true
+          },
+          "sensitivity": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AnomalySignalSensitivity"
+              }
+            ],
+            "description": "Set the sensitivity bucket for `error_rate` Signals. Cannot be set on `presence` Signals or on Signals that have not yet trained.\n"
+          },
+          "recipients": {
+            "type": "array",
+            "description": "Replace the Signal's Recipient set with the given list. An empty array clears all Recipients. Each Recipient must be referenced by its `id` from the [Recipients API](/api/recipients/). Requires the **Manage Recipients** permission in addition to **Manage Signals**.\n",
+            "items": {
+              "$ref": "#/components/schemas/SignalRecipient"
+            }
+          }
+        }
+      },
+      "SignalRecipient": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "description": "A Recipient assigned to a Signal.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique identifier of an existing Recipient. Create Recipients via the [Recipients API](/api/recipients/).",
+            "example": "hcar_01jak3ymk8s5cpc2xz3q7d8v9r"
+          },
+          "details": {
+            "type": "object",
+            "description": "Per-assignment settings for how this Recipient receives notifications for this Signal.",
+            "properties": {
+              "pagerduty_severity": {
+                "type": "string",
+                "description": "Severity to use when the assigned Recipient is a PagerDuty Recipient. Rejected for non-PagerDuty Recipients.",
+                "enum": [
+                  "critical",
+                  "error",
+                  "warning",
+                  "info"
+                ],
+                "example": "critical"
+              },
+              "muted": {
+                "type": "boolean",
+                "description": "When `true`, the Recipient is muted for this Signal and will not receive notifications.",
+                "default": false
+              }
+            }
+          }
+        }
+      },
+      "HistoricalAnomaly": {
+        "type": "object",
+        "description": "A resolved anomaly that a Signal previously fired for.",
+        "required": [
+          "id",
+          "started_at",
+          "ended_at",
+          "measurement",
+          "normal_range"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "A deterministic identifier for the anomaly, derived from the Signal, its measured kind, and the anomaly's start time.",
+            "readOnly": true,
+            "example": "0f8d0f3a-3f8b-5f2b-8f2b-1f2b3f4b5f6b"
+          },
+          "started_at": {
+            "type": "integer",
+            "description": "The time the anomaly started, in seconds since UNIX epoch.",
+            "readOnly": true,
+            "example": 1741089600
+          },
+          "ended_at": {
+            "type": "integer",
+            "description": "The time the anomaly ended, in seconds since UNIX epoch.",
+            "readOnly": true,
+            "example": 1741093200
+          },
+          "measurement": {
+            "type": "number",
+            "description": "The measured value that triggered the anomaly.",
+            "readOnly": true,
+            "example": 0.42
+          },
+          "normal_range": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/HistoricalAnomalyNormalRange"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The trained normal band the measurement exceeded. Always `null` for anomalies on `presence` Signals."
+          }
+        }
+      },
+      "HistoricalAnomalyNormalRange": {
+        "type": "object",
+        "description": "The trained normal band a measurement exceeded.",
+        "required": [
+          "lower",
+          "upper"
+        ],
+        "properties": {
+          "lower": {
+            "type": "number",
+            "description": "The lower bound of the trained normal band.",
+            "example": 0.01
+          },
+          "upper": {
+            "type": "number",
+            "description": "The upper bound of the trained normal band.",
+            "example": 0.08
+          }
+        }
+      },
+      "PaginatedHistoricalAnomaliesResponse": {
+        "type": "object",
+        "description": "A page of resolved historical anomalies for a Signal.",
+        "required": [
+          "historical_anomalies"
+        ],
+        "properties": {
+          "historical_anomalies": {
+            "type": "array",
+            "description": "The anomalies in this page, most recent first.",
+            "items": {
+              "$ref": "#/components/schemas/HistoricalAnomaly"
+            }
+          },
+          "links": {
+            "$ref": "#/components/schemas/PaginationLinks"
+          }
+        }
+      },
       "IngestKeyAttributes": {
         "title": "Ingest Key",
         "allOf": [
@@ -10896,6 +12014,11 @@
                 "description": "Whether this API Key can manage Recipients",
                 "default": false
               },
+              "manage_signals": {
+                "type": "boolean",
+                "description": "Whether this API Key can manage Signals (Anomaly Detection)",
+                "default": false
+              },
               "manage_privateBoards": {
                 "type": "boolean",
                 "description": "Whether this API Key can manage Private Boards",
@@ -10948,12 +12071,6 @@
               "ingest"
             ],
             "example": "ingest"
-          },
-          "time_to_live": {
-            "x-hidden": true,
-            "type": "string",
-            "description": "An optional property of an ingest key that determines the time at which the key becomes unauthorized.\nWhen the time_to_live passes, the key will no longer be usable. The time_to_live property can only\nbe set when the key is created and cannot be changed.\nExpressed as a RFC3339-formatted time.\n",
-            "example": "2025-11-19T18:01:02+00:00"
           }
         }
       },
@@ -11034,35 +12151,6 @@
                 "type": "string",
                 "enum": [
                   "environments"
-                ]
-              }
-            }
-          }
-        }
-      },
-      "DatasetRelationship": {
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "description": "The Dataset this object is associated with.",
-        "properties": {
-          "data": {
-            "type": "object",
-            "required": [
-              "id",
-              "type"
-            ],
-            "properties": {
-              "id": {
-                "type": "string",
-                "description": "The dataset slug or \"__all__\" for environment-wide resources.",
-                "example": "my-dataset"
-              },
-              "type": {
-                "type": "string",
-                "enum": [
-                  "datasets"
                 ]
               }
             }
@@ -11703,290 +12791,6 @@
           }
         }
       },
-      "MarkerObject": {
-        "type": "object",
-        "required": [
-          "id",
-          "type",
-          "attributes",
-          "links"
-        ],
-        "properties": {
-          "id": {
-            "type": "string",
-            "readOnly": true,
-            "description": "The unique identifier of the Marker",
-            "example": "d1c84ec0"
-          },
-          "type": {
-            "type": "string",
-            "readOnly": true,
-            "enum": [
-              "markers"
-            ]
-          },
-          "attributes": {
-            "type": "object",
-            "required": [
-              "start_time"
-            ],
-            "properties": {
-              "start_time": {
-                "type": "integer",
-                "description": "The time the Marker should be placed. Expressed in Unix Time (seconds since epoch).",
-                "example": 1471040808
-              },
-              "end_time": {
-                "type": "integer",
-                "description": "Optional end time, allows a Marker to represent a time range. Expressed in Unix Time (seconds since epoch).",
-                "example": 1471040908
-              },
-              "message": {
-                "type": "string",
-                "description": "A message to describe this specific Marker.",
-                "example": "backend deploy #123"
-              },
-              "type": {
-                "type": "string",
-                "description": "Groups similar Markers. All Markers of the same type appear with the same color on the graph.",
-                "example": "deploy"
-              },
-              "url": {
-                "type": "string",
-                "description": "A target URL for the marker. Clicking the marker text will navigate to this URL.",
-                "example": "https://github.com/myorg/myrepo/commit/abc123"
-              },
-              "color": {
-                "type": "string",
-                "readOnly": true,
-                "description": "Color assigned to this marker type via Marker Settings. Specified as hexadecimal RGB.",
-                "example": "#F96E11"
-              },
-              "timestamps": {
-                "type": "object",
-                "readOnly": true,
-                "properties": {
-                  "created": {
-                    "type": "string",
-                    "format": "date-time",
-                    "description": "The ISO8601-formatted time when the Marker was created.",
-                    "readOnly": true,
-                    "example": "2022-09-22T17:32:11Z"
-                  },
-                  "updated": {
-                    "type": "string",
-                    "format": "date-time",
-                    "description": "The ISO8601-formatted time when the Marker was updated.",
-                    "readOnly": true,
-                    "example": "2022-10-31T15:08:11Z"
-                  }
-                }
-              }
-            }
-          },
-          "relationships": {
-            "type": "object",
-            "properties": {
-              "environment": {
-                "$ref": "#/components/schemas/EnvironmentRelationship"
-              },
-              "dataset": {
-                "type": "object",
-                "description": "Optional dataset relationship. If null, this is an environment-wide marker.",
-                "properties": {
-                  "data": {
-                    "type": [
-                      "object",
-                      "null"
-                    ],
-                    "properties": {
-                      "type": {
-                        "type": "string",
-                        "enum": [
-                          "datasets"
-                        ]
-                      },
-                      "id": {
-                        "type": "string",
-                        "description": "The dataset ID",
-                        "example": "hcxds_12345678901234567890123456"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "links": {
-            "type": "object",
-            "properties": {
-              "self": {
-                "type": "string",
-                "description": "The URL of this resource",
-                "readOnly": true,
-                "example": "/2/teams/my-team/environments/hcxen_12345678901234567890123456/markers/d1c84ec0"
-              }
-            }
-          }
-        }
-      },
-      "MarkerResponse": {
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/MarkerObject"
-          }
-        }
-      },
-      "MarkerCreateRequest": {
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "properties": {
-          "data": {
-            "type": "object",
-            "required": [
-              "type",
-              "attributes",
-              "relationships"
-            ],
-            "properties": {
-              "type": {
-                "type": "string",
-                "enum": [
-                  "markers"
-                ]
-              },
-              "attributes": {
-                "type": "object",
-                "required": [
-                  "start_time"
-                ],
-                "properties": {
-                  "start_time": {
-                    "type": "integer",
-                    "description": "The time the Marker should be placed. Expressed in Unix Time (seconds since epoch).",
-                    "example": 1471040808
-                  },
-                  "end_time": {
-                    "type": "integer",
-                    "description": "Optional end time. Must be >= start_time if provided. Expressed in Unix Time (seconds since epoch).",
-                    "example": 1471040908
-                  },
-                  "message": {
-                    "type": "string",
-                    "description": "A message to describe this specific Marker.",
-                    "example": "backend deploy #123"
-                  },
-                  "type": {
-                    "type": "string",
-                    "description": "Groups similar Markers. For example, \"deploys\".",
-                    "example": "deploy"
-                  },
-                  "url": {
-                    "type": "string",
-                    "description": "A target URL for the marker.",
-                    "example": "https://github.com/myorg/myrepo/commit/abc123"
-                  }
-                }
-              },
-              "relationships": {
-                "type": "object",
-                "required": [
-                  "environment",
-                  "dataset"
-                ],
-                "properties": {
-                  "environment": {
-                    "$ref": "#/components/schemas/EnvironmentRelationship"
-                  },
-                  "dataset": {
-                    "$ref": "#/components/schemas/DatasetRelationship"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "MarkerUpdateRequest": {
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "properties": {
-          "data": {
-            "type": "object",
-            "required": [
-              "id",
-              "type",
-              "attributes",
-              "relationships"
-            ],
-            "properties": {
-              "id": {
-                "type": "string",
-                "description": "The unique identifier of the Marker"
-              },
-              "type": {
-                "type": "string",
-                "enum": [
-                  "markers"
-                ]
-              },
-              "attributes": {
-                "type": "object",
-                "properties": {
-                  "start_time": {
-                    "type": "integer",
-                    "description": "The time the Marker should be placed. Expressed in Unix Time (seconds since epoch).",
-                    "example": 1471040808
-                  },
-                  "end_time": {
-                    "type": "integer",
-                    "description": "Optional end time. Must be >= start_time if provided. Expressed in Unix Time (seconds since epoch).",
-                    "example": 1471040908
-                  },
-                  "message": {
-                    "type": "string",
-                    "description": "A message to describe this specific Marker.",
-                    "example": "backend deploy #123"
-                  },
-                  "type": {
-                    "type": "string",
-                    "description": "Groups similar Markers.",
-                    "example": "deploy"
-                  },
-                  "url": {
-                    "type": "string",
-                    "description": "A target URL for the marker.",
-                    "example": "https://github.com/myorg/myrepo/commit/abc123"
-                  }
-                }
-              },
-              "relationships": {
-                "type": "object",
-                "required": [
-                  "environment",
-                  "dataset"
-                ],
-                "properties": {
-                  "environment": {
-                    "$ref": "#/components/schemas/EnvironmentRelationship"
-                  },
-                  "dataset": {
-                    "$ref": "#/components/schemas/DatasetRelationship"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
       "AuthV2Response": {
         "type": "object",
         "required": [
@@ -12244,24 +13048,24 @@
         "type": "apiKey",
         "name": "X-Honeycomb-Team",
         "in": "header",
-        "description": "A Honeycomb Configuration Key is required to use this API.\nA Configuration Key can be found in the API Keys section of the environment configuration,\nwhich can be found under Environment Settings -> API Keys -> Configuration tab.\nCheck out our documentation to [find your API Keys](https://docs.honeycomb.io/configure/environments/manage-api-keys/#find-api-keys).\n\nMore information can be found in [Manage Environments](https://docs.honeycomb.io/configure/environments/manage-api-keys/).\n"
+        "description": "Authenticate using a Honeycomb Configuration Key.\n\nPass the **Token** in the `X-Honeycomb-Team` header:\n```http\nX-Honeycomb-Team: 1234567890123456789012\n```\n\nIf you created your key using the API, use `data.attributes.secret`; this is the same value as the **Token** in the UI.\n\nTo learn how to create a Configuration Key, visit [Manage Environment API Keys](/configure/environments/manage-api-keys). To learn more about authenticating requests, visit [API Authentication](/api/authentication).\n"
       },
       "ingest_key": {
         "type": "apiKey",
         "name": "X-Honeycomb-Team",
         "in": "header",
-        "description": "A Honeycomb Ingest Key is required to use this API. The Ingest Key is the concatenation of the Ingest Key ID and the Ingest Key Secret.\nFor security reasons the Ingest Key Secret will only be available during creation of the Ingest Key while the Ingest Key ID will always be available.\n\nMore information can be found in [Manage Environments](https://docs.honeycomb.io/configure/environments/manage-api-keys/).\n"
+        "description": "Authenticate using a Honeycomb Ingest Key.\n\nPass the Ingest Key in the `X-Honeycomb-Team` header:\n```http\nX-Honeycomb-Team: hc[x]ik_1234567890123456789012345612345678901234567890123456789012\n```\n\nThe key value is the key ID and key secret concatenated with no separator:\n- If you created your key through the UI, Honeycomb provides the complete value as the **Ingest Key**.\n- If you created your key using the API, construct the key value by concatenating `data.id` and `data.attributes.secret` with no separator.\n\nTo learn how to create an Ingest Key, visit [Manage Environment API Keys](/configure/environments/manage-api-keys). To learn more about authenticating requests, visit [API Authentication](/api/authentication).\n"
       },
       "firehose_access_key": {
         "type": "apiKey",
         "name": "X-Amz-Firehose-Access-Key",
         "in": "header",
-        "description": "A Honeycomb Ingest Key is recommended for use with this API, though a Configuration key will work.\n\nMore information can be found in [Manage Environments](https://docs.honeycomb.io/configure/environments/manage-api-keys/).\n"
+        "description": "We recommend using a Honeycomb Ingest Key to authenticate, though a Configuration Key will work.\n\nTo learn more about authenticating requests, visit [API Authentication](/api/authentication).\n"
       },
       "bearerAuth": {
         "type": "http",
         "scheme": "bearer",
-        "description": "A Honeycomb Management Key is required to use this API.\n\nThe token should be passed in the \"Authorization\" header,\nand the secret should be prefixed with \"Bearer \" followed by the API Key's ID and secret, separated by a colon.\n\nFor example, `Authorization: Bearer hcxmk_12345678901234567890123456:12345678901234567890123456789012`\n\nMore information can be found in the [Manage API Keys documentation](https://docs.honeycomb.io/configure/teams/manage-api-keys/).\n",
+        "description": "Authenticate using a Honeycomb Management Key.\n\nPass the Management Key as a Bearer token in the `Authorization` header:\n```http\nAuthorization: Bearer hcxmk_12345678901234567890123456:12345678901234567890123456789012\n```\n\nConstruct the key value by joining the **Key ID** and **Secret** with a colon (`:`).\n\nTo learn how to create a Management Key, visit [Manage Team API Keys](/configure/teams/manage-api-keys). To learn more about authenticating requests, visit [API Authentication](/api/authentication).\n",
         "bearerFormat": "HONEYCOMB_KEY_ID:HONEYCOMB_KEY_SECRET"
       }
     }

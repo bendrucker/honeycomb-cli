@@ -7,6 +7,28 @@ actions:
   - target: $.openapi
     update: "3.0.3"
 
+  # Upstream serializes the `off` Signal status as the YAML boolean `false`
+  - target: $.components.schemas.AnomalySignalStatus.enum
+    remove: true
+  - target: $.components.schemas.AnomalySignalStatus
+    update:
+      enum:
+        - onboarding
+        - training
+        - active
+        - "off"
+        - ineligible
+  - target: $.paths['/1/signals'].get.parameters[5].schema.enum
+    remove: true
+  - target: $.paths['/1/signals'].get.parameters[5].schema
+    update:
+      enum:
+        - onboarding
+        - training
+        - active
+        - ineligible
+        - "off"
+
   # type: ['null', T] → type: T + nullable: true
   - target: $.components.schemas.DatasetDefinition
     update:
@@ -48,9 +70,13 @@ actions:
     update:
       type: string
       nullable: true
-  - target: $.components.schemas.MarkerObject.properties.relationships.properties.dataset.properties.data
+  - target: $.components.schemas.Signal.properties.last_anomaly_started_at
     update:
-      type: object
+      type: integer
+      nullable: true
+  - target: $.components.schemas.Signal.properties.last_anomaly_ended_at
+    update:
+      type: integer
       nullable: true
   - target: $.components.schemas.PaginationLinks.properties.next
     update:
@@ -90,6 +116,18 @@ actions:
       nullable: true
       $ref: "#/components/schemas/UserRelationship"
   - target: $.components.schemas.EditorRelationship.oneOf
+    remove: true
+  - target: $.components.schemas.Signal.properties.sensitivity
+    update:
+      nullable: true
+      $ref: "#/components/schemas/AnomalySignalSensitivity"
+  - target: $.components.schemas.Signal.properties.sensitivity.oneOf
+    remove: true
+  - target: $.components.schemas.HistoricalAnomaly.properties.normal_range
+    update:
+      nullable: true
+      $ref: "#/components/schemas/HistoricalAnomalyNormalRange"
+  - target: $.components.schemas.HistoricalAnomaly.properties.normal_range.oneOf
     remove: true
 
   # FilterValue: anyOf with null + primitives → remove null member
