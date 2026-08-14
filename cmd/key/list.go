@@ -11,8 +11,8 @@ import (
 )
 
 var keyTypes = []string{
-	string(api.Ingest),
-	string(api.Configuration),
+	string(api.ListApiKeysParamsFilterTypeIngest),
+	string(api.ListApiKeysParamsFilterTypeConfiguration),
 }
 
 func NewListCmd(opts *options.RootOptions, team *string) *cobra.Command {

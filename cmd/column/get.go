@@ -7,6 +7,7 @@ import (
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
+	"github.com/bendrucker/honeycomb-cli/internal/deref"
 	"github.com/spf13/cobra"
 )
 
@@ -57,7 +58,7 @@ func getColumnByKeyName(ctx context.Context, opts *options.RootOptions, client a
 	}
 
 	for _, col := range columns {
-		if col.KeyName == keyName {
+		if deref.String(col.KeyName) == keyName {
 			return writeColumnDetail(opts, col)
 		}
 	}

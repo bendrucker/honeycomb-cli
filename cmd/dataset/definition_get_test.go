@@ -45,17 +45,17 @@ func TestDefinitionGet(t *testing.T) {
 	if err := json.Unmarshal(ts.OutBuf.Bytes(), &defs); err != nil {
 		t.Fatalf("unmarshal output: %v", err)
 	}
-	if defs.DurationMs == nil {
-		t.Fatal("DurationMs is nil")
+	if !defs.DurationMs.IsSpecified() {
+		t.Fatal("DurationMs is not specified")
 	}
-	if defs.DurationMs.Name != "duration_ms" {
-		t.Errorf("DurationMs.Name = %q, want %q", defs.DurationMs.Name, "duration_ms")
+	if got := defs.DurationMs.MustGet().Name; got != "duration_ms" {
+		t.Errorf("DurationMs.Name = %q, want %q", got, "duration_ms")
 	}
-	if defs.TraceId == nil {
-		t.Fatal("TraceId is nil")
+	if !defs.TraceId.IsSpecified() {
+		t.Fatal("TraceId is not specified")
 	}
-	if defs.TraceId.Name != "trace.trace_id" {
-		t.Errorf("TraceId.Name = %q, want %q", defs.TraceId.Name, "trace.trace_id")
+	if got := defs.TraceId.MustGet().Name; got != "trace.trace_id" {
+		t.Errorf("TraceId.Name = %q, want %q", got, "trace.trace_id")
 	}
 }
 

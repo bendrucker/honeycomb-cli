@@ -48,7 +48,7 @@ var columnListTable = output.TableDef{
 func columnToDetail(c api.Column) columnDetail {
 	return columnDetail{
 		ID:          deref.String(c.Id),
-		KeyName:     c.KeyName,
+		KeyName:     deref.String(c.KeyName),
 		Type:        deref.Enum(c.Type),
 		Description: deref.String(c.Description),
 		Hidden:      deref.Bool(c.Hidden),

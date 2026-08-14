@@ -9,6 +9,7 @@ import (
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/api"
 	"github.com/bendrucker/honeycomb-cli/internal/output"
+	"github.com/oapi-codegen/nullable"
 	"github.com/spf13/cobra"
 )
 
@@ -55,13 +56,13 @@ func writeDefinitions(opts *options.RootOptions, defs *api.DatasetDefinitions) e
 		name, _, _ := strings.Cut(jsonTag, ",")
 
 		column, colType := "—", "—"
-		if !field.IsNil() {
-			def := field.Interface().(*api.DatasetDefinition)
-			if def.Name != "" {
-				column = def.Name
+		if def, ok := field.Interface().(nullable.Nullable[api.DatasetDefinition]); ok && !def.IsNull() {
+			d := def.GetOrEmpty()
+			if d.Name != "" {
+				column = d.Name
 			}
-			if def.ColumnType != nil {
-				colType = string(*def.ColumnType)
+			if d.ColumnType != nil {
+				colType = string(*d.ColumnType)
 			}
 		}
 		rows = append(rows, []string{name, column, colType})

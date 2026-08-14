@@ -86,6 +86,13 @@ actions:
     update:
       type: string
 
+  # allOf [$ref] + sibling property override → restore the inherited type.
+  # Column overrides key_name only to mark it readOnly, which drops the string
+  # type it inherits from CreateColumn, leaving the property untyped.
+  - target: $.components.schemas.Column.properties.key_name
+    update:
+      type: string
+
   # allOf [$ref, {default}] → flatten to just $ref (oapi-codegen can't merge defaults)
   - target: $.components.schemas.Query.properties.calculations.items.properties.op
     update:
