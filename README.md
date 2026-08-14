@@ -63,7 +63,7 @@ Run `honeycomb help` or `honeycomb <resource> --help` for full details.
 
 ### Available Resources
 
-`api`, `auth`, `board`, `column`, `dataset`, `environment`, `key`, `marker`, `mcp`, `query`, `recipient`, `slo`, `trigger`
+`api`, `auth`, `board`, `column`, `dataset`, `environment`, `key`, `marker`, `mcp`, `query`, `recipient`, `signal`, `slo`, `trigger`
 
 ### Global Flags
 

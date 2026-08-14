@@ -51,6 +51,8 @@ The API client is generated from `api.json` (Honeycomb's OpenAPI 3.1 spec) using
 
 Run `go generate ./internal/api/...` to regenerate. The generated file is committed; the overlay is applied automatically via the oapi-codegen config.
 
+Upstream publishes YAML at `https://api-docs.honeycomb.io/api/openapi-public.yaml`. `CONTRIBUTING.md` has the refresh command and what to expect from a refresh.
+
 ## Go Conventions
 
 - **Go 1.25** — use `go tool` for codegen dependencies, range-over-func, etc.
@@ -264,6 +266,8 @@ honeycomb query annotation list/view/create/update/delete  Query annotations (sa
 honeycomb query run                             Query execution with polling
 honeycomb recipient list/get/create/update/delete  Notification recipients
 honeycomb recipient triggers                    List triggers for a recipient
+honeycomb signal list/get/update                Anomaly detection signals
+honeycomb signal anomalies                      Historical anomalies for a signal
 honeycomb slo list/get/create/update/delete     SLOs
 honeycomb slo burn-alert list/get/create/update/delete  Burn alerts
 honeycomb slo history                           SLO budget history
