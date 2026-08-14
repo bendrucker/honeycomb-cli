@@ -12,22 +12,17 @@ actions:
     remove: true
   - target: $.components.schemas.AnomalySignalStatus
     update:
-      enum:
+      enum: &anomalySignalStatus
         - onboarding
         - training
         - active
         - "off"
         - ineligible
-  - target: $.paths['/1/signals'].get.parameters[5].schema.enum
+  - target: $.paths['/1/signals'].get.parameters[?(@.name=='status')].schema.enum
     remove: true
-  - target: $.paths['/1/signals'].get.parameters[5].schema
+  - target: $.paths['/1/signals'].get.parameters[?(@.name=='status')].schema
     update:
-      enum:
-        - onboarding
-        - training
-        - active
-        - ineligible
-        - "off"
+      enum: *anomalySignalStatus
 
   # type: ['null', T] → type: T + nullable: true
   - target: $.components.schemas.DatasetDefinition

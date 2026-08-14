@@ -31,7 +31,7 @@ func NewUpdateCmd(opts *options.RootOptions) *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&enabled, "enabled", true, "Enable or disable the signal")
-	cmd.Flags().StringVar(&sensitivity, "sensitivity", "", "Sensitivity: "+enumUsage(sensitivities))
+	cmd.Flags().StringVar(&sensitivity, "sensitivity", "", "Sensitivity: "+command.EnumUsage(sensitivities))
 	cmd.Flags().StringSliceVar(&recipients, "recipient", nil, "Recipient ID to notify (repeatable, replaces the current set)")
 	cmd.Flags().BoolVar(&clearRecipients, "clear-recipients", false, "Remove all recipients from the signal")
 

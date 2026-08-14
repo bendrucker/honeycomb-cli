@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+
+	"github.com/bendrucker/honeycomb-cli/internal/output"
 )
 
 func TestGet(t *testing.T) {
@@ -84,5 +86,29 @@ func TestGet_MissingArg(t *testing.T) {
 	cmd.SetArgs([]string{"get"})
 	if err := cmd.Execute(); err == nil {
 		t.Fatal("expected error for missing arg")
+	}
+}
+
+func TestGet_TableIncludesAnomalyTimestamps(t *testing.T) {
+	opts, ts := setupTest(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		detail := signalJSON("sig-1", "checkout")
+		detail["last_anomaly_started_at"] = 1767225600
+		detail["last_anomaly_ended_at"] = 1767229200
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(detail)
+	}))
+	opts.Format = output.FormatTable
+
+	cmd := NewCmd(opts)
+	cmd.SetArgs([]string{"get", "sig-1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	out := ts.OutBuf.String()
+	for _, want := range []string{"Last Anomaly Started", "2026-01-01T00:00:00Z", "Last Anomaly Ended", "2026-01-01T01:00:00Z"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output missing %q:\n%s", want, out)
+		}
 	}
 }

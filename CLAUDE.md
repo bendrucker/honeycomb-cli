@@ -51,7 +51,7 @@ The API client is generated from `api.json` (Honeycomb's OpenAPI 3.1 spec) using
 
 Run `go generate ./internal/api/...` to regenerate. The generated file is committed; the overlay is applied automatically via the oapi-codegen config.
 
-Upstream publishes YAML at `https://api-docs.honeycomb.io/api/openapi-public.yaml`. `CONTRIBUTING.md` has the refresh command and what to expect from a refresh.
+Upstream publishes [the spec as YAML](https://docs.honeycomb.io/api/openapi-public.yaml). `CONTRIBUTING.md` has the refresh command and what to expect from a refresh.
 
 ## Go Conventions
 

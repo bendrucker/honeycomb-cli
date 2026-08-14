@@ -3,7 +3,6 @@ package signal
 import (
 	"context"
 	"fmt"
-	"net/url"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
@@ -59,8 +58,8 @@ func NewListCmd(opts *options.RootOptions) *cobra.Command {
 
 	cmd.Flags().StringVar(&service, "service", "", "Filter by service name")
 	cmd.Flags().StringVar(&dataset, "dataset", "", "Filter by dataset slug")
-	cmd.Flags().StringVar(&measuredSignal, "measured-signal", "", "Filter by measured signal: "+enumUsage(measuredSignals))
-	cmd.Flags().StringVar(&status, "status", "", "Filter by status: "+enumUsage(statuses))
+	cmd.Flags().StringVar(&measuredSignal, "measured-signal", "", "Filter by measured signal: "+command.EnumUsage(measuredSignals))
+	cmd.Flags().StringVar(&status, "status", "", "Filter by status: "+command.EnumUsage(statuses))
 	cmd.Flags().BoolVar(&anomalous, "anomalous", false, "Only list signals that are currently anomalous")
 
 	return cmd
@@ -72,7 +71,8 @@ func runList(ctx context.Context, opts *options.RootOptions, params *api.ListSig
 		return err
 	}
 
-	var items []signalItem
+	items := []signalItem{}
+	var cursor string
 	for {
 		resp, err := client.ListSignalsWithResponse(ctx, params)
 		if err != nil {
@@ -88,7 +88,7 @@ func runList(ctx context.Context, opts *options.RootOptions, params *api.ListSig
 			items = append(items, toItem(s))
 		}
 
-		cursor, err := nextPageCursor(page.Links)
+		cursor, err = api.NextPageCursor(page.Links, cursor)
 		if err != nil {
 			return err
 		}
@@ -99,27 +99,4 @@ func runList(ctx context.Context, opts *options.RootOptions, params *api.ListSig
 	}
 
 	return opts.OutputWriterList().WriteList(items, signalListTable, "No signals found.")
-}
-
-// nextPageCursor extracts the page[after] cursor from a links.next URL.
-// It returns an empty string when there is no further page.
-func nextPageCursor(links *api.PaginationLinks) (string, error) {
-	if links == nil || !links.Next.IsSpecified() || links.Next.IsNull() {
-		return "", nil
-	}
-
-	next, err := links.Next.Get()
-	if err != nil {
-		return "", fmt.Errorf("reading next page link: %w", err)
-	}
-	if next == "" {
-		return "", nil
-	}
-
-	parsed, err := url.Parse(next)
-	if err != nil {
-		return "", fmt.Errorf("parsing next page link: %w", err)
-	}
-
-	return parsed.Query().Get("page[after]"), nil
 }

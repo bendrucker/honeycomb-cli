@@ -148,6 +148,14 @@ func nullableInt(n nullable.Nullable[int]) *int {
 func writeSignalDetail(opts *options.RootOptions, detail signalDetail) error {
 	fields := output.FieldsFromTags(detail)
 
+	if detail.LastAnomalyStartedAt != nil {
+		fields = append(fields, output.Field{Label: "Last Anomaly Started", Value: formatEpoch(*detail.LastAnomalyStartedAt)})
+	}
+
+	if detail.LastAnomalyEndedAt != nil {
+		fields = append(fields, output.Field{Label: "Last Anomaly Ended", Value: formatEpoch(*detail.LastAnomalyEndedAt)})
+	}
+
 	if len(detail.Recipients) > 0 {
 		labels := make([]string, len(detail.Recipients))
 		for i, r := range detail.Recipients {
@@ -157,10 +165,6 @@ func writeSignalDetail(opts *options.RootOptions, detail signalDetail) error {
 	}
 
 	return opts.OutputWriter().WriteFields(detail, fields)
-}
-
-func enumUsage(values []string) string {
-	return strings.Join(values, ", ")
 }
 
 func recipientLabel(r recipientItem) string {

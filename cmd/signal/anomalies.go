@@ -13,23 +13,23 @@ import (
 )
 
 type anomalyItem struct {
-	ID          string  `json:"id,omitempty"`
-	StartedAt   int     `json:"started_at,omitempty"`
-	EndedAt     int     `json:"ended_at,omitempty"`
-	Measurement float32 `json:"measurement,omitempty"`
+	ID          string  `json:"id" col:"ID"`
+	StartedAt   int     `json:"started_at"`
+	EndedAt     int     `json:"ended_at"`
+	Measurement float32 `json:"measurement"`
 	LowerBound  float32 `json:"lower_bound"`
 	UpperBound  float32 `json:"upper_bound"`
 }
 
-var anomalyListTable = output.TableDef{Columns: []output.Column{
-	output.Col("ID", func(a anomalyItem) string { return a.ID }),
+var anomalyListTable = output.TableDef{Columns: append(
+	output.TableFromTags[anomalyItem]().Columns,
 	output.Col("Started", func(a anomalyItem) string { return formatEpoch(a.StartedAt) }),
 	output.Col("Ended", func(a anomalyItem) string { return formatEpoch(a.EndedAt) }),
 	output.Col("Measurement", func(a anomalyItem) string { return fmt.Sprintf("%g", a.Measurement) }),
 	output.Col("Normal Range", func(a anomalyItem) string {
 		return fmt.Sprintf("%g - %g", a.LowerBound, a.UpperBound)
 	}),
-}}
+)}
 
 func NewAnomaliesCmd(opts *options.RootOptions) *cobra.Command {
 	var (
@@ -68,7 +68,8 @@ func runAnomalies(ctx context.Context, opts *options.RootOptions, id string, sta
 		EndTime:   endTime,
 	}
 
-	var items []anomalyItem
+	items := []anomalyItem{}
+	var cursor string
 	for {
 		resp, err := client.ListSignalHistoricalAnomaliesWithResponse(ctx, id, params)
 		if err != nil {
@@ -91,7 +92,7 @@ func runAnomalies(ctx context.Context, opts *options.RootOptions, id string, sta
 			})
 		}
 
-		cursor, err := nextPageCursor(page.Links)
+		cursor, err = api.NextPageCursor(page.Links, cursor)
 		if err != nil {
 			return err
 		}
