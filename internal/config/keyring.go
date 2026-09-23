@@ -13,8 +13,10 @@ const (
 	keyringTimeout = 3 * time.Second
 )
 
+// KeyType identifies which kind of credential is stored for a profile.
 type KeyType string
 
+// Key types stored in the OS keyring.
 const (
 	KeyConfig     KeyType = "config"
 	KeyIngest     KeyType = "ingest"
@@ -28,6 +30,7 @@ func KeyTypes() []KeyType {
 	return []KeyType{KeyConfig, KeyIngest, KeyManagement}
 }
 
+// ParseKeyType parses s into a KeyType, returning an error if it is not config, ingest, or management.
 func ParseKeyType(s string) (KeyType, error) {
 	switch s {
 	case "config":
@@ -41,6 +44,7 @@ func ParseKeyType(s string) (KeyType, error) {
 	}
 }
 
+// ApplyAuth sets the request header appropriate for kt, using key as the credential value.
 func ApplyAuth(req *http.Request, kt KeyType, key string) {
 	switch kt {
 	case KeyManagement:
@@ -54,6 +58,7 @@ func keyringKey(profile string, kt KeyType) string {
 	return fmt.Sprintf("%s:%s", profile, kt)
 }
 
+// SetKey stores value in the OS keyring for the given profile and key type.
 func SetKey(profile string, kt KeyType, value string) error {
 	return withTimeout(func() error {
 		return keyring.Set(keyringService, keyringKey(profile, kt), value)
@@ -73,6 +78,7 @@ func SetManagementKey(profile, id, secret string) error {
 	return SetKey(profile, KeyManagement, ManagementKey(id, secret))
 }
 
+// GetKey retrieves the stored credential for the given profile and key type.
 func GetKey(profile string, kt KeyType) (string, error) {
 	var val string
 	err := withTimeout(func() error {
@@ -83,6 +89,7 @@ func GetKey(profile string, kt KeyType) (string, error) {
 	return val, err
 }
 
+// DeleteKey removes the stored credential for the given profile and key type.
 func DeleteKey(profile string, kt KeyType) error {
 	return withTimeout(func() error {
 		return keyring.Delete(keyringService, keyringKey(profile, kt))

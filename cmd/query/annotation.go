@@ -1,3 +1,4 @@
+// Package query implements the honeycomb query command for running queries and managing saved query annotations.
 package query
 
 import (

@@ -1,3 +1,4 @@
+// Package mcp implements the honeycomb mcp command for interacting with the Honeycomb MCP server.
 package mcp
 
 import (

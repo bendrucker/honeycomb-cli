@@ -1,3 +1,5 @@
+// Package dataset implements the "dataset" command group for managing
+// datasets and their definitions.
 package dataset
 
 import (

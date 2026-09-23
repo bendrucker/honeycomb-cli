@@ -1,3 +1,5 @@
+// Package api wraps the generated Honeycomb API client with response
+// decoding and error handling.
 package api
 
 import "fmt"

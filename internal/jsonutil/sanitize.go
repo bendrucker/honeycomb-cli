@@ -1,3 +1,4 @@
+// Package jsonutil provides helpers for validating and repairing JSON input.
 package jsonutil
 
 import "encoding/json"

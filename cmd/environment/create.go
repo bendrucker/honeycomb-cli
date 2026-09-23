@@ -1,3 +1,5 @@
+// Package environment implements the "environment" command group for
+// managing Honeycomb environments.
 package environment
 
 import (

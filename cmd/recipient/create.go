@@ -1,3 +1,4 @@
+// Package recipient implements the honeycomb recipient command for managing notification recipients.
 package recipient
 
 import (

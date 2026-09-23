@@ -1,3 +1,4 @@
+// Package trigger implements the honeycomb trigger command for managing triggers.
 package trigger
 
 import (

@@ -1,3 +1,5 @@
+// Package auth implements the "auth" command group for logging in and out of
+// Honeycomb and checking authentication status.
 package auth
 
 import (

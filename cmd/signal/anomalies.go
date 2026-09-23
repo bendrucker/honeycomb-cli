@@ -1,3 +1,4 @@
+// Package signal implements the honeycomb signal command for managing anomaly detection signals.
 package signal
 
 import (

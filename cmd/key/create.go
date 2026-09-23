@@ -1,3 +1,4 @@
+// Package key implements the honeycomb key command for managing API keys.
 package key
 
 import (

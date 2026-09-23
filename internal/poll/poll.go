@@ -1,3 +1,5 @@
+// Package poll retries an operation until it completes or times out, with
+// an optional spinner for interactive sessions.
 package poll
 
 import (
@@ -8,6 +10,7 @@ import (
 	"github.com/charmbracelet/huh/spinner"
 )
 
+// Config controls how Poll retries an operation.
 type Config struct {
 	// Interval between poll attempts. Default: 1s.
 	Interval time.Duration
@@ -31,6 +34,8 @@ func (c *Config) defaults() {
 	}
 }
 
+// Poll calls check on cfg.Interval until it reports done, returns an error,
+// or cfg.Timeout elapses.
 func Poll[T any](ctx context.Context, cfg Config, check func(ctx context.Context) (T, bool, error)) (T, error) {
 	cfg.defaults()
 

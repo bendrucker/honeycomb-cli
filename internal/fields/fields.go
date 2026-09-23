@@ -1,3 +1,5 @@
+// Package fields parses key=value flag pairs into a nested map, supporting
+// both raw string values and typed (JSON/number/bool) coercion.
 package fields
 
 import (
@@ -9,6 +11,9 @@ import (
 	"strings"
 )
 
+// Parse builds a nested map from raw and typed key=value pairs, coercing
+// typed values with CoerceValue. It returns a nil map if both slices are
+// empty.
 func Parse(raw, typed []string, stdin io.Reader) (map[string]any, error) {
 	if len(raw) == 0 && len(typed) == 0 {
 		return nil, nil
@@ -39,6 +44,8 @@ func Parse(raw, typed []string, stdin io.Reader) (map[string]any, error) {
 	return result, nil
 }
 
+// SetField assigns val into m at key, interpreting bracket suffixes
+// (e.g. "a[]" for append, "a[b]" for nesting) to build arrays and nested maps.
 func SetField(m map[string]any, key string, val any) {
 	bracket := strings.IndexByte(key, '[')
 	if bracket < 0 {
@@ -73,6 +80,9 @@ func SetField(m map[string]any, key string, val any) {
 	SetField(nested, inner+suffix, val)
 }
 
+// CoerceValue converts s to a bool, nil, JSON value, number, or string,
+// in that order, falling back to the original string. An "@" prefix reads
+// the value from the named file, or from stdin when the path is "-".
 func CoerceValue(s string, stdin io.Reader) (any, error) {
 	switch s {
 	case "true":
