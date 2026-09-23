@@ -1,6 +1,6 @@
 # Honeycomb CLI
 
-CLI for [Honeycomb](https://www.honeycomb.io/), modeled after the GitHub CLI (`gh`). `honeycomb --help` lists the command tree.
+CLI for [Honeycomb](https://www.honeycomb.io/), modeled after the GitHub CLI (`gh`). `honeycomb --help` lists top-level resources, and `honeycomb <resource> --help` lists its subcommands, including nested groups like `board view` and `slo burn-alert`.
 
 ## Commands
 
@@ -40,7 +40,7 @@ Derive columns and fields from struct tags on the projection struct: `col:"Heade
 
 ## API Requests
 
-Build the client with `opts.ClientFor(team, kind)`, declaring the command's `options.AuthKind`. It bakes in auth, so call sites pass no request editor. Pass the `--team` flag pointer for `AuthManagement`, which resolves the team first, and `nil` otherwise:
+Build the client with `opts.ClientFor(team, kind)`, declaring the command's `options.AuthKind`. It bakes in auth, so call sites pass no request editor. Pass the `--team` flag pointer for `AuthManagement`, which resolves the team first. Pass `nil` for every other auth kind:
 
 ```go
 client, err := opts.ClientFor(nil, options.AuthConfig)
@@ -61,6 +61,7 @@ Use `api.Decode` wherever a `JSON200`/`JSON201` field is read. It checks the sta
 
 `cmd/command` holds the CRUD helpers:
 
+- `Resolve(ios, value, field)`: returns a flag value, or prompts for it when the flag is empty and prompting is possible. A required `Field` that cannot be prompted returns the non-interactive error.
 - `ConfirmDelete(ios, yes, noun, fallbackName, fetchName)`: handles `--yes`, the non-interactive guard, and the y/N prompt. `fetchName` resolves a display name only when prompting. Pass `nil` to show `fallbackName`. The caller decides what a declined delete means.
 - `ReadDefinitionFile(ios, path)`: reads a JSON definition from a file or `-` (stdin) and sanitizes it.
 - `ApplyOverrides(data, overrides)`: merges flag overrides into a `map[string]any` body. Commands that build a typed request struct set fields directly.
@@ -91,6 +92,8 @@ To exercise the binary by hand, store a key as above, then build to `tmp/`:
 go build -o tmp/honeycomb ./cmd/honeycomb
 tmp/honeycomb auth status
 ```
+
+`auth status --offline` checks the keyring without calling the API.
 
 Remove the key afterward with `security delete-generic-password -s honeycomb-cli -a default:config`.
 
