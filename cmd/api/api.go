@@ -1,3 +1,5 @@
+// Package api implements the "api" command, which issues authenticated
+// requests to the Honeycomb API and prints the response.
 package api
 
 import (

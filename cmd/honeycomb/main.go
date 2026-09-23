@@ -1,3 +1,4 @@
+// Command honeycomb is the Honeycomb CLI.
 package main
 
 import (

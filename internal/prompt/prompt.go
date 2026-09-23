@@ -1,3 +1,4 @@
+// Package prompt provides interactive command-line prompt helpers.
 package prompt
 
 import (
@@ -9,11 +10,14 @@ import (
 	"golang.org/x/term"
 )
 
+// Line writes prompt to out and reads a line of input from in.
 func Line(out io.Writer, in io.Reader, prompt string) (string, error) {
 	_, _ = fmt.Fprint(out, prompt)
 	return ReadLine(in)
 }
 
+// Choice prompts until the input matches one of choices (case-insensitive),
+// reprompting on an invalid entry.
 func Choice(out io.Writer, in io.Reader, prompt string, choices []string) (string, error) {
 	for {
 		line, err := Line(out, in, prompt)
@@ -29,6 +33,8 @@ func Choice(out io.Writer, in io.Reader, prompt string, choices []string) (strin
 	}
 }
 
+// Secret writes prompt to out and reads a value without echoing it when fd
+// is a terminal, falling back to a plain read from in otherwise.
 func Secret(out io.Writer, in io.Reader, fd uintptr, prompt string) (string, error) {
 	_, _ = fmt.Fprint(out, prompt)
 	if fd != 0 {
@@ -42,6 +48,8 @@ func Secret(out io.Writer, in io.Reader, fd uintptr, prompt string) (string, err
 	return ReadLine(in)
 }
 
+// ReadLine reads a single line from r, stripping the trailing newline. It
+// returns an error if r has no more input.
 func ReadLine(r io.Reader) (string, error) {
 	scanner := bufio.NewScanner(r)
 	if scanner.Scan() {

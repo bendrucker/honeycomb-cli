@@ -1,7 +1,10 @@
+// Package agent detects which AI coding agent, if any, the CLI is running
+// under.
 package agent
 
 import "os"
 
+// Agent identifies the AI coding agent running the current process.
 type Agent struct {
 	Name string
 }
@@ -18,6 +21,7 @@ var checks = []struct {
 	{"CLINE", "cline"},
 }
 
+// Detect returns the running AI coding agent, or nil if none is detected.
 func Detect() *Agent {
 	for _, c := range checks {
 		if _, ok := os.LookupEnv(c.env); ok {

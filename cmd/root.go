@@ -1,3 +1,5 @@
+// Package cmd builds the root cobra command and assembles the CLI's
+// subcommand tree.
 package cmd
 
 import (

@@ -1,3 +1,5 @@
+// Package column implements the "column" command group for managing columns
+// and derived columns.
 package column
 
 import (

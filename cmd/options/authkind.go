@@ -1,3 +1,5 @@
+// Package options defines RootOptions, the shared configuration and helpers
+// commands use to authenticate, resolve settings, and write output.
 package options
 
 import (

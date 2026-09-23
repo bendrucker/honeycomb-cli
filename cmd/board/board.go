@@ -1,3 +1,5 @@
+// Package board implements the "board" command group for managing boards and
+// their views.
 package board
 
 import (

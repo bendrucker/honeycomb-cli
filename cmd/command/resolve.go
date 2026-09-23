@@ -37,6 +37,8 @@ type Field struct {
 // value is StreamErr, matching the majority of call sites.
 type Stream int
 
+// StreamErr and StreamOut select which IOStreams writer a prompt is written
+// to.
 const (
 	StreamErr Stream = iota
 	StreamOut

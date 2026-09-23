@@ -1,3 +1,4 @@
+// Package slo implements the honeycomb slo command for managing SLOs and burn alerts.
 package slo
 
 import (

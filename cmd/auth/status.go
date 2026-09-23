@@ -19,6 +19,7 @@ import (
 // is non-zero while JSON/table output remains intact for inspection.
 var errInvalidKey = errors.New("one or more stored keys are invalid")
 
+// KeyStatus reports the verification result for one stored key.
 type KeyStatus struct {
 	Type        string `json:"type"`
 	Status      string `json:"status"`

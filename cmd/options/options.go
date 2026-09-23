@@ -13,6 +13,7 @@ import (
 	"github.com/zalando/go-keyring"
 )
 
+// RootOptions holds the configuration and IO shared across command packages.
 type RootOptions struct {
 	IOStreams *iostreams.IOStreams
 	Config    *config.Config
@@ -28,6 +29,8 @@ type RootOptions struct {
 const defaultAPIUrl = "https://api.honeycomb.io"
 const defaultMCPUrl = "https://mcp.honeycomb.io/mcp"
 
+// ActiveProfile returns the profile to use, falling back to the config's
+// active profile and then "default" when none is set.
 func (o *RootOptions) ActiveProfile() string {
 	if o.Profile != "" {
 		return o.Profile
@@ -38,6 +41,8 @@ func (o *RootOptions) ActiveProfile() string {
 	return "default"
 }
 
+// ResolveConfigPath returns the config file path, falling back to the
+// default path when none is set.
 func (o *RootOptions) ResolveConfigPath() string {
 	if o.ConfigPath != "" {
 		return o.ConfigPath
@@ -102,6 +107,8 @@ func (o *RootOptions) resolveFormat(kind outputKind) string {
 	return output.FormatTable
 }
 
+// RequireKey reads the stored API key for kt on the active profile, returning
+// an error that names the missing key type when none is configured.
 func (o *RootOptions) RequireKey(kt config.KeyType) (string, error) {
 	profile := o.ActiveProfile()
 	key, err := config.GetKey(profile, kt)
@@ -114,6 +121,8 @@ func (o *RootOptions) RequireKey(kt config.KeyType) (string, error) {
 	return key, nil
 }
 
+// KeyEditor returns a request editor that applies the stored kt credential to
+// outgoing requests.
 func (o *RootOptions) KeyEditor(kt config.KeyType) (api.RequestEditorFn, error) {
 	key, err := o.RequireKey(kt)
 	if err != nil {
@@ -140,14 +149,18 @@ func (o *RootOptions) Client(kt config.KeyType) (*api.ClientWithResponses, error
 	return client, nil
 }
 
+// OutputWriter returns a writer for detail output, formatted per resolveFormat.
 func (o *RootOptions) OutputWriter() *output.Writer {
 	return output.New(o.IOStreams.Out, o.resolveFormat(detailOutput))
 }
 
+// OutputWriterList returns a writer for list output, formatted per resolveFormat.
 func (o *RootOptions) OutputWriterList() *output.Writer {
 	return output.New(o.IOStreams.Out, o.resolveFormat(listOutput))
 }
 
+// ResolveMCPUrl returns the MCP server URL, falling back from the flag to the
+// profile's URL, the config's URL, and finally defaultMCPUrl.
 func (o *RootOptions) ResolveMCPUrl() string {
 	if o.MCPUrl != "" {
 		return o.MCPUrl
@@ -164,6 +177,8 @@ func (o *RootOptions) ResolveMCPUrl() string {
 	return defaultMCPUrl
 }
 
+// ResolveAPIUrl returns the API base URL, falling back from the flag to the
+// profile's URL, the config's URL, and finally defaultAPIUrl.
 func (o *RootOptions) ResolveAPIUrl() string {
 	if o.APIUrl != "" {
 		return o.APIUrl

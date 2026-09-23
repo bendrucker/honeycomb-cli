@@ -1,3 +1,4 @@
+// Package output formats command results as JSON or as a rendered table.
 package output
 
 import (
@@ -11,6 +12,7 @@ import (
 	"github.com/charmbracelet/lipgloss/table"
 )
 
+// The output formats accepted by the --format flag.
 const (
 	FormatJSON  = "json"
 	FormatTable = "table"
@@ -44,6 +46,7 @@ var fieldsStyleFunc = func(row, col int) lipgloss.Style {
 	return cellStyle
 }
 
+// Column defines a table column: its header and how to render a row's value.
 type Column struct {
 	// Header is the column title, written in Title Case (e.g., "Key Name").
 	// It is automatically uppercased when rendered in a table.
@@ -58,20 +61,24 @@ func Col[T any](header string, value func(T) string) Column {
 	return Column{Header: header, Value: func(v any) string { return value(v.(T)) }}
 }
 
+// TableDef describes the columns of a table rendered from a slice.
 type TableDef struct {
 	Columns []Column
 }
 
+// Field is a single label/value row in a detail view.
 type Field struct {
 	Label string
 	Value string
 }
 
+// Writer renders data as JSON or as a table, depending on format.
 type Writer struct {
 	out    io.Writer
 	format string
 }
 
+// New creates a Writer that writes to out in the given format.
 func New(out io.Writer, format string) *Writer {
 	return &Writer{out: out, format: format}
 }
@@ -126,6 +133,7 @@ func (w *Writer) WriteMessage(data any, line string) error {
 	}
 }
 
+// WriteFields renders data as JSON, or fields as a label/value table.
 func (w *Writer) WriteFields(data any, fields []Field) error {
 	switch w.format {
 	case FormatJSON:
@@ -186,11 +194,14 @@ func (w *Writer) writeFieldsTable(fields []Field) error {
 	return err
 }
 
+// DynamicTableDef describes a table whose headers and rows are computed at
+// runtime rather than derived from a struct's columns.
 type DynamicTableDef struct {
 	Headers []string
 	Rows    [][]string
 }
 
+// WriteDynamic renders data as JSON, or td as a table in table mode.
 func (w *Writer) WriteDynamic(data any, td DynamicTableDef) error {
 	switch w.format {
 	case FormatJSON:
@@ -225,6 +236,8 @@ func (w *Writer) writeDynamicTable(td DynamicTableDef) error {
 	return err
 }
 
+// WriteDeleted renders a deletion result: {"id": id} as JSON, or msg as a
+// table-mode status line.
 func (w *Writer) WriteDeleted(id, msg string) error {
 	return w.WriteMessage(map[string]string{"id": id}, msg)
 }

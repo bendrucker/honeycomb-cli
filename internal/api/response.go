@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// APIError represents a non-2xx/3xx response from the Honeycomb API.
 type APIError struct {
 	StatusCode int
 	Message    string
@@ -19,6 +20,8 @@ func (e *APIError) Error() string {
 	return fmt.Sprintf("HTTP %d", e.StatusCode)
 }
 
+// CheckResponse returns an *APIError for a non-2xx/3xx status code, parsing
+// the body for an error message when one is present.
 func CheckResponse(statusCode int, body []byte) error {
 	if statusCode >= 200 && statusCode < 400 {
 		return nil

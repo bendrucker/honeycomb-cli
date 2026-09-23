@@ -19,11 +19,14 @@ linters:
     revive:
       rules:
         - name: exported
-          disabled: true
+          arguments:
+            - disableStutteringCheck
         - name: package-comments
-          disabled: true
-        - name: var-naming
-          disabled: true
+  exclusions:
+    rules:
+      - linters:
+          - revive
+        text: exported function New\w*Cmd should have comment
 
 formatters:
   enable:

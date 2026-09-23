@@ -1,3 +1,5 @@
+// Command genreadonly generates the readOnlyFields map used to strip
+// server-managed properties from request bodies before they are sent.
 package main
 
 import (

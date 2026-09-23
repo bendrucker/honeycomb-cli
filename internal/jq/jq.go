@@ -1,3 +1,4 @@
+// Package jq evaluates jq filter expressions against JSON input.
 package jq
 
 import (
@@ -8,6 +9,8 @@ import (
 	"github.com/itchyny/gojq"
 )
 
+// Filter decodes input as JSON, runs expr against it, and writes each result
+// to output as a line: strings are written raw, other values as JSON.
 func Filter(input io.Reader, output io.Writer, expr string) error {
 	query, err := gojq.Parse(expr)
 	if err != nil {

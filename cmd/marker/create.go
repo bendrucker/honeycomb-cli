@@ -1,3 +1,4 @@
+// Package marker implements the honeycomb marker command for managing markers and marker settings.
 package marker
 
 import (
