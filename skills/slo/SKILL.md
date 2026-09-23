@@ -11,7 +11,7 @@ Dependency chain: derived column (SLI) → SLO → burn alert. All commands requ
 
 ## SLO CRUD
 
-- `slo create -f -` (file-only, no flags yet — see #109)
+- `slo create --name --sli-alias --target --time-period [--description]` or `-f` (mutually exclusive)
 - `slo update <id> --name/--description/--target/--time-period` (flag-based, read-modify-write) or `-f` (mutually exclusive)
 - `slo get <id>` / `slo get <id> --detailed` (Enterprise-only)
 - `slo list` / `slo delete <id> --yes`
@@ -26,7 +26,7 @@ Exhaustion time: `{"alert_type":"exhaustion_time","exhaustion_minutes":240,"slo"
 
 Budget rate: `{"alert_type":"budget_rate","budget_rate_window_minutes":60,"budget_rate_decrease_threshold_per_million":50000,"slo":{"id":"..."},"recipients":[{"id":"..."}]}`
 
-All burn alert commands are file-only (`-f`), no flags yet (#110, #111).
+`burn-alert create` also takes flags: `--slo-id --alert-type --recipient` plus `--exhaustion-minutes` or `--budget-rate-window-minutes --budget-rate-threshold`. `burn-alert update` takes the same value flags.
 
 ## SLO History
 
