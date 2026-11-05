@@ -13,6 +13,8 @@ import (
 
 	mcpclient "github.com/mark3labs/mcp-go/client"
 	"github.com/mark3labs/mcp-go/client/transport"
+	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
 
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
 	"github.com/bendrucker/honeycomb-cli/internal/config"
@@ -299,5 +301,64 @@ func TestConnectWithToken(t *testing.T) {
 	// The error must come from the transport, not from a missing credential.
 	if mcpclient.IsOAuthAuthorizationRequiredError(err) {
 		t.Errorf("headless token path should not require OAuth: %v", err)
+	}
+}
+
+// TestConnectWithOAuthRetriesAfterAuthorization guards the first run after a
+// fresh login: the client that saw the authorization-required error must stay
+// open, because mcp-go cancels every request on a closed client and the retry
+// would fail with "context canceled".
+func TestConnectWithOAuthRetriesAfterAuthorization(t *testing.T) {
+	const accessToken = "fresh-token"
+
+	mcpSrv := server.NewMCPServer("test-server", "1.0.0")
+	mcpSrv.AddTool(mcp.NewTool("ping"), func(context.Context, mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		return mcp.NewToolResultText("pong"), nil
+	})
+	mcpHandler := server.NewStreamableHTTPServer(mcpSrv)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer "+accessToken {
+			w.Header().Set("WWW-Authenticate", `Bearer error="invalid_token"`)
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		mcpHandler.ServeHTTP(w, r)
+	}))
+	t.Cleanup(srv.Close)
+
+	ts := iostreams.TestPromptable(t)
+	opts := &options.RootOptions{
+		IOStreams: ts.IOStreams,
+		Config:    &config.Config{},
+		Profile:   "oauth-retry",
+	}
+	t.Cleanup(func() {
+		store := config.NewMCPStore(opts.ActiveProfile())
+		_ = store.DeleteToken()
+		_ = store.DeleteClientID()
+	})
+
+	authorized := false
+	authorize := func(ctx context.Context, _ *iostreams.IOStreams, profile string, _ error, _ net.Listener) error {
+		authorized = true
+		return newKeyringTokenStore(profile).SaveToken(ctx, &transport.Token{
+			AccessToken: accessToken,
+			TokenType:   "Bearer",
+			ExpiresAt:   time.Now().Add(time.Hour),
+		})
+	}
+
+	conn := connectOptions{root: opts, mcpURL: srv.URL}
+	c, err := connectWithOAuth(context.Background(), conn, authorize)
+	if err != nil {
+		t.Fatalf("connectWithOAuth: %v", err)
+	}
+	t.Cleanup(func() { _ = c.Close() })
+
+	if !authorized {
+		t.Fatal("expected the authorization flow to run")
+	}
+	if _, err := c.ListTools(context.Background(), mcp.ListToolsRequest{}); err != nil {
+		t.Fatalf("listing tools after authorization: %v", err)
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"strings"
 	"sync"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/bendrucker/honeycomb-cli/cmd/command"
 	"github.com/bendrucker/honeycomb-cli/cmd/options"
+	"github.com/bendrucker/honeycomb-cli/internal/iostreams"
 	"github.com/spf13/cobra"
 )
 
@@ -67,7 +69,7 @@ func defaultClientFactory(ctx context.Context, conn connectOptions) (*mcpclient.
 	if conn.token != "" {
 		return connectWithToken(ctx, conn)
 	}
-	return connectWithOAuth(ctx, conn)
+	return connectWithOAuth(ctx, conn, authorizeInteractive)
 }
 
 func connectWithToken(ctx context.Context, conn connectOptions) (*mcpclient.Client, error) {
@@ -82,7 +84,11 @@ func connectWithToken(ctx context.Context, conn connectOptions) (*mcpclient.Clie
 	return startAndInitialize(ctx, c)
 }
 
-func connectWithOAuth(ctx context.Context, conn connectOptions) (*mcpclient.Client, error) {
+// authorizer obtains and stores OAuth tokens after the server reports that
+// authorization is required.
+type authorizer func(ctx context.Context, ios *iostreams.IOStreams, profile string, authErr error, listener net.Listener) error
+
+func connectWithOAuth(ctx context.Context, conn connectOptions, authorize authorizer) (*mcpclient.Client, error) {
 	listener, redirectURI, err := newLoopbackListener()
 	if err != nil {
 		return nil, err
@@ -94,12 +100,15 @@ func connectWithOAuth(ctx context.Context, conn connectOptions) (*mcpclient.Clie
 		return nil, err
 	}
 
-	session, err := startAndInitialize(ctx, c)
+	// Closing the client on the authorization-required error would cancel every
+	// later request on it, so the retry below must reuse an open client.
+	err = initialize(ctx, c)
 	if err == nil {
-		return session, nil
+		return c, nil
 	}
 
 	if !mcpclient.IsOAuthAuthorizationRequiredError(err) {
+		_ = c.Close()
 		return nil, err
 	}
 
@@ -108,7 +117,7 @@ func connectWithOAuth(ctx context.Context, conn connectOptions) (*mcpclient.Clie
 		return nil, errNonInteractiveAuth
 	}
 
-	if authErr := authorizeInteractive(ctx, conn.root.IOStreams, conn.root.ActiveProfile(), err, listener); authErr != nil {
+	if authErr := authorize(ctx, conn.root.IOStreams, conn.root.ActiveProfile(), err, listener); authErr != nil {
 		_ = c.Close()
 		return nil, authErr
 	}
@@ -116,18 +125,24 @@ func connectWithOAuth(ctx context.Context, conn connectOptions) (*mcpclient.Clie
 	return startAndInitialize(ctx, c)
 }
 
+// startAndInitialize opens an MCP session on c, closing c if that fails.
 func startAndInitialize(ctx context.Context, c *mcpclient.Client) (*mcpclient.Client, error) {
-	if err := c.Start(ctx); err != nil {
+	if err := initialize(ctx, c); err != nil {
 		_ = c.Close()
-		return nil, fmt.Errorf("starting MCP client: %w", err)
+		return nil, err
 	}
-
-	if _, err := c.Initialize(ctx, newInitializeRequest()); err != nil {
-		_ = c.Close()
-		return nil, fmt.Errorf("initializing MCP session: %w", err)
-	}
-
 	return c, nil
+}
+
+// initialize starts c and performs the MCP handshake, leaving c open on error.
+func initialize(ctx context.Context, c *mcpclient.Client) error {
+	if err := c.Start(ctx); err != nil {
+		return fmt.Errorf("starting MCP client: %w", err)
+	}
+	if _, err := c.Initialize(ctx, newInitializeRequest()); err != nil {
+		return fmt.Errorf("initializing MCP session: %w", err)
+	}
+	return nil
 }
 
 var errNonInteractiveAuth = errors.New(
